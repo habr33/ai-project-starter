@@ -5,6 +5,8 @@ description: "Reproduce and isolate a failing test, build, request, or behavior 
 
 # debug - find the cause before changing anything
 
+**Writes:** nothing
+
 Where this sits:
 
     something broken -> debug -> `spec` or `build` -> repair

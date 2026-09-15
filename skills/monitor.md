@@ -5,6 +5,8 @@ description: "Set up and read the signals that tell you whether the live project
 
 # monitor - know when it breaks, before someone tells you
 
+**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md`
+
 Where this sits:
 
     deploy -> monitor -> (a problem) -> debug -> spec -> build
@@ -184,6 +186,8 @@ the project's shape it belongs back at `architect` rather than in a spec.
 **"The signals say nothing worth acting on" is a real and common result.** Record
 it and move on. Inventing work from a quiet dashboard is worse than reading
 nothing, because it spends the project's remaining attention on noise.
+
+**When this skill repairs a finding** - a `preflight` blocker such as no error tracking, or a check with nowhere to deliver its alert - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in its **Resolution** line: a test error reached the tracker and the alert arrived where it was sent. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules
 

@@ -5,6 +5,8 @@ description: "Create the actual application from the stack recorded in the proje
 
 # scaffold - stand the whole stack up, then check your own work
 
+**Writes:** `blueprint/context/coding-standards.md` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md`
+
 Where this sits:
 
     `stack` -> `layout` -> scaffold -> `ci` -> `context` -> `spec`

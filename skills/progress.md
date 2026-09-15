@@ -5,6 +5,8 @@ description: "Read-only report on where the project stands and whether the workf
 
 # progress - where things stand, and what to do next
 
+**Writes:** nothing
+
 Where this sits:
 
     any point in the loop -> progress -> the next skill it names

@@ -5,6 +5,8 @@ description: "Read-only code audit that records what it finds in the ledger at b
 
 # review - audit the code, and record what you find
 
+**Writes:** `blueprint/context/findings.md`
+
 Where this sits:
 
     `build` -> review -> repairs -> review again -> `ship`

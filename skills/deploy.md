@@ -5,6 +5,8 @@ description: "Deploy the project to one named environment, and roll a bad releas
 
 # deploy - put it out there, and take it back if it goes wrong
 
+**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md`
+
 Where this sits:
 
     preflight -> host -> deploy -> monitor
@@ -119,8 +121,17 @@ Not inherited from a staging deploy, not implied by running this skill, not
 carried over from earlier. Say what is going live, from which commit, and what
 changes for the people using it. Then wait.
 
-Run migrations **before** the code that needs them, in their own step, and
-confirm each one before continuing.
+**Migrations are applied by `migrate`, not here.** Check that every migration
+this release needs is already applied to this environment - `migrate` applies
+them one environment at a time, backs up first where there is real data, gets
+the approval that names what a destructive change loses, and records it in
+`dev-notes/status.md`. **A pending migration stops the deploy: route to
+`migrate`**, then come back. A release approval is not a schema change's
+approval, and a destructive migration run from here would skip both the backup
+and the question. **The same holds where the platform runs migrations for you** -
+a release command, a start script that migrates on boot: check each pending one
+has been through `migrate` for this environment before triggering the release
+that will run it.
 
 ## Step 3 - verify it is actually serving
 
@@ -254,6 +265,8 @@ success from every check you would naturally run.
 - **Service with no UI** - deploy as for a web app, but **consumers are code, not
   people**: they do not reload. A contract change needs the old shape served
   until they have moved, which `integrate`'s version check is what tests.
+
+**When this skill repairs a finding** - a `preflight` blocker such as a rollback that has never been tried - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in its **Resolution** line: the rollback ran against the target and the previous release came back. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules
 

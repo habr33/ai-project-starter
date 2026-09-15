@@ -5,6 +5,8 @@ description: "Prove the current work actually does what its spec says, by runnin
 
 # verify - prove it against the running app
 
+**Writes:** `blueprint/context/findings.md` · `blueprint/context/needs-you.md`
+
 Where this sits:
 
     `build` -> verify -> `review` -> `ship`
@@ -24,10 +26,13 @@ actually happens.
 
 ## Before you start
 
-- **`blueprint/context/current-work.md` holds no spec, or none of its steps are
+- **`blueprint/context/current-work.md` holds a spec with none of its steps
   ticked** - there is nothing built to verify. Stop and say to run `build` first.
   Verifying an unbuilt spec produces a list of failures that describe the plan,
   not a defect.
+- **It holds no spec** - not a stop. With no argument, verify the most recently
+  archived item, as Step 1 says - `ship` resets the spec and then points here -
+  and with `--all`, the archives. Stop only when there is no archive either.
 - **A done-when names a number from `blueprint/context/quality-bar.md`** -
   measure it, do not assert it. "Under 500ms at p95" is proven with timings from a
   real run, and reporting it as met without them is a fabricated pass with a
@@ -68,12 +73,21 @@ done-when criteria each recorded, and build one checklist across all of them,
 grouped by item and in ship order.
 
 **Those directories each contain a `README.md` that is not an archive** - the
-template ships one in all three, explaining the naming convention. **Skip it.**
+template ships one in each, explaining the naming convention. **Skip it.**
 An archive is named `NN-title.md` for a feature and `title.md` for a fix; the
 directory's own README describes the directory. Reading it as an archive yields
 an item with no done-whens, which reports as either a silent extra or a
 could-not-verify against a feature that does not exist - and both make the
-checklist wrong in a way nobody would think to question. **These claims were proved once, when the item
+checklist wrong in a way nobody would think to question.
+
+**Skip an archive whose build-plan item is unchecked** - that is a feature rolled
+back. `ship` keeps its archive under `blueprint/history/features` and unchecks the
+item, adding one under `blueprint/history/rollbacks` that names it, so its
+done-whens describe behaviour removed on purpose; proving them reports the
+rollback as a regression. Name each one skipped, with its rollback archive. A
+feature shipped again after its rollback is checked again, and counts.
+
+**These claims were proved once, when the item
 shipped, and nothing in this workflow has looked at them since** - which is the
 whole reason for this mode.
 
@@ -142,8 +156,9 @@ Drive the real routes with it, and **look at what it captured** - a screenshot
 that was taken and never opened proves nothing that the HTML did not.
 
 **Do not add one from this skill.** It is a dependency and a few hundred
-megabytes of browser binaries; this skill is read-only and installing mid-
-verification is the wrong moment. If a project that renders has no harness, say
+megabytes of browser binaries; this skill never edits the product - it writes
+only the ledger and `needs-you.md` - and installing mid-verification is the wrong
+moment. If a project that renders has no harness, say
 so, name `stack` as where that gets decided, and carry on with what can be
 observed.
 

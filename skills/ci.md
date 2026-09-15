@@ -5,6 +5,8 @@ description: "Set up automatic checks that run on push and on pull requests, usi
 
 # ci - make the checks run without being asked
 
+**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md`
+
 Where this sits:
 
     `scaffold` -> ci -> `context` -> the build loop
@@ -175,6 +177,8 @@ hand, so the same checks can be run without the pipeline.
 
 **Then say what comes next: `context`.** It generates the overview the build
 loop reads, and it is the last planning step before `spec` starts on items.
+
+**When this skill repairs a finding** - a `preflight` blocker such as no automated checks, or a verification command that skips some - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in its **Resolution** line: the workflow ran and failed on a deliberately broken check. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules
 

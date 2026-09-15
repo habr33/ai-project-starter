@@ -117,3 +117,53 @@ inside it is one nobody was asked about before a lockfile existed.
 This moved nine documented claims that were individually true and collectively a
 loop that no longer exists. `tests/test-seams.sh` now asserts no file attributes
 the directory layout to `architect`, and pins the handoff pairs to the new order.
+
+## D9 - The board's status files are working state; its contract line is committed (2026-09-15)
+
+From a git worktree the board resolves under the main checkout, so worktree
+sessions edited tracked `blueprint/status/` files there that nothing committed.
+**Committing them was the wrong fix, found by reading what the skills do with
+git**: `ship` clears its packet *after* its one commit, so the main checkout was
+dirty after every ship; `ship` stages everything, so the next part's commit swept
+in another part's state; and `autopilot` refuses on unrelated uncommitted changes,
+which another part's status write is. Having each writer commit instead puts
+several sessions on the main checkout's index at once - the race worktrees exist
+to remove.
+
+**Chose: gitignore `blueprint/status/`; keep `orchestration.md` tracked.** The
+contract line is a decision, and `orchestrate` commits it on its own, naming the
+one file. A fresh clone has no status files, and a missing one reads as `idle`.
+`lib/seed-product-root.sh` writes the ignore line for both creation routes;
+`install.sh` prints the commands that untrack an older product and runs none of
+them, because the index is the user's.
+
+**The files are ignored, not the directory.** The first version ignored
+`/blueprint/status/`, and running `spec` in a fresh clone of a real two-part
+product failed on its first claim - the directory did not exist. A tracked
+`.gitkeep` keeps it; no test here had cloned the product.
+
+The resolution was also fixed for the shapes it assumed away, each run before
+changing it: in a submodule the shared git directory's parent is
+`.git/modules/`, so it now follows `core.worktree`; a worktree of a bare
+repository has no main checkout, and the command now stops instead of choosing
+one whose removal would take the board with it.
+
+## D10 - Every skill declares what it writes (2026-09-15)
+
+Rule 12 checked that a declared writer *mentioned* its file, which every reader
+does - a reader listed as a writer passed, and a writer the table left out was
+never looked for. A write-verb heuristic was tried and was wrong in both
+directions.
+
+**Chose: a `**Writes:**` line under every skill's heading**, with `nothing` as a
+valid answer, checked against `template/AGENTS.md`'s table in both directions. The
+rejected alternative was a readers column in that table: it would force the
+question per file, far from the steps that do the writing, and it grows a
+user-facing file every project loads. A declaration beside the instructions is
+the one someone editing those instructions sees.
+
+Writing the lines down was itself the audit: seven skills wrote state files the
+table did not credit - `rollback`, `build`, `architect`, `ideate`, `host`,
+`migrate`, `ci` between them - and `docs/anatomy.md` called `verify` read-only
+while it raises findings. `orchestration.md` and `status/` now have rows, which
+retired rule 12's `state_declared_elsewhere` list.

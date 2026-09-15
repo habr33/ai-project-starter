@@ -5,6 +5,8 @@ description: "Build the spec in `blueprint/context/current-work.md` one small re
 
 # build - turn the spec into code, one reviewed step at a time
 
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/context/needs-you.md` · `blueprint/status/`
+
 Where this sits:
 
     `spec` -> build -> `verify` -> `review` -> `ship`
@@ -58,6 +60,26 @@ the user to run `git init` - the loop depends on branches and on being able to
 show diffs.
 
 On a resume the branch already exists. Check it out; do not create a second one.
+
+**In a multi-part project, mark this part building** before the first step, in
+`<product root>/blueprint/status/<this part>.md` - resolved the same way as the
+packet in Step 4, under the main checkout in a git worktree:
+
+    **State:** building
+    **Item:** <the item being built>
+    **Blocked on:** -
+    **Review packet:** -
+    **Updated:** <today>
+
+Without it the board reads `spec'ing` for the whole build, and `orchestrate`'s
+drift check - a part claiming one thing while its spec shows another - fires on a
+part that is simply working.
+
+**In a git worktree already on a branch of its own** - one per part is how
+`orchestrate` drives parts - rename that branch to the spec's name
+(`git branch -m <spec branch>`) instead of creating another. The worktree was
+made before the spec named anything, and a second branch leaves the first behind
+after `ship` removes the worktree.
 
 Never build on `main` or `master`.
 
@@ -240,7 +262,10 @@ work nobody has posted counts to zero forever.**
 rather than only reporting it:
 
     **State:** blocked
+    **Item:** <the item being built>
     **Blocked on:** <part> - <what is needed>
+    **Review packet:** -
+    **Updated:** <today>
 
 Same reason as the packet, and the same failure: `orchestrate` detects deadlock
 and stale blocks by reading this field, so a block that lives only in the

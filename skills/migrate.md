@@ -5,6 +5,8 @@ description: "Change the database schema safely - write the migration, work out 
 
 # migrate - change the shape of the data without losing any
 
+**Writes:** `dev-notes/decisions.md` · `dev-notes/status.md` · `blueprint/context/findings.md`
+
 Where this sits:
 
     architect (the data model) -> spec -> migrate -> build -> ship -> deploy
@@ -121,6 +123,8 @@ change was a real decision rather than a mechanical addition.
   a version you do not control, possibly several versions behind. It must handle
   every version still in the wild, and **it cannot be rolled back at all** once
   shipped.
+
+**When this skill repairs a finding** - a `preflight` blocker such as a schema change with no way back - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in its **Resolution** line: the down migration ran against a copy and the data survived it. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules
 

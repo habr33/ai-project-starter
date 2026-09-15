@@ -18,9 +18,9 @@ These are already loaded, before you read anything else:
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | the pack - refreshed on every install, your edits are overwritten |
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
-| `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship` |
-| `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship`, `verify`, `preflight`, `host` |
-| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify` |
+| `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `rollback` |
+| `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
+| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect` |
 
 **These are not loaded. Read them when you need them:**
 
@@ -28,12 +28,14 @@ These are already loaded, before you read anything else:
 |---|---|---|
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
-| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout` |
-| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship` |
+| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
+| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
 | `blueprint/history/` | every completed item, archived | `ship` |
-| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold` |
-| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor` |
+| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate` |
+| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
+| `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
+| `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `ship`, `autopilot` |
 
 **Every one of those has a named writer, and that is deliberate.** A file with
 readers and nothing that writes it is the single most repeated defect in this

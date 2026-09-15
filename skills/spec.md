@@ -5,6 +5,8 @@ description: "Turn one work item into a buildable spec written to blueprint/cont
 
 # spec - turn one item into something buildable
 
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/status/`
+
 Where this sits:
 
     `blueprint/build-plan.md` -> spec -> `build` -> `verify` -> `ship`
@@ -37,7 +39,8 @@ than working around it**:
 - **`blueprint/context/current-work.md` already holds an unfinished spec** - an
   item is in flight. Say which, and stop. Overwriting it destroys the ticked
   steps, which are the entire resume mechanism; finishing it or abandoning it
-  deliberately is the user's call, not this skill's.
+  deliberately is the user's call, not this skill's. `ship --abandon` is how it
+  is set aside: it archives the spec and keeps its branch.
 - **`blueprint/build-plan.md` has no unchecked items** and no argument was given -
   nothing is queued. Report that and ask, rather than inventing the next item.
 - **The next unchecked item does not match what the plan says this product is** -
@@ -120,6 +123,12 @@ progress is trackable from here on. Proceed either way.
 
 State which item you are spec'ing, and in which mode, before going further.
 
+**If `blueprint/history/abandoned/` holds a spec for this item**, say so, with its
+reason and branch, and ask whether to resume from it: restore it to
+`blueprint/context/current-work.md` with its ticks, check out the branch it
+names, and remove the abandoned note from the item's plan line - or write a new
+spec, leaving the archive as the record of the first attempt.
+
 **In a multi-part project, claim this part first** by writing
 `<product root>/blueprint/status/<this part>.md` - the path from `AGENTS.md`'s `Product root:`, **not** this part's
 own `blueprint/`, which is a different directory, and **in a git worktree, resolve
@@ -137,6 +146,7 @@ Write **every field, not just `State:`**:
     **State:** spec'ing
     **Item:** <the build-plan number and name being spec'd>
     **Blocked on:** -
+    **Review packet:** -
     **Updated:** <today>
 
 A field left at `-` because nobody bothered is indistinguishable from one that is
@@ -147,7 +157,10 @@ unshipped work, or a contract change - **record the block instead of just saying
 it**:
 
     **State:** blocked
+    **Item:** <the item being spec'd>
     **Blocked on:** api - the /orders endpoint this screen reads
+    **Review packet:** -
+    **Updated:** <today>
 
 Then stop. **Naming the block in the conversation is not recording it**: the
 transcript disappears, `orchestrate` reads the file, and a block that only ever

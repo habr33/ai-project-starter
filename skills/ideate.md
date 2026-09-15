@@ -5,6 +5,8 @@ description: "Turn a rough idea into a filled-in project plan by interviewing ab
 
 # ideate - turn a rough notion into a plan you can build from
 
+**Writes:** `blueprint/project-plan.md` · `blueprint/build-plan.md` · `dev-notes/decisions.md`
+
 Where this sits:
 
     ideate -> `architect` -> `stack` -> `layout` -> `scaffold` -> `ci` -> `context`

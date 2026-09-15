@@ -5,6 +5,8 @@ description: "Tune the freshly installed workflow to this actual repository: det
 
 # setup - make the workflow match this repo
 
+**Writes:** `blueprint/context/coding-standards.md` · `blueprint/context/needs-you.md` · `blueprint/context/quality-bar.md` · `blueprint/project-plan.md` · `blueprint/build-plan.md`
+
 Where this sits:
 
     install -> setup -> fill in the plans -> `ci` -> `context` -> `spec`
@@ -73,6 +75,17 @@ picking.
   `blueprint/project-plan.md` and a `blueprint/build-plan.md` whose already-built items are
   checked off. Stop for approval before writing either. Then run
   `context`.
+
+  **Fill sections 5. Tech and 6. Architecture of the plan from the code** - on
+  this route `stack` and `architect` never run, and `context` stops while either
+  still holds its seeded instruction text. Tech is the stack as detected in Step
+  1, versions as installed; Architecture is what the code already is - the
+  deployable parts, routes or screens, the data model as the schema or models
+  define it, where the logic lives, the auth boundary. **Replace the seeded
+  instruction sentence in each** rather than writing beneath it: `context` tells a
+  section is unfilled by that sentence still being there, whatever surrounds it.
+  Both are discovered, like the quality bar - mark anything the code does not
+  show as unknown rather than choosing it.
 
 Never present a reconstruction of an existing project as fact. Say which parts
 came from the code and which came from the user.

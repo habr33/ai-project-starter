@@ -188,27 +188,47 @@ r=$(fresh_repo); rm "$r/template/AGENTS.md"
 assert_refuses "a missing AGENTS.md fails loudly instead of exiting silently" \
   "template/AGENTS.md is missing" lint "$r"
 
+# The defect the Writes: line exists for: a reader named as a writer. `progress`
+# names current-work.md - it reads it - so "the writer mentions the file" passed
+# this, and the file's real writers could all disappear behind it.
+assert_ok "the fixture's progress really mentions current-work.md" \
+  grep -qF 'blueprint/context/current-work.md' "$REPO/skills/progress.md"
 r=$(fresh_repo)
-python3 - "$r/check.sh" <<'RULE12'
-import sys, pathlib, re
-p = pathlib.Path(sys.argv[1]); s = p.read_text()
-s2 = re.sub(r'^(state_declared_elsewhere=")([^"]*)(")$', r'\1\2 blueprint/gone.md\3', s, count=1, flags=re.M)
-assert s2 != s, "state_declared_elsewhere assignment not found - the test needs updating"
-p.write_text(s2)
-RULE12
-assert_refuses "a stale entry in state_declared_elsewhere is caught" "a stale entry" lint "$r"
+sed -i 's/^\(| `blueprint\/context\/current-work.md` | [^|]* | \)\(.*\) |$/\1\2, `progress` |/' "$r/template/AGENTS.md"
+assert_refuses "a reader declared as a writer is caught" \
+  "table says \`progress\` writes blueprint/context/current-work.md, but skills/progress.md's **Writes:** line does not name it" lint "$r"
 
-# The rule that once could not fail. This is the variant that caught it: the
-# message printed and the exit code was still 0, because `fail` ran in a
-# subshell created by a pipe into `while read`.
+# The other direction, which the old check never looked at: a skill that writes a
+# file the table does not credit it with. `rollback` was exactly this.
 r=$(fresh_repo)
-python3 - "$r/template/AGENTS.md" <<'PY'
-import sys, pathlib, re
-p = pathlib.Path(sys.argv[1]); s = p.read_text()
-p.write_text(re.sub(r'(\|[^|\n]*coding-standards\.md[^|\n]*\|[^|\n]*\|)([^|\n]*)\|',
-                    r'\1 `rollback` |', s, count=1))
-PY
-assert_refuses "a declared writer that never writes is caught" "never names it" lint "$r"
+sed -i 's/^\(| `blueprint\/context\/current-work.md` | .*\), `rollback` |$/\1 |/' "$r/template/AGENTS.md"
+assert_refuses "a writer the table omits is caught" \
+  "skills/rollback.md: declares it writes blueprint/context/current-work.md, but template/AGENTS.md does not name \`rollback\`" lint "$r"
+
+r=$(fresh_repo); sed -i '/^\*\*Writes:\*\*/d' "$r/skills/verify.md"
+assert_refuses "a skill with no Writes: line is caught" "skills/verify.md: no '**Writes:**' line" lint "$r"
+
+r=$(fresh_repo); sed -i 's/^\*\*Writes:\*\* nothing$/**Writes:** none/' "$r/skills/debug.md"
+assert_refuses "a Writes: line that is neither files nor 'nothing' is caught" "is not 'nothing'" lint "$r"
+
+r=$(fresh_repo); sed -i 's/^\*\*Writes:\*\* nothing$/&\n**Writes:** nothing/' "$r/skills/debug.md"
+assert_refuses "two Writes: lines are caught" "more than one '**Writes:**' line" lint "$r"
+
+r=$(fresh_repo); sed -i 's/^\*\*Writes:\*\* nothing$/**Writes:** `blueprint\/context\/risk.md`/' "$r/skills/debug.md"
+assert_refuses "a declared file with no table row is caught" \
+  "declares it writes blueprint/context/risk.md, which has no row" lint "$r"
+
+# Declared in both places, and still fiction: nothing in verify names design.md.
+assert_fails "the fixture's verify really never names design.md" grep -qF 'design.md' "$REPO/skills/verify.md"
+r=$(fresh_repo)
+sed -i 's/^\(\*\*Writes:\*\* .*\)$/\1 · `blueprint\/context\/design.md`/' "$r/skills/verify.md"
+sed -i 's/^\(| `blueprint\/context\/design.md` | [^|]* | \)\(.*\) |$/\1\2, `verify` |/' "$r/template/AGENTS.md"
+assert_refuses "a declaration with no instruction behind it is caught" \
+  "skills/verify.md: declares it writes blueprint/context/design.md, but nothing else in the skill names it" lint "$r"
+
+r=$(fresh_repo)
+sed -i 's/^\(| `blueprint\/context\/design.md` | [^|]* | \)`prototype` |$/\1`prototyp` |/' "$r/template/AGENTS.md"
+assert_refuses "a table writer that is not a skill is caught" "names \`prototyp\` as its writer, which is not a skill" lint "$r"
 
 r=$(fresh_repo)
 python3 - "$r/template/AGENTS.md" <<'PY'
@@ -359,5 +379,134 @@ assert_refuses "a mode dropped from the description is caught" \
 # at all - a linter that finds nothing and a linter that died look identical.
 assert_ok "a skill whose Input table has no argument rows does not kill the run" \
   bash -c 'out=$("$1/check.sh" 2>&1); rc=$?; [ "$rc" -eq 0 ] && [ -n "$out" ]' _ "$REPO"
+
+section "rule gaps the 2026-09-15 review found"
+# Each of these passed check.sh before the fix - probed one at a time in a copy.
+r=$(fresh_repo)
+python3 - "$r/skills/verify.md" <<'GAP'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+i = s.index("\n---\n", 4)                      # drop the frontmatter terminator...
+p.write_text(s[:i] + "\n" + s[i + 5:] + "\n---\n")   # ...and end the file with a rule
+GAP
+assert_refuses "rule 1: a later --- does not terminate frontmatter" "unterminated frontmatter" lint "$r"
+
+r=$(fresh_repo)
+sed -i '0,/^name: verify$/{/^name: verify$/d}' "$r/skills/verify.md"; printf '\nname: verify\n' >> "$r/skills/verify.md"
+assert_refuses "rule 2: a name: line in the body is not the frontmatter name" "!= filename" lint "$r"
+
+r=$(fresh_repo); printf '\nThen run `/ship` to finish.\n' >> "$r/skills/verify.md"
+assert_refuses "rule 4: a /skill reference in backticks is caught" "tool-specific reference to 'ship'" lint "$r"
+
+r=$(fresh_repo); printf '\nThen run /idea.\n' >> "$r/skills/verify.md"
+assert_refuses "rule 4: a /reference to a retired name is caught" "tool-specific reference to 'idea'" lint "$r"
+
+r=$(fresh_repo)
+for n in orphan-a orphan-b; do
+  o=orphan-a; [ "$n" = orphan-a ] && o=orphan-b
+  printf -- '---\nname: %s\ndescription: "A test skill."\n---\n\n# %s\n\n**Writes:** nothing\n\n## Before you start\n\nNothing.\n\nThen `%s`.\n' "$n" "$n" "$o" > "$r/skills/$n.md"
+done
+assert_refuses "rule 7: two skills routing only to each other are unreachable" "orphan-a.md: no route from an entry point" lint "$r"
+
+r=$(fresh_repo); printf '#!/usr/bin/env bash\n' > "$r/x.sh"; printf '#!/usr/bin/env bash\n' > "$r/tax.sh"
+printf '\nRun `tax.sh`.\n' >> "$r/README.md"
+assert_refuses "rule 8: a name that merely contains the script's is not a reference" "x.sh: nothing references it" lint "$r"
+
+r=$(fresh_repo)
+python3 - "$r/skills/progress.md" <<'GAP'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+p.write_text(re.sub(r'^description:.*$', 'description: >-\n  ' + 'x' * 1100, s, count=1, flags=re.M))
+GAP
+assert_refuses "rule 11: a multi-line description is caught" "description must be on one line" lint "$r"
+
+r=$(fresh_repo)
+python3 - "$r/skills/review.md" <<'GAP'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+assert "(`current`), " in s; p.write_text(s.replace("(`current`), ", "", 1))
+GAP
+assert_refuses "rule 15: a word-like mode must be named in backticks, not just as prose" \
+  "declares mode 'current'" lint "$r"
+
+r=$(fresh_repo); printf '\nRead `orchestration.md` before starting.\n' >> "$r/skills/debug.md"
+assert_refuses "rule 13: a product-root file named bare, without its path, is still caught" \
+  "names blueprint/orchestration.md, which lives at the product root" lint "$r"
+
+section "rule 16 - no script refuses after its first write"
+# Three scripts wrote first and validated second, and a refused run left a
+# half-made tree that then blocked the corrected retry. Two of the three
+# refusals lived in lib/seed-part.sh, called after the caller had written - so
+# the calls are tested here as well as the exits.
+
+# Inserts $3 (a line, or several) directly after the first line equal to $2.
+after_line() {
+  python3 - "$1" "$2" "$3" <<'INSERT'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+at = s.index(sys.argv[2] + "\n") + len(sys.argv[2]) + 1
+p.write_text(s[:at] + sys.argv[3] + "\n" + s[at:])
+INSERT
+}
+# The line number of the first line of $1 containing $2. Read from the fixture,
+# not written here: a literal line number goes stale on the next edit.
+line_of() { grep -nF -- "$2" "$1" | head -1 | cut -d: -f1; }
+# Removes every line of $1 containing $2 - used to strip one marker.
+drop_lines() { grep -vF -- "$2" "$1" > "$1.tmp"; mv "$1.tmp" "$1"; }
+
+r=$(fresh_repo)
+mk=$(line_of "$r/new-project.sh" 'mkdir -p "$TARGET"')
+after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' '[ -n "$NAME" ] || { echo "no name" >&2; exit 1; }'
+assert_refuses "an exit after the first write is caught, naming both lines" \
+  "new-project.sh:$((mk + 1)): exits non-zero after its first write (line $mk)" lint "$r"
+
+r=$(fresh_repo)
+drop_lines "$r/new-project.sh" "after-write: every name seed-part.sh would refuse"
+assert_refuses "a call to a script that can refuse, after a write, is caught" \
+  "calls lib/seed-part.sh, which can refuse," lint "$r"
+
+# A script with no refusal of its own can still refuse by calling one that does,
+# and missing that is how a guard in a callee goes unseen. seed-product-root.sh
+# is that script once its `${1:?}` - a refusal in its own right - is taken out,
+# which it must be: with it in, this passed with transitivity switched off.
+r=$(fresh_repo)
+sed -i 's/^ROOT="\${1:?[^}]*}"$/ROOT="$1"/' "$r/lib/seed-product-root.sh"
+assert_eq "the fixture's seed-product-root.sh has no refusal of its own" "" \
+  "$(grep -vE '^[[:space:]]*#' "$r/lib/seed-product-root.sh" | grep -E 'exit[[:space:]]+[1-9]|:\?' || true)"
+drop_lines "$r/new-project.sh" "after-write: seed-product-root.sh refuses only"
+assert_refuses "can refuse is transitive" \
+  "calls lib/seed-product-root.sh, which can refuse," lint "$r"
+
+r=$(fresh_repo)
+after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' "python3 - <<'PY'
+import sys; sys.exit(1)
+PY"
+assert_refuses "a sys.exit inside a heredoc counts too" "exits non-zero after its first write" lint "$r"
+
+# The text of a heredoc is not code: usage text and templates say "exit 1".
+r=$(fresh_repo)
+after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' "cat <<'NOTE' >/dev/null
+then exit 1 if it fails
+NOTE"
+assert_ok "a heredoc's text saying exit 1 is not a refusal" lint "$r"
+
+# `after-write:` with no reason is not a declaration - the reason is the point.
+r=$(fresh_repo)
+sed -i 's/^# after-write: this verifies the write just above.*$/# after-write:/' "$r/lib/seed-part.sh"
+ex=$(line_of "$r/lib/seed-part.sh" "failed to write 'Part:")
+assert_refuses "a marker with no reason does not count" \
+  "lib/seed-part.sh:$ex: exits non-zero after its first write" lint "$r"
+
+r=$(fresh_repo)
+mk=$(line_of "$r/new-project.sh" 'mkdir -p "$TARGET"')
+after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' '# after-write: nothing below refuses'
+assert_refuses "a marker covering nothing is caught" \
+  "new-project.sh:$((mk + 1)): an after-write marker that covers no refusal" lint "$r"
+
+# Prose that mentions the marker is not one. check.sh's own comment describing it
+# tripped the stale-marker check the first time the rule ran.
+r=$(fresh_repo)
+after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' '# A refusal down here would need an `after-write:` note.'
+assert_ok "a comment mentioning after-write: is not a marker" lint "$r"
 
 finish

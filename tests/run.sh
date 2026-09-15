@@ -71,6 +71,7 @@ assert_exists  "c-exists"         /nonexistent/really-not-here
 assert_absent  "c-absent"         /
 assert_lacks   "c-lacks-found"    "$LIB" 'assert_lacks'
 assert_lacks   "c-lacks-missing"  /nonexistent/really-not-here 'x'
+assert_lacks   "c-lacks-badre"    "$LIB" '(unbalanced'
 assert_eq      "p-eq"             "same" "same"
 assert_ok      "p-ok"             true
 assert_refuses "p-refuses"        "needle" sh -c 'echo needle; exit 1'
@@ -82,9 +83,9 @@ finish
 CANARY
   out="$(LIB="$HERE/lib.sh" REPO="$REPO" TEST_TMP="$st" bash "$st/canary.sh" 2>&1)"; rc=$?
   if [ "$rc" -eq 0 ]; then
-    printf 'harness self-test FAILED: nine broken assertions exited 0\n' >&2; return 1
+    printf 'harness self-test FAILED: ten broken assertions exited 0\n' >&2; return 1
   fi
-  for n in c-eq c-ok c-refuses-rc0 c-refuses-msg c-fails c-exists c-absent c-lacks-found c-lacks-missing; do
+  for n in c-eq c-ok c-refuses-rc0 c-refuses-msg c-fails c-exists c-absent c-lacks-found c-lacks-missing c-lacks-badre; do
     grep -qx "FAIL $n" "$st/.assertions" || missing="$missing $n"
   done
   for n in p-eq p-ok p-refuses p-fails p-exists p-absent p-lacks; do
@@ -94,8 +95,8 @@ CANARY
     printf 'harness self-test FAILED: wrong result recorded for:%s\n' "$missing" >&2; return 1
   fi
   read -r passes fails < "$st/.result" 2>/dev/null || { printf 'harness self-test FAILED: finish wrote no result\n' >&2; return 1; }
-  if [ "$fails" != "9" ] || [ "$passes" != "7" ]; then
-    printf 'harness self-test FAILED: expected 7 passed 9 failed, harness counted %s/%s\n' "$passes" "$fails" >&2; return 1
+  if [ "$fails" != "10" ] || [ "$passes" != "7" ]; then
+    printf 'harness self-test FAILED: expected 7 passed 10 failed, harness counted %s/%s\n' "$passes" "$fails" >&2; return 1
   fi
 
   # The file loop, canaried with files that are each broken one way. Every one

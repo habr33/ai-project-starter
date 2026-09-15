@@ -5,6 +5,8 @@ description: "Lock the visual direction before building, with throwaway static m
 
 # prototype - settle the look before you build it
 
+**Writes:** `blueprint/context/design.md`
+
 Where this sits:
 
     `layout` -> `scaffold` -> `ci` -> `context` -> prototype -> `spec` -> `build`

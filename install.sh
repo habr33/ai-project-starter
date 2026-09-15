@@ -348,9 +348,15 @@ if [ -f "$BOARD" ] && [ -d "$TARGET/blueprint/status" ]; then
     n=$(basename "$f")
     grep -q "^    blueprint/status/$n\$" "$BOARD" || board_wrong="$board_wrong $n"
   done
+  # A listed file that is absent is normal now - status files are not committed,
+  # so a fresh clone has none until each part writes. It is wrong only when no
+  # part of that name is listed in the root's AGENTS.md either.
   board_phantom=""
   while read -r n; do
-    [ -n "$n" ] && [ ! -e "$TARGET/blueprint/status/$n" ] && board_phantom="$board_phantom $n"
+    [ -n "$n" ] || continue
+    [ -e "$TARGET/blueprint/status/$n" ] && continue
+    grep -qE '^- `([^`]*/)?'"${n%.md}"'/`' "$TARGET/AGENTS.md" 2>/dev/null && continue
+    board_phantom="$board_phantom $n"
   done < <(sed -n 's|^    blueprint/status/\(.*\.md\)$|\1|p' "$BOARD")
   if [ -n "$board_wrong" ] || [ -n "$board_phantom" ]; then
     legacy="$legacy\n  - blueprint/orchestration.md lists the wrong parts."
@@ -358,6 +364,14 @@ if [ -f "$BOARD" ] && [ -d "$TARGET/blueprint/status" ]; then
     [ -n "$board_wrong" ]   && legacy="$legacy\n    Does not name real parts:$board_wrong"
     legacy="$legacy\n    It was seeded from a template that hard-coded web.md and api.md. The\n    board is yours - it holds the contract line - so nothing here rewrites it.\n    Fix the list under 'Where each part's state lives' to match blueprint/status/."
   fi
+fi
+
+# Products seeded before 2026-09-15 commit blueprint/status/. It is live working
+# state: tracked, every `ship` leaves the main checkout dirty and the next commit
+# sweeps in other parts' state. Untracking changes the user's index, so this
+# reports the two commands and runs neither.
+if [ -f "$BOARD" ] && [ -n "$(git -C "$TARGET" ls-files -- 'blueprint/status/*.md' 2>/dev/null)" ]; then
+  legacy="$legacy\n  - blueprint/status/ is committed, and it is live working state - tracked, every\n    ship leaves the main checkout dirty. To stop committing it, in $TARGET:\n      echo '/blueprint/status/*.md' >> .gitignore\n      touch blueprint/status/.gitkeep && git add blueprint/status/.gitkeep\n      git rm --cached blueprint/status/*.md\n    The files stay on disk; only git stops tracking them, and the .gitkeep keeps\n    the directory in every clone."
 fi
 
 # CLAUDE.md is yours and is never rewritten here, so a project created before a

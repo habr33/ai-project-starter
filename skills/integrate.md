@@ -5,6 +5,8 @@ description: "Prove the parts of a multi-part project actually work together. Re
 
 # integrate - prove the parts agree
 
+**Writes:** nothing
+
 Where this sits:
 
     ship (a part) -> integrate -> deploy

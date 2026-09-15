@@ -53,8 +53,12 @@ section "a cold session is told where to start and what is unverified"
 #     rather than by taste - was produced by a session that KNEW what the reorder
 #     was meant to demonstrate, and wrote the bar. Repeating that as evidence
 #     without the caveat is how a promising result becomes a settled one.
-assert_ok "CLAUDE.md sends a cold session to status.md first" \
-  bash -c "tr '\n' ' ' < CLAUDE.md | tr -s ' ' | grep -qF 'Start with \`dev-notes/status.md\`'"
+# CLAUDE.md was a hand-kept paraphrase of AGENTS.md - the drift this repo warns
+# about, in its own entry points: the two had already diverged on how the test
+# suite is described. It now imports AGENTS.md, so there is one text to keep true.
+assert_ok "CLAUDE.md imports AGENTS.md" grep -qx '@AGENTS.md' CLAUDE.md
+assert_eq "and restates none of it" "0" \
+  "$(grep -cE 'Start with|check.sh|tests/run.sh|keeps biting' CLAUDE.md || true)"
 # AGENTS.md is the same file for every tool that is not Claude Code - opencode,
 # Codex, Cursor all read it first - and it still pointed at the README after
 # CLAUDE.md was fixed. Half a fix reads exactly like a whole one: the claim
@@ -209,12 +213,10 @@ section "the pack says a mutation used to prove a test can itself be a no-op"
 #
 # The runner already guards its own harness; nothing taught the practice. This
 # is the one place a green result is most trusted and least examined.
-assert_ok "CLAUDE.md says to check the break was real" \
-  bash -c "tr '\n' ' ' < CLAUDE.md | tr -s ' ' | grep -qF 'check the break was real'"
+assert_ok "AGENTS.md says to check the break was real" \
+  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qiF 'check the break was real'"
 assert_ok "and names the failure - a mutation that changes nothing" \
-  bash -c "tr '\n' ' ' < CLAUDE.md | tr -s ' ' | grep -qF 'mutation that changes nothing is not'"
-assert_ok "AGENTS.md carries it too" \
-  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qF 'Check the break was real'"
+  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qF 'mutation that changes nothing is not'"
 assert_ok "build says a new test is not trusted until it has failed once" \
   bash -c "tr '\n' ' ' < skills/build.md | tr -s ' ' | grep -qF 'not trusted until it has failed once'"
 assert_ok "and says to suspect the mutation before the test" \
@@ -363,7 +365,7 @@ section "something reconciles the data model against what the stack owns"
 # hand. An auth library owning users is the common case, and `ideate` had
 # already written a User table with columns. Two of them drift silently.
 assert_ok "stack amends the data model when a library owns part of it" \
-  grep -q 'section 4, the data model, wherever the chosen stack owns part of it' skills/stack.md
+  grep -q 'the data model in section 6, wherever the chosen stack owns part of it' skills/stack.md
 assert_ok "stack names auth as the usual case" \
   grep -q 'Auth is the usual one' skills/stack.md
 assert_ok "stack says not to leave both descriptions standing" \
@@ -829,6 +831,107 @@ assert_ok "stack says where a needs-you line goes in a split product" \
   bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'needs-you.md. is part-local'"
 assert_ok "and names who would otherwise never see it" \
   bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'only ever read the part they are run in'"
+
+section "an existing project can be adopted all the way to context"
+# `setup` proposes both plans for a project with shipped features, then says to
+# run `context` - which stops while plan sections 5 (Tech) and 6 (Architecture)
+# still hold their seeded instruction text. On that route `stack` and `architect`
+# never run, so nothing filled them: the adoption route could not reach its own
+# next step. And `setup` wrote both plans without being declared their writer.
+_setup=$(tr '\n' ' ' < skills/setup.md | tr -s ' ')
+assert_ok "setup's proposal fills section 5, Tech" grep -qF '5. Tech' <<< "$_setup"
+assert_ok "and section 6, Architecture" grep -qF '6. Architecture' <<< "$_setup"
+assert_ok "and replaces the seeded instruction text context checks for" grep -qi 'seeded instruction' <<< "$_setup"
+
+section "verify --all does not re-prove a feature that was rolled back"
+# ship keeps a rolled-back feature's archive under history/features and unchecks
+# its build-plan item. verify --all read every archive there, so it re-proved
+# behaviour removed on purpose and reported the rollback as a regression.
+_verify=$(tr '\n' ' ' < skills/verify.md | tr -s ' ')
+assert_ok "verify --all skips an archive whose build-plan item is unchecked" \
+  grep -qi 'skip an archive whose build-plan item is unchecked' <<< "$_verify"
+assert_ok "and names what it skipped with its rollback archive" grep -qF 'history/rollbacks' <<< "$_verify"
+
+section "stack reconciles the data model where architect wrote it"
+# architect writes the data model - entities, fields, relations - into section 6,
+# Architecture, and migrate reads it there. stack amended section 4, which only
+# lists what is stored, so the hand-written columns a library now owns stayed in
+# section 6: the two descriptions the paragraph exists to prevent.
+_stack=$(tr '\n' ' ' < skills/stack.md | tr -s ' ')
+assert_ok "architect writes the data model into Architecture" \
+  bash -c "tr '\n' ' ' < template/blueprint/project-plan.md | grep -qi 'Architecture.*the data model in enough detail'"
+assert_ok "stack amends the data model in section 6" grep -qF 'the data model in section 6' <<< "$_stack"
+assert_eq "and no longer calls section 4 the data model" "0" "$(grep -cF 'section 4, the data model' skills/stack.md || true)"
+
+section "an item in flight can be abandoned or parked"
+# spec stops while current-work holds an unfinished spec, and called abandoning
+# it "the user's call" - but no skill carried that call out. The only ways
+# forward were to finish it or hand-edit current-work, which destroys the ticked
+# steps the whole resume mechanism rests on.
+_ship=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
+assert_ok "ship declares an --abandon mode" grep -qE '^\| `--abandon' skills/ship.md
+assert_ok "ship archives an abandoned spec under history/abandoned" grep -qF 'blueprint/history/abandoned/' <<< "$_ship"
+assert_ok "and keeps the branch, so the work is parked rather than lost" grep -qi 'keep the branch' <<< "$_ship"
+assert_ok "and leaves the plan item unchecked" grep -qi 'leave the item unchecked' <<< "$_ship"
+assert_exists "the template ships the abandoned directory's README" template/blueprint/history/abandoned/README.md
+_spec=$(tr '\n' ' ' < skills/spec.md | tr -s ' ')
+assert_ok "spec routes an unwanted item in flight to ship --abandon" grep -qF 'ship --abandon' <<< "$_spec"
+assert_ok "and offers to resume an abandoned spec for the same item" grep -qF 'history/abandoned' <<< "$_spec"
+assert_lacks "verify no longer counts the history directories" skills/verify.md 'one in all three'
+
+section "preflight runs where its files are"
+# The product root's AGENTS.md listed preflight under "Run these here", but
+# preflight reads the overview, the standards, the ledger and history - all of
+# them a part's own - and writes its blockers to the part's ledger. A product
+# root has none of them.
+assert_eq "the product root does not list preflight among its own skills" "0" \
+  "$(sed -n '/^## Run these here/,/^## /p' template/product/AGENTS.md | grep -c '^- \*\*`preflight`' || true)"
+assert_ok "and says preflight runs in each part" \
+  bash -c "tr '\n' ' ' < template/product/AGENTS.md | tr -s ' ' | grep -qi 'preflight. runs in each part'"
+assert_ok "preflight stops at a product root and names the parts to run it in" \
+  bash -c "tr '\n' ' ' < skills/preflight.md | tr -s ' ' | grep -qi 'at a product root'"
+
+section "verify agrees with itself"
+# Its preconditions stopped on "no spec" while Step 1 verified the most recent
+# archive when there was no spec, --all has no spec by design, and ship points at
+# verify right after resetting the spec. And it called itself read-only while it
+# raises findings and writes needs-you lines.
+_vpre=$(sed -n '/^## Before you start/,/^## /p' skills/verify.md | tr '\n' ' ' | tr -s ' ')
+assert_ok "verify's preconditions allow no spec: the most recent archive, or --all" \
+  bash -c 'grep -qi "most recently archived" <<< "$1" && grep -qF -- "--all" <<< "$1"' _ "$_vpre"
+assert_lacks "verify no longer calls itself read-only" skills/verify.md 'this skill is read-only'
+assert_ok "and says what it does write" \
+  bash -c "tr '\n' ' ' < skills/verify.md | tr -s ' ' | grep -qi 'never edits the product'"
+
+section "check.sh never pipes a file into grep -q"
+# `grep -v ... "$f" | grep -q` under `set -o pipefail`: grep -q exits on its first
+# match, the writer still reading the file takes SIGPIPE, and the pipeline reports
+# failure although the match succeeded. Rule 12 printed "declares it writes
+# blueprint/project-plan.md, but nothing else in the skill names it" for
+# architect.md - which names it a dozen times - once, then passed on the next
+# run. tests/lib.sh already forbids this shape for the same reason.
+assert_eq "no file-reading pipeline in check.sh ends in grep -q" "" \
+  "$(grep -nE '"\$(HERE|f)[^"]*" *\| *grep -q' check.sh || true)"
+
+section "one skill applies a migration to an environment"
+# Both migrate (Step 4, production last) and deploy ("Run migrations before the
+# code that needs them") applied migrations to production. A destructive
+# migration run by deploy went out under a release approval - skipping migrate's
+# backup-first rule and its approval that names what is lost.
+assert_lacks "deploy no longer runs migrations itself" skills/deploy.md 'Run migrations \*\*before\*\* the code'
+assert_ok "deploy stops on a pending migration and routes to migrate" \
+  bash -c "tr '\n' ' ' < skills/deploy.md | tr -s ' ' | grep -qi 'pending migration.*\`migrate\`'"
+assert_ok "including one a platform's release step would run" \
+  bash -c "tr '\n' ' ' < skills/deploy.md | tr -s ' ' | grep -qi 'release command'"
+
+section "anatomy has a row for every skill"
+# The Plan, Build and Operate tables covered the loop and left out the eight
+# skills around it - autopilot, debug, docs, orchestrate, prepare, progress,
+# rollback, setup - so the file read before changing the workflow's shape said
+# nothing about what they read or write. rollback and setup both write state.
+missing=""
+for f in skills/*.md; do n=$(basename "$f" .md); grep -qE "^\| \`$n\` \|" docs/anatomy.md || missing="$missing $n"; done
+assert_eq "every skill has a row in docs/anatomy.md" "" "$missing"
 
 section "anatomy's state table counts match the skills"
 # Two reader counts in that table said "10 skills" - one meant 13 and the other
@@ -1406,12 +1509,158 @@ cp -R "$main" "$w/nogit" && rm -rf "$w/nogit/.git"
 assert_eq "outside git, the board is the product root's, as before" \
   "$(cd "$w/nogit" && pwd -P)/blueprint" "$(cd "$w/nogit/web" && bash -c "$board_cmd" 2>/dev/null)"
 
+# The resolution assumed an ordinary clone. In a submodule the shared git
+# directory is `.git/modules/<name>` inside the superproject, so its parent is
+# `.git/modules` - a board nobody else reads. Ran it; that is where it landed.
+sup="$w/super"; git init -q "$sup"
+git -C "$sup" -c protocol.file.allow=always submodule add -q "$main" wtp >/dev/null 2>&1
+git -C "$sup/wtp" worktree add -q -b feat/sub "$w/sub-web" >/dev/null 2>&1
+assert_exists "the fixture really is a worktree of a submodule" "$w/sub-web/web/AGENTS.md"
+sub_main=$(cd "$sup/wtp" && pwd -P)
+assert_eq "in a submodule, the board is the submodule's checkout" "$sub_main/blueprint" \
+  "$(cd "$sup/wtp/web" && bash -c "$board_cmd" 2>/dev/null)"
+assert_eq "and from a worktree of that submodule, the same board" "$sub_main/blueprint" \
+  "$(cd "$w/sub-web/web" && bash -c "$board_cmd" 2>/dev/null)"
+# A bare repository's worktrees have no main checkout. Its parent directory was
+# the answer, which is simply wherever the bare repo happens to sit.
+git clone -q --bare "$main" "$w/bare.git" && git -C "$w/bare.git" worktree add -q "$w/bare-web" >/dev/null 2>&1
+assert_exists "the fixture really is a worktree of a bare repository" "$w/bare-web/web/AGENTS.md"
+assert_refuses "in a worktree of a bare repository, it stops and says why" "No main checkout" \
+  bash -c 'cd "$1" && bash -c "$2" >/dev/null' _ "$w/bare-web/web" "$board_cmd"
+assert_eq "and prints no board path to act on" "" \
+  "$(cd "$w/bare-web/web" && bash -c "$board_cmd" 2>/dev/null)"
+
+section "shipping from a git worktree"
+# Run on a two-part CMS (2026-09-15): `ship` said to squash-merge into main, and
+# in a worktree `git switch main` refuses because the main checkout has it; then
+# `git branch -D` refused the branch the worktree still held. And `build` made a
+# second branch inside a worktree that already had one, left dangling afterwards.
+# The procedure is run here as ship states it, in an ordinary repo and a submodule
+# - git's own "already used by worktree at" names .git/modules/ in a submodule.
+_ship_from_worktree() {  # $1 repo (main checkout), $2 worktree path
+  local repo="$1" wt="$2" top mc f
+  f="$(basename "$wt").txt"   # the submodule is cloned from the first repo, so each run needs its own file
+  git -C "$repo" worktree add -q -b spare "$wt" >/dev/null 2>&1 || return 1
+  git -C "$wt" branch -m spare feature/demo || return 1
+  echo demo > "$wt/$f" && git -C "$wt" add "$f" && git -C "$wt" -c user.name=t -c user.email=t@t commit -qm wip || return 1
+  git -C "$wt" switch main >/dev/null 2>&1 && return 1   # must refuse, or the fixture proves nothing
+  top=$(git -C "$wt" rev-parse --show-toplevel)
+  # board_cmd was extracted with `cd ".."` for a part; here it runs at the top.
+  mc=$(cd "$top" && bash -c "$(tail -n +2 <<< "$board_cmd")" 2>/dev/null) || return 1
+  mc=$(dirname "$mc")
+  [ -z "$(git -C "$mc" status --porcelain)" ] || return 1
+  git -C "$mc" merge --squash feature/demo >/dev/null && git -C "$mc" -c user.name=t -c user.email=t@t commit -qm "feat: demo" || return 1
+  git -C "$mc" worktree remove "$wt" && git -C "$mc" branch -D feature/demo >/dev/null || return 1
+  [ -f "$mc/$f" ] && [ -z "$(git -C "$mc" branch --list spare feature/demo)" ]
+}
+ws=$(workdir); git init -q -b main "$ws/plain" && (cd "$ws/plain" && touch a && git add a && git -c user.name=t -c user.email=t@t commit -qm i)
+assert_ok "from a worktree, ship's merge and cleanup land on main and leave no branch" \
+  _ship_from_worktree "$ws/plain" "$ws/plain-wt"
+git init -q -b main "$ws/sup" && git -C "$ws/sup" -c protocol.file.allow=always submodule add -q "$ws/plain" plain >/dev/null 2>&1
+git -C "$ws/sup/plain" checkout -q -B main
+assert_ok "and the same from a worktree of a submodule" _ship_from_worktree "$ws/sup/plain" "$ws/sub-wt"
+assert_ok "ship merges from the main checkout when run in a worktree" \
+  bash -c '_f=$(tr "\n" " " < skills/ship.md | tr -s " "); grep -qi "in a git worktree, merge from the main checkout" <<< "$_f"'
+assert_ok "and removes the worktree before deleting its branch" grep -qF 'git worktree remove' skills/ship.md
+assert_ok "build renames a worktree's branch instead of making a second" grep -qF 'git branch -m' skills/build.md
+
+section "the board's status files are working state, never committed"
+# Tracked, `ship` cleared its packet after its one commit and left the main
+# checkout dirty on every ship; its stage-all swept other parts' state into a
+# feature commit; and autopilot refused on "unrelated uncommitted changes" that
+# another part had written. The contract line is a decision and stays tracked.
+assert_exists "a --parts product has status files on disk" "$main/blueprint/status/web.md"
+assert_eq "none of them is committed" "" "$(git -C "$main" ls-files -- 'blueprint/status/*.md')"
+# Ignoring the whole directory left a fresh clone without one: `spec` claiming a
+# part in a clone failed with "No such file or directory" on its first write.
+# Found by running spec in a clone, not by any test here.
+git clone -q "$main" "$w/fresh-clone" >/dev/null 2>&1
+assert_ok "a fresh clone still has the status directory to write into" test -d "$w/fresh-clone/blueprint/status"
+assert_ok "and a part's first status write there succeeds" \
+  bash -c 'printf "**State:** spec'"'"'ing\n" > "$1/blueprint/status/web.md"' _ "$w/fresh-clone"
+assert_eq "and leaves the clone clean" "" "$(git -C "$w/fresh-clone" status --porcelain)"
+assert_ok "orchestration.md is committed" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- blueprint/orchestration.md)"' _ "$main"
+printf '**State:** idle\n**Item:** -\n**Blocked on:** -\n**Review packet:** -\n**Updated:** today\n' \
+  > "$main/blueprint/status/web.md"
+assert_eq "a part clearing its packet leaves the main checkout clean" "" \
+  "$(git -C "$main" status --porcelain -- blueprint)"
+w3=$(workdir); (cd "$w3" && "$REPO/new-project.sh" one --no-git >/dev/null 2>&1)
+(cd "$w3/one" && git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -qm init)
+(cd "$w3/one" && "$REPO/convert-to-parts.sh" --parts web,api --existing web >/dev/null 2>&1)
+assert_ok "a converted product ignores them too" git -C "$w3/one" check-ignore -q blueprint/status/api.md
+for n in orchestrate; do
+  assert_ok "$n reads a missing status file as idle" \
+    bash -c "tr '\n' ' ' < skills/$n.md | tr -s ' ' | grep -qi 'missing status file reads as .idle.'"
+done
+assert_ok "orchestrate commits the contract line by naming its one file" \
+  grep -qF -- '-- blueprint/orchestration.md`' skills/orchestrate.md
+
 assert_ok "status/ is declared product-root state, so rule 13 checks it" \
   grep -q '^ *<product root>/blueprint/status/' template/AGENTS.md
 for n in spec build ship autopilot progress; do
   assert_ok "$n resolves the board under the main checkout" \
     bash -c "tr '\n' ' ' < skills/$n.md | tr -s ' ' | grep -qi 'resolve [a-z ]*under the main checkout'"
 done
+
+section "every status write has the board's shape"
+# Run on a two-part CMS (2026-09-15): `spec` and `autopilot` claimed a part
+# without `Review packet:`, the `blocked` blocks set two fields, and `ship`'s
+# "reset the whole file" dropped the heading and note the seed wrote - so a status
+# file's shape depended on which skill touched it last, and on a fresh clone (no
+# file yet) a claim created one with a field missing. And `build` never set
+# `building`, so a hand-driven build read `spec'ing` until the packet.
+board_fields=$(sed -n '/^Each status file:$/,/^\*\*States/p' template/blueprint/orchestration.md \
+  | grep -oE '^    \*\*[A-Za-z ]+:\*\*' | sed 's/^    //' | tr '\n' '|')
+assert_ok "the board's example block is found" test -n "$board_fields"
+short=""
+for f in skills/*.md; do
+  n=$(basename "$f" .md)
+  short="$short$(awk -v F="$n" -v want="$board_fields" '
+    /^    \*\*State:\*\*/ { b=1; line=NR; got="" }
+    b && /^    \*\*[A-Za-z ]+:\*\*/ { x=$0; sub(/^    /,"",x); sub(/:\*\*.*/,":**",x); got=got x "|"; next }
+    b { if (got != want) printf " %s:%d", F, line; b=0 }
+    END { if (b && got != want) printf " %s:%d", F, line }' "$f")"
+done
+assert_eq "every status block in a skill sets the board's fields, in order" "" "$short"
+assert_ok "the board says a write leaves the rest of the file alone" \
+  bash -c 'tr "\n" " " < template/blueprint/orchestration.md | tr -s " " | grep -qi "leaves the rest of the file alone"'
+assert_ok "and says what to create when the file is missing" \
+  bash -c 'tr "\n" " " < template/blueprint/orchestration.md | tr -s " " | grep -qi "if the file is missing"'
+assert_lacks "ship no longer resets the whole file" skills/ship.md 'resetting the whole file'
+assert_ok "build marks the part building" grep -qx '    \*\*State:\*\* building' skills/build.md
+assert_ok "the board declares build as a building writer" \
+  grep -qE '^\| `State` \| [^|]*`build`[^|→]*→ `building`' template/blueprint/orchestration.md
+
+section "ship resets the working files to the template, not to its own wording"
+# ship quoted a findings stub of its own - "_No findings recorded. `review`
+# appends findings here..._" - so every ship replaced the template's ledger,
+# header and all. The header is where `docs`, `ci`, `deploy` and `monitor` learn
+# how a non-code finding closes; after the first ship it was gone.
+_quoted() {  # the indented block in ship.md that starts with the heading $1
+  awk -v h="    $1" '$0==h {f=1} f && /^    / {sub(/^    /,""); print; next} f && /^$/ {print; next} f {exit}' skills/ship.md \
+    | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
+}
+assert_eq "ship's findings stub is the template's file" \
+  "$(cat template/blueprint/context/findings.md)" "$(_quoted '# Findings')"
+assert_eq "ship's current-work stub is the template's file" \
+  "$(cat template/blueprint/context/current-work.md)" "$(_quoted '# Current work')"
+
+section "a contract can be frozen before the owner's whole plan ships"
+# Run on a two-part CMS (2026-09-15): the contract held only the routes of the
+# owner's first item, so `orchestrate` rightly refused to freeze - items 2 and 3
+# would still add routes - and the consuming part would have waited for the
+# owner's entire plan. Nothing told `architect` to write the planned boundary up
+# front, and nothing said what to do while `Owner:` was still a placeholder.
+_one() { tr '\n' ' ' < "$1" | tr -s ' '; }
+assert_ok "architect writes every planned boundary into the contract" \
+  bash -c 'tr "\n" " " < skills/architect.md | tr -s " " | grep -qi "every boundary the plan.s features cross"'
+assert_ok "and says how a generated contract gets whole early" \
+  bash -c 'tr "\n" " " < skills/architect.md | tr -s " " | grep -qi "stubs every planned route"'
+assert_ok "orchestrate stops on a placeholder Owner and routes to architect" \
+  bash -c 'tr "\n" " " < skills/orchestrate.md | tr -s " " | grep -qi "If .Owner:. is still the placeholder"'
+assert_ok "orchestrate names an owner item extending the contract as the cause of a refused freeze" \
+  bash -c 'tr "\n" " " < skills/orchestrate.md | tr -s " " | grep -qi "items that add to the contract"'
 
 section "autopilot posts its review packet the way build does"
 # The cap counts `Review packet:` lines, and only `build` wrote one. autopilot's
@@ -1439,15 +1688,20 @@ section "a finding no code fixes can still close"
 # re-examined. The P1 stayed `open` forever and blocked every `ship` in the part.
 # The route: the repairing skill marks it `fixed`, the auditor re-checks and closes.
 _says() { tr '\n' ' ' < "$1" | tr -s ' ' | grep -qF -- "$2"; }
-assert_ok "host marks a finding it repaired fixed"         _says skills/host.md 'set it to `fixed`'
-assert_ok "and never closes its own repair"                _says skills/host.md 'Never `closed`'
+# Every skill preflight routes a non-code blocker to repairs it, so each must say
+# so itself - the review found ci, docs, deploy and monitor learning it only from
+# the ledger's header, which ship used to overwrite. migrate is routed too.
+for n in host docs ci deploy monitor migrate; do
+  assert_ok "$n marks a finding it repaired fixed"   _says skills/$n.md 'set it to `fixed`'
+  assert_ok "and $n never closes its own repair"     _says skills/$n.md 'Never `closed`'
+done
 assert_ok "preflight re-checks and closes non-code repairs" _says skills/preflight.md 'this skill is the one that closes it'
 assert_ok "review names the auditor as closer for those"   _says skills/review.md 'the auditor closes it'
 assert_ok "the ledger's own header carries the route"      _says template/blueprint/context/findings.md '`preflight` re-checks and closes it'
 assert_fails "preflight no longer calls itself read-only"  grep -q 'Read-only' skills/preflight.md
 assert_fails "nor does anatomy"                            grep -q '^| `preflight` |.*nothing — read-only' docs/anatomy.md
 # Every skill that writes the ledger is a declared writer, in both declarations.
-for n in review build ship verify preflight host; do
+for n in review build ship verify preflight host docs ci deploy monitor migrate; do
   assert_ok "template/AGENTS.md declares $n as a ledger writer" \
     grep -qE "^\| \`blueprint/context/findings.md\` \|[^|]*\|[^|]*\`$n\`" template/AGENTS.md
   assert_ok "anatomy declares $n as a ledger writer" \

@@ -5,6 +5,8 @@ description: "Validate the two planning docs and generate `blueprint/context/pro
 
 # context - generate the source of truth from the plans
 
+**Writes:** `blueprint/context/project-overview.md`
+
 Where this sits:
 
     `blueprint/project-plan.md` + `blueprint/build-plan.md` -> context -> `blueprint/context/project-overview.md`

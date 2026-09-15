@@ -5,6 +5,8 @@ description: "Settle the technology stack for a new project - web app, mobile ap
 
 # stack - choose the stack before you scaffold
 
+**Writes:** `blueprint/project-plan.md` · `blueprint/context/needs-you.md`
+
 Where this sits:
 
     `ideate` -> `architect` -> stack -> `layout` -> `scaffold` -> `ci` -> `context`
@@ -345,7 +347,9 @@ Propose the exact text for the Tech section of `blueprint/project-plan.md`,
 including **every version settled above**, and stop for approval before writing
 it.
 
-**And section 4, the data model, wherever the chosen stack owns part of it.**
+**And the data model in section 6, wherever the chosen stack owns part of it** -
+the entities and fields `architect` wrote into Architecture, which `migrate` and
+every spec read.
 This is a seam that only exists because the model is written before the stack:
 `ideate` and `architect` describe the data with no library in mind, and then a
 library is chosen that **creates and migrates some of those tables itself**.
@@ -356,13 +360,13 @@ both produces **two user tables that drift**, and the bug is slow and confusing.
 The same applies to a CMS owning content tables, a queue owning job tables, and
 an ORM's own migration bookkeeping.
 
-**So say which tables the stack now owns, and amend section 4 to name the owner
-rather than the columns.** Note it in the report as a change to someone else's
+**So say which tables the stack now owns, and amend the data model in section 6
+to name the owner rather than the columns** - and section 4 too, if it lists them. Note it in the report as a change to someone else's
 section, because it is: the plan said one thing, and the choice made here changed
 it.
 
 **Do not quietly leave both descriptions standing.** Whoever builds that item
-reads section 4, writes the table it describes, and finds out at the second
+reads section 6, writes the table it describes, and finds out at the second
 migration.
 
 **And the Deployment section, section 8** - because "where it ships" was already

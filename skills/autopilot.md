@@ -5,6 +5,8 @@ description: "Explicit opt-in only. Runs a named range of the workflow unattende
 
 # autopilot - one bounded pass, then stop
 
+**Writes:** `blueprint/status/`
+
 Where this sits:
 
     `progress` -> autopilot -> human review -> `ship`
@@ -183,6 +185,7 @@ Then claim this part by writing `<product root>/blueprint/status/<this part>.md`
     **State:** building
     **Item:** <the item this run is working>
     **Blocked on:** -
+    **Review packet:** -
     **Updated:** <today>
 
 **On finishing *or stopping early*, record which.** A status file still reading
@@ -193,7 +196,10 @@ at all.
 because it needs another part writes:
 
     **State:** blocked
+    **Item:** <the item this run is working>
     **Blocked on:** <part> - <what is needed>
+    **Review packet:** -
+    **Updated:** <today>
 
 anything else that stops early writes `State: stopped`. This matters more here
 than anywhere else in the workflow: **nobody watched this run.** The status file

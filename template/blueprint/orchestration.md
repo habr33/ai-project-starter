@@ -2,15 +2,22 @@
 
 > **The coordination board.** Every session reads this before starting and writes
 > its own status file when its state changes. There is no message passing between
-> agents — files are how they coordinate, and they are committed because they are
-> state.
+> agents — files are how they coordinate.
+>
+> **This file is committed; `blueprint/status/` is not.** The contract line is a
+> decision, and `orchestrate` commits it on its own. The status files are live
+> working state: committed, every `ship` would leave the main checkout dirty and
+> the next commit would sweep in other parts' state. **A missing status file
+> reads as `idle`** — a fresh clone has none until each part writes its own.
 >
 > Maintained by the `orchestrate` skill. Present only in a multi-part project.
 >
 > **There is one board, in the main checkout.** A git worktree has its own copy
 > of this file and of `blueprint/status/`; nothing reads or writes that copy.
 > Every session resolves the board under the main checkout - `orchestrate` gives
-> the command. Outside git, or with no worktrees, that is simply this file.
+> the command, which also covers a submodule. Outside git, or with no worktrees,
+> that is simply this file. A worktree of a bare repository has no main checkout,
+> and the command stops there rather than guess.
 
 **Mode:** orchestrated
 **Contract:** _none yet_ — **NOT FROZEN**
@@ -44,6 +51,11 @@ Each status file:
     **Review packet:** -
     **Updated:** 2026-09-01
 
+**Every write sets all five fields, in this order, and leaves the rest of the
+file alone** - a field left out reads as a confident `-`, and a rewritten file
+loses the note beneath the fields. **If the file is missing** - a fresh clone has
+none - create it with a `# <part>` heading and the five fields.
+
 **States:** `idle` · `spec'ing` · `building` · `waiting` (for review) ·
 `blocked` · `stopped` (an unattended run stopped early — say why)
 
@@ -55,7 +67,7 @@ consuming it reports all-clear on data nobody ever supplied.
 
 | Field | Written by | Cleared by |
 |---|---|---|
-| `State` | `spec` → `spec'ing`, `autopilot` → `building`, `build` and `autopilot` → `waiting`, any of the three → `blocked` / `stopped` | `ship` → `idle` |
+| `State` | `spec` → `spec'ing`, `build` and `autopilot` → `building`, `build` and `autopilot` → `waiting`, any of the three → `blocked` / `stopped` | `ship` → `idle` |
 | `Item` | `spec` on claiming, `autopilot` and `build` on the item they are working | `ship` |
 | `Blocked on` | `spec`, `build`, `autopilot` — whichever stops for something another part owns | `ship`, or the part's own next session once the dependency lands |
 | `Review packet` | `build`, `autopilot` | `ship` |

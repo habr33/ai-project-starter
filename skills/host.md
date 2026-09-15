@@ -5,6 +5,8 @@ description: "Provision what the project needs to run somewhere other than a lap
 
 # host - set up the places this runs
 
+**Writes:** `blueprint/context/findings.md` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md` · `dev-notes/status.md`
+
 Where this sits:
 
     ship -> preflight -> host -> deploy -> monitor

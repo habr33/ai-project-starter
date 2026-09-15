@@ -48,20 +48,30 @@ for f in "$HERE"/skills/*.md; do
     fail "$rel: unterminated frontmatter"
     continue
   fi
+  # The first `---` closes it, so everything before that must look like
+  # frontmatter. Without this a file missing its terminator passed on any later
+  # `---` - a horizontal rule - with the whole body parsed as YAML.
+  fm=$(tail -n +2 "$f" | sed '/^---$/q' | sed '$d')
+  if grep -qvE '^([A-Za-z_-]+:.*|[[:space:]].*|)$' <<< "$fm"; then
+    fail "$rel: unterminated frontmatter - a body line comes before the closing ---"
+    continue
+  fi
 
   # 2. name matches the filename
-  declared="$(grep -m1 '^name:' "$f" | sed 's/^name:[[:space:]]*//' | tr -d '"'"'" || true)"
+  declared="$(grep -m1 '^name:' <<< "$fm" | sed 's/^name:[[:space:]]*//' | tr -d '"'"'" || true)"
   [ "$declared" = "$name" ] || fail "$rel: frontmatter name '$declared' != filename '$name'"
 
   # 3. description present - it drives skill auto-invocation
-  grep -q '^description:' "$f" || fail "$rel: missing description"
+  grep -q '^description:' <<< "$fm" || fail "$rel: missing description"
 
   # 4. no tool-specific invocation syntax. Cross-references are plain names, so
   #    the same file reads correctly in every tool and on paper.
   #    One grep per file over an alternation of every name, not one per name:
   #    27 x 27 greps were most of this script's runtime. Each name is still
   #    reported once, at its first line.
-  hits=$(grep -noE "(^|[^[:alnum:]\`/_-])[/\$]($alt_known)\b" "$f" || true)
+  # A backtick does not excuse it - `/ship` is the same tool-specific call - and a
+  # retired name written /idea is a stale call rule 5 cannot see either.
+  hits=$(grep -noE "(^|[^[:alnum:]/_-])[/\$]($alt_known|$alt_retired)\b" "$f" || true)
   while IFS= read -r h; do
     [ -n "$h" ] || continue
     fail "$rel:${h%%:*}: tool-specific reference to '${h##*[/\$]}' - use a plain name instead"
@@ -97,11 +107,31 @@ done
 #    because it declared its place in the flow and nothing routed to it. Entry
 #    points are exempt - they are reached from the CLI or invoked by name.
 entry_points="ideate setup autopilot"
+#    Reachable means reachable from an entry point, followed hop by hop - not
+#    "something names it". Two skills naming only each other passed the old count
+#    while no path from anywhere a person starts ever led to either.
+reached=" $entry_points "
+frontier="$entry_points"
+while [ -n "$frontier" ]; do
+  next=""
+  for src in $frontier; do
+    [ -f "$HERE/skills/$src.md" ] || continue
+    for dst in $(grep -oE "\`($alt_known)\`" "$HERE/skills/$src.md" | tr -d '\`' | sort -u || true); do
+      case "$reached" in *" $dst "*) continue ;; esac
+      reached="$reached$dst "; next="$next $dst"
+    done
+  done
+  frontier="$next"
+done
 for f in "$HERE"/skills/*.md; do
   name="$(basename "$f" .md)"
-  case " $entry_points " in *" $name "*) continue ;; esac
+  case "$reached" in *" $name "*) continue ;; esac
   routes=$(grep -l -- "\`$name\`" "$HERE"/skills/*.md 2>/dev/null | grep -vc "/$name.md" || true)
-  [ "${routes:-0}" -gt 0 ] || fail "skills/$name.md: no other skill routes to it - it is unreachable"
+  if [ "${routes:-0}" -gt 0 ]; then
+    fail "skills/$name.md: no route from an entry point ($entry_points) reaches it - only skills that are themselves unreachable name it"
+  else
+    fail "skills/$name.md: no other skill routes to it - it is unreachable"
+  fi
 done
 
 # 8. Every script must be referenced somewhere a person will actually look, for
@@ -129,7 +159,10 @@ for rel in $scripts; do
   # Search for the path as written. A lib/ script is referred to with its
   # directory, a root one by bare name, and both forms appear inside the other
   # scripts that call them.
-  refs=$(grep -l -F -- "$rel" $prose 2>/dev/null | grep -vc "/$rel\$" || true)
+  # A whole name, not a substring: a longer script name ending in this one is
+  # not a reference to it.
+  rel_re=$(printf '%s' "$rel" | sed 's/[.]/\\./g')
+  refs=$(grep -l -E -- "(^|[^A-Za-z0-9_.-])$rel_re" $prose 2>/dev/null | grep -vc "/$rel\$" || true)
   [ "${refs:-0}" -gt 0 ] || fail "$rel: nothing references it - no docs, no skill, no other script"
 done
 
@@ -270,6 +303,11 @@ done
 for f in "$HERE"/skills/*.md; do
   name=$(basename "$f" .md)
   desc=$(sed -n '/^---$/,/^---$/p' "$f" | sed -n 's/^description:[[:space:]]*//p' | sed 's/^"//; s/"$//')
+  # A YAML block scalar (`>-`, `|`) puts the text on the lines below, where this
+  # length check and install.sh's wrapper generation both read nothing.
+  case "$desc" in
+    ">"*|"|"*) fail "skills/$name.md: description must be on one line - a block scalar hides it from the length check and the wrappers"; continue ;;
+  esac
   len=${#desc}
   [ "$len" -le 1024 ] \
     || fail "skills/$name.md: description is $len characters, over the 1024 limit - it will silently fail to load"
@@ -280,7 +318,7 @@ for f in "$HERE"/skills/*.md; do
 done
 
 # 12 - every state file the skills read has a declared writer, and that writer
-#      really names it.
+#      declares that it writes it.
 #
 #    This is rule 9 applied to project state rather than board fields, and it
 #    exists because the same defect keeps recurring in a new place: a file with
@@ -289,20 +327,20 @@ done
 #    UI/UX section had a reader and no writer at all; `Blocked on:` had four
 #    readers and none.
 #
-#    The table in template/AGENTS.md is the declaration. Both halves are checked:
-#    a file the skills reference must have a row, and a skill named as its writer
-#    must actually mention the file - so the table cannot drift into fiction.
+#    Two declarations, which must agree: the table in template/AGENTS.md, and a
+#    `**Writes:**` line in every skill. A file the skills reference must have a
+#    row; the skills a row names as writers must be exactly the skills whose
+#    Writes: line names that file; and a declared file must also be named
+#    somewhere else in the skill, so a declaration has an instruction behind it.
+#
+#    The Writes: line replaced "the writer mentions the file", which any reader
+#    passes - a reader declared as a writer read as green, and a real writer the
+#    table omitted was never looked for. Written down, the first audit found seven:
+#    `rollback` writes current-work.md, `build` and `architect` write
+#    needs-you.md, and `ideate`, `host`, `migrate` and `ci` write dev-notes files,
+#    none of them in the table. `nothing` is a declaration too, so every skill
+#    has answered the question once.
 agents="$HERE/template/AGENTS.md"
-# Files that are state but whose writer is declared somewhere other than this
-# table. orchestration.md is seeded by lib/seed-product-root.sh, and its fields
-# have their own writer table, checked by rule 9. The list is the rule: an entry
-# here must still be a file the template ships, or it is stale.
-state_declared_elsewhere="blueprint/orchestration.md"
-for sf in $state_declared_elsewhere; do
-  [ -f "$HERE/template/$sf" ] \
-    || fail "check.sh: state_declared_elsewhere names $sf, which the template does not ship - a stale entry"
-done
-
 if [ ! -f "$agents" ]; then
   # Checked before anything reads it. Missing, this file used to skip rule 12
   # and then kill the script under pipefail at rule 13 - exit 2, no output.
@@ -330,7 +368,6 @@ else
   while read -r n path; do
     [ -n "$path" ] || continue
     printf '%s' "$rows" | grep -qF -- "| \`$path\` |" && continue
-    case " $state_declared_elsewhere " in *" $path "*) continue ;; esac
     covered=""
     for d in $dir_rows; do
       case "$path" in "$d"*) covered=1 ;; esac
@@ -339,18 +376,52 @@ else
       || fail "template/AGENTS.md: $path is read by $n skill(s) but has no row in the state/writer table"
   done <<< "$counts"
 
-  # every declared writer must actually name the file it claims to write
+  # Every skill's Writes: line - one, naming files in backticks, or `nothing`.
+  declared=""
+  for f in "$HERE"/skills/*.md; do
+    n=$(basename "$f" .md)
+    wl=$(grep '^\*\*Writes:\*\*' "$f" || true)
+    if [ -z "$wl" ]; then
+      fail "skills/$n.md: no '**Writes:**' line - declare the state files it writes, or 'nothing'"; continue
+    fi
+    [ "$(printf '%s\n' "$wl" | wc -l | tr -d ' ')" = 1 ] \
+      || { fail "skills/$n.md: more than one '**Writes:**' line"; continue; }
+    paths=$(printf '%s' "$wl" | grep -oE '`[^`]+`' | tr -d '`' || true)
+    if [ -z "$paths" ]; then
+      [ "$wl" = "**Writes:** nothing" ] \
+        || fail "skills/$n.md: '**Writes:**' names no file in backticks and is not 'nothing'"
+      continue
+    fi
+    for p in $paths; do
+      printf '%s' "$rows" | grep -qF -- "| \`$p\` |" \
+        || fail "skills/$n.md: declares it writes $p, which has no row in template/AGENTS.md's state/writer table"
+      # Herestring, not a pipe: see tests/lib.sh on grep -q and SIGPIPE.
+      grep -qF -- "${p%/}" <<< "$(grep -v '^\*\*Writes:\*\*' "$f")" \
+        || fail "skills/$n.md: declares it writes $p, but nothing else in the skill names it - a declaration with no instruction behind it"
+      declared="$declared$n $p"$'\n'
+    done
+  done
+
+  # The table's writers must be exactly the skills that declare the file.
   while IFS= read -r row; do
     [ -n "$row" ] || continue
     path=$(printf '%s' "$row" | sed 's/^| `\([^`]*\)`.*/\1/')
-    case "$path" in */) continue ;; esac
     writers=$(printf '%s' "$row" | awk -F'|' '{print $4}' | grep -oE '`[a-z-]+`' | tr -d '`' || true)
     for w in $writers; do
-      [ -f "$HERE/skills/$w.md" ] || continue
-      grep -qF -- "$path" "$HERE/skills/$w.md" \
-        || fail "template/AGENTS.md: table says \`$w\` writes $path, but skills/$w.md never names it"
+      if [ ! -f "$HERE/skills/$w.md" ]; then
+        fail "template/AGENTS.md: $path names \`$w\` as its writer, which is not a skill"; continue
+      fi
+      grep -qxF -- "$w $path" <<< "$declared" \
+        || fail "template/AGENTS.md: table says \`$w\` writes $path, but skills/$w.md's **Writes:** line does not name it"
     done
   done <<< "$rows"
+  while read -r n p; do
+    [ -n "$p" ] || continue
+    row=$(grep -F -- "| \`$p\` |" <<< "$rows" | head -1 || true)
+    [ -n "$row" ] || continue
+    grep -qF -- "\`$n\`" <<< "$(printf '%s' "$row" | awk -F'|' '{print $4}')" \
+      || fail "skills/$n.md: declares it writes $p, but template/AGENTS.md does not name \`$n\` as its writer"
+  done <<< "$declared"
 fi
 
 # 13 - a file that lives at the product root is named as such by every skill
@@ -379,8 +450,11 @@ if [ -z "$product_files" ]; then
 else
   while IFS= read -r pf; do
     [ -n "$pf" ] || continue
+    # A file is also named by its bare filename in backticks - `orchestration.md`
+    # read from inside a part resolves exactly as wrongly as the full path does.
+    bare=""; case "$pf" in *.md) bare="\`${pf##*/}\`" ;; esac
     for sk in "$HERE"/skills/*.md; do
-      grep -qF -- "$pf" "$sk" || continue
+      grep -qF -- "$pf" "$sk" || { [ -n "$bare" ] && grep -qF -- "$bare" "$sk"; } || continue
       grep -qF -- 'Product root:' "$sk" \
         || fail "skills/$(basename "$sk"): names $pf, which lives at the product root, without saying where it resolves"
     done
@@ -458,9 +532,114 @@ for f in "$HERE"/skills/*.md; do
   # which looks exactly like a linter that found nothing to say.
   args=$(sed -n '/^## Input/,/^## [^I]/p' "$f" | grep -oE '^\| `[^`]+`' | sed 's/^| //; s/`//g' | sort -u || true)
   for a in $args; do
-    printf '%s' "$desc" | grep -qF -- "$a" \
+    # A --flag is distinctive; a word-like mode (`current`, `full`) must appear
+    # in backticks, or ordinary prose like "the current work" satisfies it.
+    needle="$a"; case "$a" in --*) ;; *) needle="\`$a\`" ;; esac
+    grep -qF -- "$needle" <<< "$desc" \
       || fail "skills/$name.md: declares mode '$a' in its Input table but never names it in the description - an agent matching on the description cannot reach it"
   done
+done
+
+# 16 - no script refuses after its first write, unless the refusal says why that
+#    leaves nothing half-made.
+#
+#    Three times a script wrote first and validated second: lib/seed-part.sh
+#    (2026-09-09), new-project.sh (2026-09-10), and convert-to-parts.sh
+#    (2026-09-15), which moved every file in the project into the first part and
+#    only then refused `-api`. A refused run leaves a half-made tree, and the
+#    retry with the typo corrected is then blocked by the half-made tree.
+#
+#    Two of the three refusals were not in the script that wrote - they were in
+#    lib/seed-part.sh, called after the caller's writes. So a call to a pack
+#    script that can refuse counts as a refusal too, and "can refuse" is
+#    transitive: seed-product-root.sh has no exit of its own but calls install.sh.
+#
+#    The declaration is a comment that opens with `after-write:` and gives a
+#    reason, on the refusing line or in the comment block directly above its
+#    statement. Not a
+#    line number: those go stale on the next edit. The marker is a claim, and the
+#    rule cannot check the claim - it can only make somebody write it. A marker
+#    that covers nothing is an error, for the same reason a stale name in any
+#    declared list is: dead config hides the thing it was meant to check.
+#
+#    tests/ is excluded: a test writes a fixture and then fails on purpose.
+r16_refusal='(^|[^a-z_])exit[[:space:]]+([1-9]|\$)|sys\.exit\([1-9]|\$\{[A-Za-z0-9_]+:\?'
+r16_scripts=""
+for s in "$HERE"/*.sh "$HERE"/lib/*.sh; do [ -e "$s" ] && r16_scripts="$r16_scripts ${s#"$HERE"/}"; done
+r16_refusers=" "
+for s in $r16_scripts; do
+  grep -qE "$r16_refusal" <<< "$(grep -vE '^[[:space:]]*#' "$HERE/$s")" && r16_refusers="$r16_refusers$s "
+done
+r16_grew=1
+while [ "$r16_grew" -eq 1 ]; do
+  r16_grew=0
+  for s in $r16_scripts; do
+    case "$r16_refusers" in *" $s "*) continue ;; esac
+    for c in $(grep -vE '^[[:space:]]*#' "$HERE/$s" | grep -oE '\$HERE/(lib/)?[a-z0-9-]+\.sh' | sed 's|^\$HERE/||' || true); do
+      case "$r16_refusers" in *" $c "*) r16_refusers="$r16_refusers$s "; r16_grew=1; break ;; esac
+    done
+  done
+done
+r16_awk=$(cat <<'AWK'
+function stripq(s) { gsub(/"[^"]*"/, "\"\"", s); gsub(/'[^']*'/, "''", s); return s }
+# The marker line covering line n, or 0: on n itself, or in the comment block
+# directly above the start of n's statement (walking up through `\` lines).
+function marker(n,   i) {
+  if (line[n] ~ M) return n
+  i = n
+  while (i > 1 && line[i-1] ~ /\\[[:space:]]*$/) i--
+  for (i = i - 1; i >= 1 && line[i] ~ /^[[:space:]]*#/; i--) if (line[i] ~ M) return i
+  return 0
+}
+{ line[NR] = $0 }
+END {
+  # `after-write:` must open the comment, so prose mentioning it is not one.
+  M = "(^|[[:space:]])#[[:space:]]*after-write:[[:space:]]*[^[:space:]]"
+  first = 0; term = ""
+  for (n = 1; n <= NR; n++) {
+    l = line[n]; body = 0
+    if (term != "") {
+      if (l ~ "^[[:space:]]*" term "[[:space:]]*$") { term = ""; continue }
+      body = 1
+    }
+    if (!body && l ~ /^[[:space:]]*#/) continue
+    code = body ? l : stripq(l)
+    # Found on the quote-stripped line, so a `<<` inside a string is not one; the
+    # terminator is read from the raw line, because stripping empties <<'USAGE'.
+    if (!body && code ~ /<</ && match(l, /<<-?[[:space:]]*['"]?[A-Za-z_]+/)) {
+      term = substr(l, RSTART, RLENGTH); sub(/^<<-?[[:space:]]*['"]?/, "", term)
+    }
+    if (!first) {
+      if (body) w = (code ~ /\.write_text\(|\.write\(/)
+      else w = (code ~ /(^|[;&|{([:space:]])(mkdir|cp|mv|rm|ln|touch|tee)[[:space:]]/ \
+             || code ~ /git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?(init|add|commit|mv|rm)([[:space:]]|$)/ \
+             || code ~ /sed[[:space:]]+-i/ \
+             || code ~ /[^0-9&<]>>?[[:space:]]*[^&[:space:]\/]/)
+      if (w) first = n
+      continue
+    }
+    why = ""
+    if (body) { if (code ~ /sys\.exit\([1-9]/) why = "exits non-zero" }
+    else if (code ~ /(^|[^a-z_])exit[[:space:]]+([1-9]|\$)/) why = "exits non-zero"
+    else if (code !~ /^[[:space:]]*(source|\.)[[:space:]]/ && match(l, /\$HERE\/(lib\/)?[a-z0-9-]+\.sh/)) {
+      callee = substr(l, RSTART + 6, RLENGTH - 6)
+      if (index(refusers, " " callee " ")) why = "calls " callee ", which can refuse,"
+    }
+    if (why == "") continue
+    m = marker(n)
+    if (m) used[m] = 1
+    else printf "%s:%d: %s after its first write (line %d) - a refusal there leaves a half-made tree. Move the check above that write, or mark it with a comment '# after-write: <why nothing is left half-made>'\n", rel, n, why, first
+  }
+  for (n = 1; n <= NR; n++)
+    if (line[n] ~ M && !used[n])
+      printf "%s:%d: an after-write marker that covers no refusal after a write - remove it, or it hides the next one\n", rel, n
+}
+AWK
+)
+for s in $r16_scripts; do
+  while IFS= read -r msg; do
+    [ -n "$msg" ] && fail "$msg"
+  done <<< "$(awk -v refusers="$r16_refusers" -v rel="$s" "$r16_awk" "$HERE/$s")"
 done
 
 if [ "$errors" -gt 0 ]; then
@@ -474,4 +653,4 @@ echo "     every script referenced, every board field written, every skill state
 echo "     its preconditions, frontmatter within host limits, every state file a writer,"
 echo "     every product-root file named as one, every decision skill says what"
 echo "     happens when its decision already exists, every declared mode named"
-echo "     in its description"
+echo "     in its description, no script refusing after it has written"

@@ -223,6 +223,8 @@ IGNORE
 
 if [ -z "$PARTS" ]; then
   # Single-session project: one loop, one state. The default.
+  # after-write: install.sh refuses only an unknown option or a missing
+  # directory, and it is given no options and the directory just created.
   "$HERE/install.sh" --target "$TARGET" >/dev/null
 else
   # Multi-part: a shared product plan at the root, and a full loop inside each
@@ -232,8 +234,14 @@ else
   # Both steps are shared with convert-to-parts.sh, so a converted project and a
   # created one are the same shape. Two callers building parts slightly
   # differently is precisely the kind of seam that breaks here.
+  #
+  # after-write: seed-product-root.sh refuses only through install.sh, given the
+  # directory just created.
   "$HERE/lib/seed-product-root.sh" "$TARGET" "${clean_parts[@]}"
   for part in "${clean_parts[@]}"; do
+    # after-write: every name seed-part.sh would refuse - nested, absolute, a
+    # bad segment - was refused above before the first write, and flat unique
+    # names in a new product cannot collide.
     "$HERE/lib/seed-part.sh" "$TARGET" "$part" --quiet
   done
 fi

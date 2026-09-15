@@ -211,8 +211,20 @@ the rules. Each part's live state is a **separate file** at
 **There is one board, in the main checkout.** A git worktree carries its own copy
 of both, and `Product root:` resolves into that copy — so every skill that reads
 or writes the board resolves it under the main checkout instead, from
-`git rev-parse --git-common-dir` (`orchestrate` gives the command). Outside git,
-or with no worktrees, that is the same directory and nothing changes.
+`git rev-parse --git-common-dir` (`orchestrate` gives the command, which also
+finds a submodule's checkout). Outside git, or with no worktrees, that is the same
+directory and nothing changes. **A worktree of a bare repository has no main
+checkout**, so the command stops: work from one ordinary clone and add worktrees
+to that.
+
+**`orchestration.md` is committed; the status files are gitignored** - the files,
+not the directory, which a tracked `.gitkeep` keeps in every clone. The
+contract line is a decision, and `orchestrate` commits it on its own. The status
+files are live working state: tracked, every `ship` - which clears its packet
+after its one commit - left the main checkout dirty, and the next commit swept in
+another part's state. A fresh clone has no status files, and a missing one reads
+as `idle`. A product seeded before 2026-09-15 still tracks them; `install.sh`
+prints the two commands that stop it.
 
 **That separation is load-bearing.** One file per part means no file has two
 writers, so nothing is lost when sessions genuinely run at the same time — which

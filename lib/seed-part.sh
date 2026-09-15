@@ -94,6 +94,8 @@ fi
 DIR="$ROOT/$PART_PATH"
 
 mkdir -p "$DIR"
+# after-write: install.sh refuses only an unknown option or a missing directory,
+# and it is given no options and the directory just created.
 "$HERE/install.sh" --target "$DIR" >/dev/null
 
 # This part's blueprint is its own; the product plan lives one level up. install.sh
@@ -126,8 +128,11 @@ else:
 p.write_text(s)
 PYEOF
 
+# after-write: this verifies the write just above - a check of a write cannot run
+# before it. What they report is the half-made part, by name, not a bad input.
 grep -q '^- Part: '"$PART"'$' "$DIR/AGENTS.md" \
   || { echo "seed-part.sh: failed to write 'Part: $PART' into $DIR/AGENTS.md" >&2; exit 1; }
+# after-write: as above - verifies the write, and names what it failed to write.
 grep -q "^- Product root: $UP\$" "$DIR/AGENTS.md" \
   || { echo "seed-part.sh: failed to write 'Product root: $UP' into $DIR/AGENTS.md" >&2; exit 1; }
 
@@ -199,6 +204,8 @@ if head:
 PYEOF
 fi
 if [ -f "$BOARD" ]; then
+  # after-write: verifies the board edit just above, and names the board it
+  # failed to change.
   grep -q "^    blueprint/status/$PART\.md$" "$BOARD" \
     || { echo "seed-part.sh: failed to list '$PART' in $BOARD" >&2; exit 1; }
 fi

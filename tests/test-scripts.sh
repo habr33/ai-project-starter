@@ -68,6 +68,30 @@ for bad in "../escape" "apps/../../escape" "/abs/path" "apps/-dash" "apps//empty
 done
 assert_absent "and nothing was created outside the root" "$w2/escape"
 
+section "a seeded part can move to the path layout chose"
+# new-project.sh --parts and convert-to-parts.sh create top-level parts before
+# `layout` runs, and `layout` had no answer for a framework wanting them nested
+# (`apps/api`). A part is not a directory rename: Product root, the root's listing
+# and the board all name it, and architect has already written its build plan.
+# This runs the procedure layout states: carry the part's own files, drop its
+# listing and directory, seed the new path, put the files back.
+w=$(workdir); (cd "$w" && "$NP" mv --parts api,web >/dev/null 2>&1); m="$w/mv"
+printf '\n- [ ] 1. **Pages** - store a page\n' >> "$m/api/blueprint/build-plan.md"
+assert_refuses "seeding the new path while the old part is listed is refused" \
+  "a different part is already called 'api'" "$SP" "$m" apps/api --quiet
+carry="$w/carry"; mkdir -p "$carry" && cp -R "$m/api/blueprint" "$m/api/dev-notes" "$carry/"
+sed -i '/^- `api\/`/d' "$m/AGENTS.md" && rm -rf "$m/api"
+assert_ok "then the new path seeds" "$SP" "$m" apps/api --quiet
+cp -R "$carry/blueprint" "$carry/dev-notes" "$m/apps/api/"
+assert_eq "the moved part climbs two levels to the root" "- Product root: ../.." "$(grep -m1 '^- Product root:' "$m/apps/api/AGENTS.md")"
+assert_ok "the root lists it at its new path" grep -q '^- `apps/api/`' "$m/AGENTS.md"
+assert_lacks "and no longer at the old one" "$m/AGENTS.md" '^- `api/`'
+assert_ok "the board still names its status file" grep -q '^    blueprint/status/api\.md$' "$m/blueprint/orchestration.md"
+assert_ok "and the build plan architect wrote came with it" grep -q 'Pages.*store a page' "$m/apps/api/blueprint/build-plan.md"
+_layout=$(tr '\n' ' ' < "$REPO/skills/layout.md" | tr -s ' ')
+assert_ok "layout says what to do when the parts already exist" grep -qi 'if the parts already exist' <<< "$_layout"
+assert_ok "and moves one with lib/seed-part.sh, carrying its files" grep -qF 'lib/seed-part.sh' <<< "$_layout"
+
 section "two parts may not share a status file"
 # `apps/web` and `services/web` are different parts whose last segment is the
 # same, and the status file and board entry are both keyed on that segment - so
@@ -170,11 +194,14 @@ w=$(workdir)
 assert_ok      "a bare name works"            env -C "$w" "$NP" bare
 mkdir -p "$w/sub"
 assert_ok      "a relative path works"        env -C "$w" "$NP" sub/nested
-assert_ok      "an absolute path works"       "$NP" "$w/abs"
+assert_ok      "an absolute path works"       env -C "$w" "$NP" "$w/abs"
 assert_ok      "--in DIR works"               "$NP" inned --in "$w"
 assert_exists  "--in landed in DIR"           "$w/inned"
-assert_eq      "an absolute name does not nest under \$PWD" "0" \
-  "$(find "$w" -maxdepth 6 -path '*home*' -name AGENTS.md 2>/dev/null | wc -l | tr -d ' ')"
+assert_exists  "the absolute path landed where it names" "$w/abs/AGENTS.md"
+# Run from inside \$w, so a name joined onto \$PWD would land at \$w/\$w/abs.
+# Named exactly, not found by a glob: '*home*' matched every file whenever the
+# temp directory itself sat under a home directory.
+assert_absent  "an absolute name does not nest under \$PWD" "$w/${w#/}"
 
 section "new-project.sh - refusals"
 assert_fails   "refuses an existing directory"       env -C "$w" "$NP" bare
@@ -186,11 +213,17 @@ section "part names - the guard that new-project.sh was missing"
 # convert-to-parts.sh had the guard; new-project.sh did not; both call
 # lib/seed-part.sh, which is where the guard now lives.
 w=$(workdir)
-assert_fails  "refuses a traversing part name"  env -C "$w" "$NP" t --parts '../escaped,api'
-assert_absent "and writes nothing outside the root" "$w/escaped"
-assert_fails  "refuses '..' as a part"          env -C "$w" "$NP" t2 --parts '..,api'
-assert_fails  "refuses a leading dash"          env -C "$w" "$NP" t3 --parts '-rf,api'
-assert_fails  "refuses an absolute part path"   env -C "$w" "$NP" t4 --parts '/tmp/pwned,api'
+# Each names the part it refused, so a refusal for some other reason - a typo in
+# the command, a missing directory - cannot pass as the guard firing.
+assert_refuses "refuses a traversing part name" "part name here: '../escaped'" \
+  env -C "$w" "$NP" t --parts '../escaped,api'
+assert_absent  "and writes nothing outside the root" "$w/escaped"
+assert_refuses "refuses '..' as a part"         "part name: '..'" \
+  env -C "$w" "$NP" t2 --parts '..,api'
+assert_refuses "refuses a leading dash"         "may not start with '-'" \
+  env -C "$w" "$NP" t3 --parts '-rf,api'
+assert_refuses "refuses an absolute part path"  "part name: '/tmp/pwned'" \
+  env -C "$w" "$NP" t4 --parts '/tmp/pwned,api'
 assert_absent "and creates no absolute path"    "/tmp/pwned"
 # The guard has to hold at the chokepoint too, or the callers are the only check
 # and the rule drifts again the next time something calls seed-part.sh.
@@ -323,8 +356,8 @@ w=$(workdir); (cd "$w" && "$NP" shop --parts frontend,backend >/dev/null 2>&1)
 b="$w/shop/blueprint/orchestration.md"
 assert_ok     "the board lists the first real part"   grep -q '^    blueprint/status/frontend\.md$' "$b"
 assert_ok     "and the second"                        grep -q '^    blueprint/status/backend\.md$' "$b"
-assert_fails  "and names no part that does not exist" grep -q '^    blueprint/status/web\.md$' "$b"
-assert_fails  "the seeding placeholder is consumed"   grep -q '^    (none yet' "$b"
+assert_lacks  "and names no part that does not exist" "$b" '^    blueprint/status/web\.md$'
+assert_lacks  "the seeding placeholder is consumed"   "$b" '^    \(none yet'
 
 # Adding a part later has to reach the board too - that is the half that drifted.
 "$SP" "$w/shop" worker >/dev/null 2>&1
@@ -353,7 +386,7 @@ w2=$(workdir); (cd "$w2" && "$NP" conv2 >/dev/null 2>&1)
 (cd "$w2/conv2" && "$CP" --parts ui,svc --existing ui >/dev/null 2>&1)
 b2="$w2/conv2/blueprint/orchestration.md"
 assert_ok    "the converted product's board names its parts" grep -q '^    blueprint/status/ui\.md$' "$b2"
-assert_fails "and not the template's"                        grep -q '^    blueprint/status/web\.md$' "$b2"
+assert_lacks "and not the template's"                        "$b2" '^    blueprint/status/web\.md$'
 
 section "concurrent sessions cannot corrupt each other's status files"
 # The multi-part design rests on one claim: separate files remove the write race
@@ -475,6 +508,29 @@ assert_ok "and says the board is the user's to fix" \
   grep -q 'nothing here rewrites it' <<< "$stale"
 assert_ok "the board itself is untouched" grep -q 'blueprint/status/web.md' "$b"
 
+# Status files are not committed, so a fresh clone has only the ones this machine
+# has written. A listed part with no file yet is normal, not a wrong board.
+w4=$(workdir); (cd "$w4" && "$NP" fresh --parts frontend,backend >/dev/null 2>&1)
+rm "$w4/fresh/blueprint/status/backend.md"
+clone_out=$("$IN" --target "$w4/fresh" --skills-only 2>&1)
+assert_ok "a part with no status file yet is not reported as a wrong board" \
+  bash -c '! grep -q "lists the wrong parts" <<< "$1"' _ "$clone_out"
+
+# A product seeded before status/ was ignored still tracks it. Untracking is the
+# user's index, so install.sh prints the commands and changes nothing.
+w5=$(workdir); (cd "$w5" && "$NP" legacy --parts web,api >/dev/null 2>&1)
+sed -i '/^\/blueprint\/status\/\*\.md$/d' "$w5/legacy/.gitignore"
+git -C "$w5/legacy" add -A >/dev/null && git -C "$w5/legacy" -c user.name=t -c user.email=t@t commit -qm track
+assert_ok "the fixture really tracks its status files" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- "blueprint/status/*.md")"' _ "$w5/legacy"
+tracked_out=$("$IN" --target "$w5/legacy" --skills-only 2>&1)
+assert_ok "install.sh says the status files are committed" \
+  grep -q 'blueprint/status/ is committed' <<< "$tracked_out"
+assert_ok "and gives the command that untracks them" \
+  grep -qF 'git rm --cached blueprint/status/*.md' <<< "$tracked_out"
+assert_ok "and runs neither" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- "blueprint/status/*.md")"' _ "$w5/legacy"
+
 # The report lived inside the non-skills-only branch, so --skills-only silently
 # suppressed every legacy finding - and --skills-only is the documented mode for
 # a product root, the only place this particular finding can occur. The report
@@ -545,7 +601,7 @@ section "a single-part project is unaffected by the multi-part machinery"
 w=$(workdir); (cd "$w" && "$NP" solo >/dev/null 2>&1)
 assert_absent "no board"                "$w/solo/blueprint/orchestration.md"
 assert_absent "no status directory"     "$w/solo/blueprint/status"
-assert_fails  "no Part: field"          grep -q '^- Part: ' "$w/solo/AGENTS.md"
+assert_lacks  "no Part: field"          "$w/solo/AGENTS.md" '^- Part: '
 
 section "install.sh - into a project that already exists"
 w=$(workdir); mkdir -p "$w/existing/src"
@@ -569,7 +625,7 @@ assert_ok "the upgraded skill matches the source" \
 printf 'edited\n' >> "$w/existing/.claude/skills/build/SKILL.md"
 printf 'my plan\n' > "$w/existing/blueprint/project-plan.md"
 assert_ok    "--force re-installs"                "$IN" --target "$w/existing" --force
-assert_fails "--force replaced the edited skill"  grep -q '^edited$' "$w/existing/.claude/skills/build/SKILL.md"
+assert_lacks "--force replaced the edited skill"  "$w/existing/.claude/skills/build/SKILL.md" '^edited$'
 assert_eq    "--force left the plan alone" "my plan" "$(cat "$w/existing/blueprint/project-plan.md")"
 
 section "pack-owned files refresh on install; project-owned never do"
@@ -590,8 +646,8 @@ printf 'MY PLAN\n' > "$p/blueprint/project-plan.md"
 printf 'MY ITEMS\n' > "$p/blueprint/build-plan.md"
 assert_ok "re-install runs" "$IN" --target "$p"
 
-assert_fails "the pack's fundamentals are refreshed" grep -qx STALE "$p/blueprint/context/fundamentals.md"
-assert_fails "so are the history READMEs"            grep -qx STALE "$p/blueprint/history/features/README.md"
+assert_lacks "the pack's fundamentals are refreshed" "$p/blueprint/context/fundamentals.md" '^STALE$'
+assert_lacks "so are the history READMEs"            "$p/blueprint/history/features/README.md" '^STALE$'
 assert_eq "this project's standards are NOT touched" "MINE"     "$(cat "$p/blueprint/context/coding-standards.md")"
 assert_eq "nor is the plan"                          "MY PLAN"  "$(cat "$p/blueprint/project-plan.md")"
 assert_eq "nor the build plan"                       "MY ITEMS" "$(cat "$p/blueprint/build-plan.md")"
@@ -691,7 +747,7 @@ sed -i '/^## Environments$/d' "$p/AGENTS.md"
 out=$("$IN" --target "$p" 2>&1)
 assert_ok "a missing section is named"   bash -c 'printf "%s" "$1" | grep -q "AGENTS.md has no: Environments"' _ "$out"
 assert_ok "and setup is named as the fixer" bash -c 'printf "%s" "$1" | grep -q "setup. fills them in"' _ "$out"
-assert_fails "the file itself is not edited" grep -q '^## Environments' "$p/AGENTS.md"
+assert_lacks "the file itself is not edited" "$p/AGENTS.md" '^## Environments'
 
 w2=$(workdir); (cd "$w2" && "$NP" clean2 >/dev/null 2>&1)
 out2=$("$IN" --target "$w2/clean2" 2>&1)
@@ -890,8 +946,8 @@ assert_ok "names the unsplit build plan"  grep -q "build-plan.md has 2 unchecked
 assert_ok "names the open needs-you line" grep -q "needs-you.md has 1 open line"       <<< "$out"
 assert_ok "names the pre-split decision"  grep -q "decisions.md has 1 entry"           <<< "$out"
 assert_ok "and says nothing here splits them" grep -q "Nothing here splits these"      <<< "$out"
-assert_ok "the other part's plan really is empty" \
-  bash -c "! grep -q '^- \[ \]' '$p/api/blueprint/build-plan.md'"
+assert_lacks "the other part's plan really is empty" \
+  "$p/api/blueprint/build-plan.md" '^- \[ \]'
 
 # A project with nothing to split must stay quiet, or the line is noise on every
 # conversion and stops being read.

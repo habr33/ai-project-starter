@@ -23,7 +23,7 @@ one.
 - `blueprint/orchestration.md` - the coordination board: the contract line and
   the rules
 - `blueprint/status/<part>.md` - one live-state file per part, each written only
-  by that part's own sessions. **In a git worktree the board is the main
+  by that part's own sessions. Working state: the files are gitignored and never committed; the directory is kept. **In a git worktree the board is the main
   checkout's**, never the worktree's copy - `orchestrate` gives the command
 - `contracts/` - the boundary between the parts, owned by the part that can
   break it
@@ -67,7 +67,11 @@ still looks correct.
   whole product, before any part starts.
 - **`integrate`** - proves the parts actually agree. Every part passing its own
   checks is not evidence of that.
-- **`preflight`** - whether the product as a whole can face real users.
+
+**`preflight` runs in each part**, not here - it reads that part's overview,
+standards, ledger and history, and writes its blockers to that ledger, and none
+of those live at the root. Before a release, run it in every part and
+`integrate` here; together they are the whole product's readiness.
 
 ## The sequence that matters more than the tooling
 

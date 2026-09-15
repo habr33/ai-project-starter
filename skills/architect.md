@@ -5,6 +5,8 @@ description: "Turn the problem, users, features and constraints already in `blue
 
 # architect - design the structure before you build
 
+**Writes:** `blueprint/project-plan.md` · `blueprint/context/quality-bar.md` · `blueprint/build-plan.md` · `dev-notes/decisions.md` · `blueprint/context/needs-you.md`
+
 Where this sits:
 
     `ideate` -> architect -> `stack` -> `layout` -> `scaffold` -> `ci` -> `context`
@@ -197,8 +199,9 @@ Design only what the project needs, from:
   items keeps them, ticks included; add only what is missing. **`ideate` is the
   only skill that writes an initial item set and it runs once, at the product
   root** - after the split, nothing else will do this. Check the same way for
-  anything else written before there were parts: open `needs-you.md` lines belong
-  to the part that uses the tool, and `dev-notes/decisions.md` entries that are
+  anything else written before there were parts: open
+  `blueprint/context/needs-you.md` lines move to that file in the part that uses
+  the tool, and `dev-notes/decisions.md` entries that are
   product-wide belong at the root. The conversion script lists what it moved for
   exactly this reason.
 
@@ -232,6 +235,17 @@ Design only what the project needs, from:
   `ci` both regenerate it and fail on a difference; neither can do that against
   "the contract file" in the abstract. Write the paths into `AGENTS.md` with the
   other commands.
+
+  **And say what it covers: every boundary the plan's features cross, now** -
+  each route or operation and the shape it carries, taken from the routes and
+  data model above, not only what the owner's first item needs. `orchestrate`
+  refuses to freeze while an open item would still change the contract, so a
+  contract that grows one item at a time keeps every consuming part waiting for
+  the owner's entire plan. Written whole, the owner's later items implement the
+  contract instead of extending it. **A generated contract** cannot be written
+  ahead of the code that emits it, so make the owner's first item the one that
+  stubs every planned route - the document it generates is then whole, and the
+  freeze follows that item rather than the whole plan.
 
 - **Inside a source root** - say how it is organised, because "we will see"
   becomes a different answer in every file:

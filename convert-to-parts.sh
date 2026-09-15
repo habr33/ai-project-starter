@@ -175,8 +175,14 @@ mkdir -p "$TARGET/blueprint/context"
 # --- seed the product root and every part ---
 # Same two helpers new-project.sh --parts uses, so a converted product and a
 # created one are the same shape. Neither overwrites a file already present.
+#
+# after-write: seed-product-root.sh refuses only through install.sh, given the
+# existing directory this script was pointed at.
 "$HERE/lib/seed-product-root.sh" "$TARGET" "${clean_parts[@]}"
 for p in "${clean_parts[@]}"; do
+  # after-write: every name seed-part.sh would refuse - nested, absolute, a bad
+  # segment - was refused above before anything moved, and flat unique names
+  # under a fresh board cannot collide. The -api bug lived exactly here.
   "$HERE/lib/seed-part.sh" "$TARGET" "$p" --quiet
 done
 

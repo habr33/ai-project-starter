@@ -38,29 +38,32 @@ exists to compensate for it.
 
 A file with readers and no writer is the most repeated defect in this workflow's
 history — four separate instances. So every file has a declared writer, and
-`check.sh` rule 12 enforces both halves: a file two or more skills read must have
-a row, and a declared writer must actually name the file.
+`check.sh` rule 12 enforces both halves: a file any skill reads must have a row,
+and the row's writers must be exactly the skills whose own `**Writes:**` line
+names that file. A skill that only reads a file can no longer pass as its writer
+by mentioning it.
 
 | File | Holds | Written by | Read by |
 |---|---|---|---|
-| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` | 13 skills |
-| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` | `context` `progress` `monitor` `preflight` |
+| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` | 12 skills |
+| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` | `context` `progress` `monitor` `preflight` |
 | `blueprint/context/project-overview.md` | the source of truth, generated | `context` | `spec` `build` `review` `progress` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
 | `blueprint/context/design.md` | visual decisions, measured values | `prototype` | `spec` `review` `ship` |
-| `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` | 8 skills |
-| `blueprint/context/findings.md` | the findings ledger — code findings close through `review`, non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` | `spec` `progress` `ship` `preflight` |
-| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` | `prepare` `progress` `preflight` |
+| `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` `rollback` | 7 skills |
+| `blueprint/context/findings.md` | the findings ledger — code findings close through `review`, non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
+| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` | `prepare` `progress` `preflight` |
 | `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `ship` | `progress` `verify` `rollback` `docs` `preflight` |
-| `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees | `orchestrate` + the scripts | `orchestrate` |
+| `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees. The contract line is committed; `status/` is working state and gitignored | `orchestrate` + the scripts | `orchestrate` |
 | `CHANGELOG.md` | what changed, for users | `docs` | `preflight` |
 | `project-plan.md` · §8 Deployment | target host, build and start commands, env vars by name, storage, health check | `stack` `architect` `scaffold` | `host` `deploy` `preflight` |
 | `AGENTS.md` · Environments | every place this code runs, and which hold real data | `scaffold` `host` | `deploy` `migrate` `preflight` `monitor` |
 
-**`current-work.md` is the hinge.** Eleven skills touch it and exactly three write
-it. `spec` fills it, `build` ticks it, `ship` clears it. That is why shipping in
+**`current-work.md` is the hinge.** Eleven skills touch it and four write it.
+`spec` fills it, `build` ticks it, `ship` clears it, and `rollback` writes the
+guarded plan for a reversal into it. That is why shipping in
 one part of a multi-part product used to destroy another part's in-flight work,
 and why the coordination board is one file per part rather than one file with
 rows.
@@ -70,11 +73,11 @@ rows.
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
 | `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
-| `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions, each part's build-plan | plan absent, or problem/features still placeholder | `stack` |
+| `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions, each part's build-plan and needs-you | plan absent, or problem/features still placeholder | `stack` |
 | `stack` | project-plan Architecture + **quality-bar** | project-plan Tech | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
-| `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row | no verification command exists | `context` |
+| `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `context` |
 | `context` | both plans | project-overview | either plan missing | `prototype` or `spec` |
 | `prototype` | project-plan UI/UX, project-overview | `prototypes/`, **design.md** | project-overview absent | `spec` |
 
@@ -116,7 +119,7 @@ against *this project's* recorded values rather than a generic standard.
 |---|---|---|---|---|
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
-| `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | nothing — read-only | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
+| `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify) — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
 | `review` | source, standards, quality-bar, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
 | `ship` | current-work, findings, build-plan | history, build-plan, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
 
@@ -141,10 +144,10 @@ something is already live. It edits no product code; it isolates and hands back.
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
 | `preflight` | plan, overview, standards, findings, quality-bar, history, CHANGELOG | **findings only** — blockers as P0/P1, and `closed` on a non-code repair it re-checked | *(no gate — it audits any state)* | the skill fixing each blocker |
-| `host` | project-plan Deployment + Architecture | infrastructure, secrets, status | plan names no service, database or domain | `deploy` |
-| `deploy` | build output, env, migrations | the release, status (**the commit**) | *(advisory)* — names missing preflight/ci/host | `monitor`, `docs` |
-| `monitor` | signals, quality-bar, build-plan | status, proposed plan items | nothing is deployed | `debug`, or `spec` |
-| `migrate` | project-plan Tech + data model | the schema | no database; no recent backup | `build` |
+| `host` | project-plan Deployment + Architecture | infrastructure, secrets, status, decisions, findings→`fixed` | plan names no service, database or domain | `deploy` |
+| `deploy` | build output, env, migrations | the release, status (**the commit**), findings→`fixed` | *(advisory)* — names missing preflight/ci/host; **stops on a pending migration**, which is `migrate`'s | `monitor`, `docs` |
+| `monitor` | signals, quality-bar, build-plan | status, findings→`fixed`, proposed plan items | nothing is deployed | `debug`, or `spec` |
+| `migrate` | project-plan Tech + data model | the schema, status, decisions, findings→`fixed` | no database; no recent backup | `build` |
 | `integrate` | contracts, each part | nothing — reports | single-part project | `deploy` |
 
 **`preflight` is the only whole-project gate.** `ship` asks whether a change is
@@ -155,7 +158,7 @@ backups passes `review` and fails here. It is allowed — required — to say no
 **`prepare` reports on you, not on the project.** Every other status skill asks
 about the code: `progress` — *where am I?*, `review` — *is the code sound?*,
 `preflight` — *can this face real users?* This one asks **whose turn is it, and
-what do I need to get?** It reads `blueprint/context/needs-you.md`, which six
+what do I need to get?** It reads `blueprint/context/needs-you.md`, which eight
 skills write the moment they hit something an agent cannot do — an account, a
 card, an SDK, a device, a decision. Read-only: it never buys, installs or
 decides, which is the same boundary that makes `host` trustworthy.
@@ -168,6 +171,21 @@ plan and the code: `spec` reads the plan, `build` reads the spec, `review` reads
 the code, `ship` updates the plan. Without monitor's deliberate
 read-the-signals pass, a project can be perfectly executed against a plan nobody
 ever checked against use.
+
+## Around the loop
+
+The skills a person reaches for between, beside or instead of the loop's steps.
+
+| Part | Reads | Writes | Stops when | Hands to |
+|---|---|---|---|---|
+| `setup` | the existing repo, its config and conventions | AGENTS.md stack and commands, standards, quality-bar (discovered), needs-you; for a project with shipped features, **both plans**, after approval | *(no gate — it adopts any repo)* | `ci`, then `context` |
+| `progress` | both plans, overview, current-work, findings, needs-you, history, git | nothing — read-only | *(no gate)* | the one next action |
+| `prepare` | needs-you, the plan, quality-bar, the Environments table | nothing — read-only | *(no gate)* | the skill that owns each line |
+| `debug` | the failure, current-work, the code | nothing — never product code | *(no gate)* | `spec` for a fix, or back to `build` |
+| `docs` | README, dev-notes, plan, history, the code | README and API docs, decisions, status, CHANGELOG, findings→`fixed`; with `--check`, nothing | *(no gate)* | whatever the audit found |
+| `rollback` | history archive, git history, current-work | current-work — a guarded `Type: Rollback` spec | the feature is not shipped; another item is in flight; it is a bad release (`deploy`) | `build`, then `ship` |
+| `autopilot` | the range's own inputs, the board, the review queue | code on a branch through the skills in its range, the part's status | not explicitly asked; any preflight miss; unfrozen contract for a consumer; two packets waiting | a review packet, then `ship` |
+| `orchestrate` | the board, every status file, each part's plan, current-work and findings | the contract line, committed on its own | no board; not run from the product root; placeholder `Owner:` | the next skill per part |
 
 ## The gates that actually hold
 
@@ -196,13 +214,13 @@ none of them execute:
 
 ## What holds this together mechanically
 
-`check.sh` has 15 rules. Ten were added *after* a specific bug got through,
-which is the only reason they are the right ten:
+`check.sh` has 16 rules. Eleven were added *after* a specific bug got through,
+which is the only reason they are the right eleven:
 
 | Rule | Catches | Added because |
 |---|---|---|
 | 5 | a retired skill name | a stale plain-prose reference looks like ordinary text |
-| 7 | a skill nothing routes to | `prototype` sat orphaned for the pack's whole life |
+| 7 | a skill no route from an entry point reaches | `prototype` sat orphaned for the pack's whole life |
 | 8 | a script nothing references | `convert-to-parts.sh` was built and unrouted within the hour |
 | 9 | a board field with no writer | `Blocked on:` had four readers and nothing set it |
 | 10 | a skill that states no preconditions | 7 of 25 had them, each written differently |
@@ -211,6 +229,7 @@ which is the only reason they are the right ten:
 | 13 | a product-root file read as if it were the part's | `orchestrate` resolved the board to the part it ran in |
 | 14 | a decision skill silent on re-deciding | `ideate` re-run erased the `- [x]` marks that are the resume mechanism |
 | 15 | a mode missing from its skill's description | `docs --check` was reachable only by someone who already knew |
+| 16 | a script that refuses after it has written | `convert-to-parts.sh` moved every file into a part, then refused `-api` - the third time |
 
 **One class was recorded here as unlintable for months and is now rule 13.** A
 path that resolves to the wrong directory — every file valid, only the runtime
@@ -333,5 +352,6 @@ Being honest about this is part of the design, not a caveat on it.
   only the self-managed shape. Managed platform, container, static host and
   serverless are written from knowledge rather than use.
 - **A contract lives in `contracts/` and `integrate` has caught real drift**
-  across it. What has not been exercised is `orchestrate`'s deadlock detection,
-  freeze gate and review cap - they need genuinely parallel work in two parts.
+  across it. `orchestrate`'s deadlock detection, freeze gate and review cap have
+  fired against constructed board state, but never with two live sessions
+  racing - which is the case they exist for.

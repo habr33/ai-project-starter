@@ -95,11 +95,17 @@ assert_absent()  { _name="$1"; if [ ! -e "$2" ]; then _ok; else _no "should not 
 # A pattern that must NOT be in a file that MUST exist. `assert_fails grep -q X
 # file` passes on grep's exit 2 when the file is missing, so a step that deleted
 # the file instead of rewriting it read as "the stale content is gone".
+# The same holds for a pattern grep cannot parse: `^    (none yet` is an invalid
+# ERE, grep exits 2, and a plain `if grep` reads that as "not found".
 assert_lacks() {
-  _name="$1"; local file="$2" pattern="$3"
-  if [ ! -f "$file" ]; then _no "missing: $file - cannot show it lacks '$pattern'"
-  elif grep -qE -- "$pattern" "$file"; then _no "'$pattern' found in $file"
-  else _ok; fi
+  _name="$1"; local file="$2" pattern="$3" rc
+  if [ ! -f "$file" ]; then _no "missing: $file - cannot show it lacks '$pattern'"; return; fi
+  grep -qE -- "$pattern" "$file" 2>/dev/null; rc=$?
+  case "$rc" in
+    0) _no "'$pattern' found in $file" ;;
+    1) _ok ;;
+    *) _no "grep exited $rc on '$pattern' - not a usable pattern" ;;
+  esac
 }
 
 # --- fixtures ---------------------------------------------------------------

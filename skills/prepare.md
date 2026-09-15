@@ -5,6 +5,8 @@ description: "Report the work only a person can do - accounts, spend, system sof
 
 # prepare - what needs you, and what can wait
 
+**Writes:** nothing
+
 Where this sits:
 
     any point in the loop -> prepare -> you do it -> back to the loop

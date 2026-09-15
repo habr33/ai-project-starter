@@ -5,6 +5,8 @@ description: "The whole-project go-live audit: everything, once, before the firs
 
 # preflight - is this ready to be live at all?
 
+**Writes:** `blueprint/context/findings.md`
+
 Where this sits:
 
     ship -> preflight -> host -> deploy -> monitor
@@ -77,6 +79,11 @@ claims to be; a milestone gate is the right moment to notice it no longer is:
 would be checking readiness against the wrong definition of ready.
 
 State what you are auditing and what you are not, before starting.
+
+**At a product root, stop** - an `AGENTS.md` listing parts with no `Part:` field
+of its own. This audit reads a part's overview, standards, ledger and history,
+and writes its blockers to that ledger; the root has none of them. Name the parts
+to run it in, and `integrate` for whether they agree.
 
 ## Step 2 - work through everything
 

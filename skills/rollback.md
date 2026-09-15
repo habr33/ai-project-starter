@@ -5,6 +5,8 @@ description: "Plan a safe reversal of a completed feature: find its archive and 
 
 # rollback - plan the reversal before touching anything
 
+**Writes:** `blueprint/context/current-work.md`
+
 Where this sits:
 
     completed feature -> rollback -> `build` -> `ship`

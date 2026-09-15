@@ -32,6 +32,24 @@ copy_if_absent() { [ -e "$2" ] || cp "$1" "$2"; }
 
 mkdir -p "$ROOT/blueprint/context" "$ROOT/blueprint/status" "$ROOT/contracts" "$ROOT/dev-notes"
 
+# The status files are live working state and are never committed. Tracked, they
+# left the main checkout dirty after every `ship` (which clears its packet after
+# its one commit), were swept into other parts' commits by `ship`'s stage-all,
+# and made `autopilot` refuse on "unrelated uncommitted changes" another part had
+# written. Written here, before new-project.sh's first commit, so they are never
+# in one. The contract line in orchestration.md is a decision and stays tracked.
+#
+# The files are ignored, not the directory: ignoring `/blueprint/status/` left a
+# fresh clone with no directory at all, and a part's first claim there failed
+# with "No such file or directory". The tracked .gitkeep is what keeps it.
+if ! grep -qxF '/blueprint/status/*.md' "$ROOT/.gitignore" 2>/dev/null; then
+  { [ -s "$ROOT/.gitignore" ] && echo
+    echo "# The coordination board's per-part live state - working state, not history."
+    echo "/blueprint/status/*.md"
+  } >> "$ROOT/.gitignore"
+fi
+[ -e "$ROOT/blueprint/status/.gitkeep" ] || : > "$ROOT/blueprint/status/.gitkeep"
+
 copy_if_absent "$HERE/template/blueprint/project-plan.md"           "$ROOT/blueprint/project-plan.md"
 copy_if_absent "$HERE/template/blueprint/orchestration.md"          "$ROOT/blueprint/orchestration.md"
 copy_if_absent "$HERE/template/blueprint/context/ai-interaction.md" "$ROOT/blueprint/context/ai-interaction.md"
@@ -77,6 +95,9 @@ fi
 # part; `ideate`, `stack` and `architect` write the product plan that lives here.
 # Without a copy here there is nowhere to run them from - and running them from
 # inside a part resolves `blueprint/` to that part's own, where the board is not.
+#
+# after-write: install.sh refuses only an unknown option or a missing directory;
+# --skills-only is one it takes, and the root was created above.
 "$HERE/install.sh" --target "$ROOT" --skills-only >/dev/null
 copy_if_absent "$HERE/template/product/CLAUDE.md" "$ROOT/CLAUDE.md"
 

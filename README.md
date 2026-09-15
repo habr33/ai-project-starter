@@ -244,12 +244,15 @@ It also checks the things that span files rather than living in one, because
 that is where every serious bug here has been: **no skill is unreachable**,
 **every script is referenced** by some doc or skill or other script, **every
 field on the coordination board has a writer**, **every state file the skills
-read has a declared writer that really writes it**, **every skill states its
+read has a declared writer**, named alike in the table and in that skill's own
+`Writes:` line, **every skill states its
 preconditions**, **every skill that writes a foundational decision says what
 happens when that decision already exists**, **every mode a skill declares is
 named in its description** — the description is what an agent matches on, so a
 mode missing from it cannot be reached — and **every file that lives at the
-product root is named as such** by each skill that reads it. **15 rules.**
+product root is named as such** by each skill that reads it — and **no script
+refuses after it has started writing**, which is what leaves a half-made project
+that blocks the corrected retry. **16 rules.**
 
 A skill nothing routes to, a script nothing
 mentions, a field every reader sees as permanently empty, and a path that

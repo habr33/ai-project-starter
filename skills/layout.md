@@ -5,6 +5,8 @@ description: "Decide where the code physically lives - the source root, how each
 
 # layout - where the code physically lives
 
+**Writes:** `blueprint/project-plan.md` · `dev-notes/decisions.md`
+
 Where this sits:
 
     `architect` -> `stack` -> layout -> `scaffold` -> `ci` -> `context`
@@ -37,6 +39,25 @@ exists to avoid.
 `architect` first.** The part count is the input: one application and three
 deployable services are different questions, and only one of them is about
 directories at all.
+
+**If the parts already exist** - `new-project.sh --parts` and `convert-to-parts.sh`
+create them as top-level directories before this skill runs - **take where they
+are as the default** and decide the layout inside each part. When the framework
+genuinely wants them elsewhere (`apps/web` in a JavaScript workspace), a part
+cannot simply be renamed: its `AGENTS.md` `Product root:`, the root `AGENTS.md`
+listing and the board all name it, and `architect` has already written its build
+plan. Before any code exists, and after approval in Step 4, move it like this:
+
+1. Copy the part's `blueprint/` and `dev-notes/` somewhere outside it.
+2. Delete its line from the root `AGENTS.md` listing, then its directory.
+3. Seed the new path: `lib/seed-part.sh <product root> apps/web` - it writes the
+   right `Product root:` and the listing, and keeps the board entry and status
+   file, which are keyed on the part's name.
+4. Copy the saved `blueprint/` and `dev-notes/` back into the new directory.
+
+`lib/seed-part.sh` refuses step 3 while the old path is still listed, because two
+parts with one name would share a status file. Once code exists, moving a part is
+the costly change the next paragraph describes.
 
 **If a layout is already recorded and code exists in it, say what changing it
 costs before proposing anything.** Every path in every config file, every import,

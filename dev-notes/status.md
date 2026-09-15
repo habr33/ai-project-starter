@@ -17,7 +17,7 @@ place that answers "has this skill actually run?".
 
 ## Where this stands (2026-09-14)
 
-27 skills, four scripts, three shared library scripts, a linter with **15 rules**,
+27 skills, four scripts, three shared library scripts, a linter with **16 rules**,
 four guides, and a template. No dependencies, nothing to build, no network calls.
 
 **This file is the public summary.** The chronological record of building the
@@ -80,7 +80,7 @@ lib/seed-part.sh      seed one part; also adds a part to an existing product
 lib/seed-product-root.sh   seed a product root
 lib/part-name.sh      part-name checks, run before anything is created or moved
 skills/               27 files, one per skill - the only source
-template/             20 files: AGENTS.md, CLAUDE.md, blueprint/, dev-notes/,
+template/             21 files: AGENTS.md, CLAUDE.md, blueprint/, dev-notes/,
                       README, and product/ for a multi-part root
 docs/                 4 guides: walkthrough, anatomy, mobile, multi-part
 tests/                run.sh, lib.sh, and three suites - lint, scripts, seams
@@ -119,54 +119,45 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-- **A 16th rule: no refusal after the first write.** The class has bitten three
-  times - `lib/seed-part.sh` (2026-09-09), `new-project.sh` (2026-09-10) and
-  `convert-to-parts.sh` (2026-09-15, which moved every file into the first part
-  before refusing `-api`) - each found by running a script. Part names are now
-  checked up front in `lib/part-name.sh`, but nothing stops a fourth. Writing the rule
-  means deciding how a legitimate post-write assertion declares itself; a marker
-  comment on `lib/seed-part.sh`'s three is the obvious shape, and line numbers
-  are not, because they go stale on the next edit.
-- **`docs/anatomy.md`'s *What is still unproven* is half-stale on `orchestrate`.**
-  It says the deadlock detection, freeze gate and review cap have not been
-  exercised; they have, against constructed state. What is missing is two live
-  sessions, which is what the sentence should say.
+**Found by running the loop on a two-part CMS (2026-09-15)** - `context`, `spec`,
+`build`, `review`, `ship` and `orchestrate` against a Python api and web part, the
+api item built in a git worktree and the web part claimed from a fresh clone. The
+plans before `context` were filled by hand, not by `ideate`..`ci`. The board
+changes held: every status write left both checkouts clean, and the freeze
+committed one file with an unrelated change staged. The one defect in them - a
+fresh clone had no `status/` directory - is fixed, and so is shipping from a
+worktree: `ship` Step 4 now merges from the main checkout and removes the
+worktree before the branch, and `build` renames the worktree's branch instead of
+making a second. The rest the run found is fixed too: `build` marks a part
+`building`; every status block in a skill sets the board's five fields and a write
+leaves the rest of the file alone; `ship` resets the ledger and the spec to the
+template's exact files, where its own findings stub had been dropping the
+ledger's header; and `architect` writes every planned boundary into the contract,
+while `orchestrate` routes a placeholder `Owner:` and a freeze held by
+contract-extending owner items back to `architect`.
 
 **Left open by the 2026-09-15 review** - a whole-pack review run in parallel
 slices (skills as a system, linter and tests, scripts, docs). Its highs are fixed
-on branch `review-fixes`; these are not:
+on branch `review-fixes`. Since closed: `docs`, `ci`, `deploy`, `monitor` and
+`migrate` now say to mark a repaired `preflight` blocker `fixed` and are declared
+ledger writers; `CLAUDE.md` imports `AGENTS.md`; `docs/anatomy.md` has a row for
+every skill; `setup`'s adoption route fills plan sections 5 and 6 and is a
+declared writer of both plans; `verify --all` skips rolled-back features; `stack`
+reconciles the data model in section 6; `ship --abandon` parks an item in flight
+and `spec` resumes it; `preflight` runs in each part, not at the product root;
+`layout` moves an already-seeded part with `lib/seed-part.sh`; `verify` no longer
+contradicts itself; and `check.sh` no longer pipes a file into `grep -q`, which
+had produced one false rule 12 error; and `deploy` no longer applies migrations -
+a pending one routes to `migrate`, the only skill that applies them. The smaller
+rule gaps are closed too, each probed in a copy before its fix: frontmatter is
+read only up to its own terminator (1, 2), a backticked or retired `/name` is a
+tool-specific reference (4, 5), reachability is walked from the entry points (7),
+a script reference is a whole name (8), a description must be one line (11), a
+product-root file named bare is still checked (13), and a word-like mode must be
+backticked in the description (15). Still open:
 
-- **Is the board committed state or working state?** From a git worktree the
-  board now resolves under the main checkout, so worktree sessions leave edits to
-  tracked `blueprint/status/` files there that nobody commits. Either gitignore
-  it (touches `ship`, `progress` and the seams tests that expect it tracked) or
-  say who commits it. The resolution also assumes an ordinary clone - a bare
-  repository with worktrees, or a submodule, lands elsewhere.
-- **Rule 12 still accepts a reader declared as a writer.** A write-verb heuristic
-  was wrong both ways. It needs a declaration - a `Writes:` line per skill, or a
-  readers column in `template/AGENTS.md` - and `blueprint/orchestration.md` wants
-  its own row there.
-- **Smaller gaps in rules 1, 2, 4, 5, 7, 8, 11, 13 and 15** - e.g. `` `/ship` ``
-  in backticks passes rule 4, two skills routing only to each other pass rule 7,
-  the word `current` satisfies rule 15. The handoff seam test matches wording, so
-  rewriting a skill's last step can need its list updated.
-- **Skill seams, medium:** adopting an existing project cannot get through
-  `context` (sections 5 and 6 have no writer on that route); `verify --all`
-  re-proves rolled-back features; `stack` reconciles the data model in the wrong
-  section; no way to abandon or park an item in flight; the product root is told
-  to run `preflight` without the files it needs; `layout` cannot place parts that
-  already exist; `verify` contradicts itself on preconditions and on being
-  read-only (so does `docs/anatomy.md`); two skills may apply a production
-  migration (unconfirmed).
-- **`docs`, `ci`, `deploy` and `monitor` fix `preflight` blockers** but learn to
-  mark them `fixed` only from the ledger's header.
-- **`tests/test-scripts.sh`:** about a dozen negative `grep` checks pass when the
-  file is missing (use `assert_lacks`); the part-name guard test does not check
-  the refusal message; a `-path '*home*'` check breaks when the temp directory's
-  path contains `home`.
-- **Pack `CLAUDE.md` is a hand-kept paraphrase of `AGENTS.md`**, not an import -
-  the drift this repo warns about. The 15-rule summary is restated in four files,
-  and `docs/anatomy.md` has no reads/writes row for the eight support skills.
+- **The handoff seam test matches wording**, so rewriting a skill's last step
+  can need its list in `tests/test-seams.sh` updated. Known, not a defect.
 
 ### Known and accepted
 
@@ -200,7 +191,8 @@ on branch `review-fixes`; these are not:
 ```
 
 To add a skill: write `skills/<name>.md` with `name:` and `description:`
-frontmatter, run `./check.sh`. `install.sh` picks it up automatically - there is
+frontmatter and a `**Writes:**` line under its heading - the state files it
+writes, or `nothing` - then run `./check.sh`. `install.sh` picks it up automatically - there is
 no list to update and nothing to regenerate.
 
 To rename one: rename the file, change the frontmatter, **and add the old name to

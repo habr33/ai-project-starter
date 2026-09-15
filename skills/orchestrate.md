@@ -5,6 +5,8 @@ description: "Coordinate the parts of a multi-part project through the board at 
 
 # orchestrate - the board, and what it is safe to start
 
+**Writes:** `blueprint/orchestration.md`
+
 Where this sits:
 
     architect (the parts and the boundary) -> orchestrate -> parallel part work
@@ -36,15 +38,27 @@ reads or writes the board resolves its directory like this (at the root itself,
 
     cd "<product root>"
     if common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
-      echo "$(dirname "$common")/$(git rev-parse --show-prefix)blueprint"
+      if [ "$(git config --file "$common/config" --type=bool core.bare)" = true ]; then
+        echo "No main checkout: a worktree of a bare repository has no board to share." >&2
+        false
+      else
+        main=$(git config --file "$common/config" core.worktree) \
+          && main=$(cd "$common" && cd "$main" && pwd) || main=$(dirname "$common")
+        echo "$main/$(git rev-parse --show-prefix)blueprint"
+      fi
     else
       echo "$PWD/blueprint"
     fi
 
-The shared git directory's parent is the main checkout, and the prefix keeps the
-product root's place inside it. **Outside git, or in the main checkout itself,
-that is the directory `Product root:` already names** - nothing changes. A
-worktree's own copy of the board is never read, edited or committed.
+The main checkout is the shared git directory's parent - or, in a submodule,
+where that directory's `core.worktree` points, because a submodule's git
+directory lives inside the superproject's `.git/modules/` and its parent is not a
+checkout at all. The prefix keeps the product root's place inside it. **Outside
+git, or in the main checkout itself, that is the directory `Product root:`
+already names** - nothing changes. A worktree's own copy of the board is never
+read, edited or committed. **A worktree of a bare repository has no main
+checkout**, so the command prints nothing and fails: stop and say so, rather than
+picking a worktree whose removal would take the board with it.
 
 **That separation is deliberate and load-bearing.** One file per part means no
 file has two writers, so nothing is lost when sessions genuinely run at the same
@@ -79,6 +93,11 @@ directory, which is exactly the kind of thing a bare filename hides. Check what 
 **a status file saying `building` while that part's spec is the untouched stub is
 drift**,
 and it means a session stopped without recording it.
+
+**A missing status file reads as `idle`**, not as an error. Status files are
+working state and are not committed, so a fresh clone has none until each part's
+next session writes its own. Check that part's spec the same way: a missing file
+beside a spec with ticked steps is the same drift.
 
 ## Step 2 - report where everything stands
 
@@ -126,6 +145,11 @@ question that matters is *which* version was frozen. If `contracts/` is empty or
 holds nothing the parts actually use, say that instead of freezing - there is
 nothing to freeze, and recording one would be worse than recording nothing.
 
+**If `Owner:` is still the placeholder**, there is no owner to build first and no
+contract a freeze could name. Say so and route to `architect`, which decides it -
+do not pick one here; which part can break the boundary is an architecture
+decision.
+
 **The owner builds first.** The part named as `Owner:` under *The contract* in
 the product root's `AGENTS.md` may spec and build the items that define the
 contract before any freeze - they are what produces the thing to freeze, so
@@ -135,7 +159,12 @@ next step is the owner's first contract-defining item, not a freeze.
 **Refuse to freeze** while any part has an open item that would change the
 contract - in practice, until the owner's contract-defining items have shipped.
 Freezing a contract that is about to change is worse than not freezing it,
-because parts will build against it in good faith.
+because parts will build against it in good faith. **When the only thing holding
+the freeze is owner items that add to the contract** - routes the plan already
+names but the contract file does not yet describe - say that is the cause and
+route to `architect` to write the whole planned boundary. Those items then
+implement the contract rather than change it, and stop blocking every consuming
+part.
 
 **Refuse to move the consuming parts into parallel work while the contract is not
 frozen.** The owner working alone before the freeze is sequential, not parallel.
@@ -145,6 +174,13 @@ of them find out until `integrate`.
 
 **Unfreezing stops everything.** Every part in flight finishes its current step
 and holds. A contract change should feel expensive, because it is.
+
+**Commit the contract line on its own, with the user's go-ahead** - in the main
+checkout, naming the file so nothing else is swept in:
+`git commit -m "chore: freeze <contract file> <version>" -- blueprint/orchestration.md`
+(`unfreeze` for the reverse). The line is a decision, and it is committed like
+one. The status files beside it are not, and never are - which is why this
+commit names its one file.
 
 ## Step 5 - the cap on unreviewed work
 
@@ -211,7 +247,7 @@ having read what it did.
 ## Rules
 
 - **Read-only over the parts.** The board's contract line is the only thing this
-  skill writes. Each part's status file belongs to that part's own sessions -
+  skill writes, and the only thing it commits. Each part's status file belongs to that part's own sessions -
   including its `Blocked on:` field, even when the block is plainly stale.
 - **Resolve every path against the product root**, from `AGENTS.md`'s
   `Product root:` when running inside a part. A bare `blueprint/` there is the

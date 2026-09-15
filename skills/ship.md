@@ -1,9 +1,11 @@
 ---
 name: ship
-description: "Close out finished work: run a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, make one work-level commit, then squash-merge the branch with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed in blueprint/context/findings.md. Asks separately before pushing. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
+description: "Close out finished work: run a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, make one work-level commit, then squash-merge the branch with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed in blueprint/context/findings.md. Asks separately before pushing. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked, so it is parked or dropped deliberately. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
 ---
 
 # ship - log it, commit it, merge it
+
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/status/`
 
 Where this sits:
 
@@ -16,10 +18,18 @@ the branch carried.
 
 Run it only when the work is done, verified, and reviewed.
 
+## Input
+
+| Argument | Mode |
+|---|---|
+| *(none)* | Close out finished work - Steps 1 to 4 |
+| `--abandon` | Set an unfinished item aside, with the user's reason - *Abandoning or parking an item*, below, instead of Steps 1 to 4 |
+
 ## Before you start
 
-**If `blueprint/context/current-work.md` holds no completed spec, stop.** There is
-nothing to close out, and resetting it destroys whatever is in flight.
+**If `blueprint/context/current-work.md` holds no completed spec, stop** - unless
+this is `--abandon`, which exists for the unfinished one. There is nothing to
+close out, and resetting it destroys whatever is in flight.
 
 Name which of these has not happened rather than merging past it - Step 1 turns
 the ones that matter into a hard stop:
@@ -85,11 +95,23 @@ with the archive name so it stays unique forever: item 12's `F-03` becomes
 
 Unresolved entries - `open` or `fixed` at P2 or P3, and `unverified` leads - stay
 in the ledger with their IDs. They are never silently dropped. When nothing is
-left, reset `blueprint/context/findings.md` to its stub:
+left, reset `blueprint/context/findings.md` to its stub - the template's file,
+header included, because the header is where `docs`, `ci`, `deploy` and `monitor`
+learn how a finding no code fixes gets closed:
 
     # Findings
 
-    _No findings recorded. `review` appends findings here when it finds them._
+    > **Generated file.** The findings ledger: review findings raised by the `review`
+    > skill against the work in progress, each with a durable ID, a severity (P0-P3),
+    > and a status. `build` marks a repaired finding `fixed`; only a later `review`
+    > pass moves it to `closed`. **A finding no code fixes** - raised by `preflight`
+    > or `host`, such as missing backups or a leaked secret - is marked `fixed` with
+    > evidence by whichever skill repairs it, and `preflight` re-checks and closes it.
+    > `ship` refuses to merge while any P0 or P1 finding
+    > is `open` or `fixed`, then archives resolved findings with the work item and
+    > resets this file.
+
+    _No findings recorded._
 
 Then reset `blueprint/context/current-work.md` to its stub:
 
@@ -99,8 +121,8 @@ Then reset `blueprint/context/current-work.md` to its stub:
     > The `spec` skill writes it, `build` ticks its steps off as they land, and
     > `ship` archives it under blueprint/history and resets this file.
 
-    _Nothing in progress. Run the `spec` skill to start the next item, or
-    describe a bug to spec it as a fix._
+    _Nothing in progress. Run the `spec` skill to start the next item, or describe a
+    bug to spec it as a fix._
 
 **Both stubs are quoted here because by the time this skill runs they have been
 overwritten** - "reset it to its stub" is an instruction with no source to
@@ -147,6 +169,26 @@ The project's verification command must pass first.
    reach for `-D` just because `-d` complained, and never on a branch you have
    not merged. Delete the remote branch too if it was pushed, or the pull request
    view keeps offering it.
+
+**In a git worktree, merge from the main checkout.** `main` is checked out there,
+so `git switch main` in the worktree refuses - and the path git's refusal names is
+wrong inside a submodule. Find the main checkout with the board command
+`orchestrate` gives, run from this repository's top level
+(`git rev-parse --show-toplevel`) instead of the product root: it prints
+`<main checkout>/blueprint`, and the directory above that is the one to merge in.
+**Check that checkout's `git status` is clean first** - merging into someone's
+uncommitted work mixes the two in one commit - and stop if it is not.
+
+Then, from the main checkout, **`git worktree remove <this worktree>` before the
+branch delete**: git refuses to delete a branch a worktree still holds. Removal
+refuses a worktree with uncommitted or untracked files, and that is a stop, not a
+reason for `--force` - the refusal is about work nothing has kept. Run it from
+the main checkout, not from inside the worktree, which would delete the
+directory this session is standing in.
+
+**A worktree of a bare repository** has no main checkout - the command stops -
+and `main` is checked out nowhere, so switch to it in the worktree and merge
+there as usual; the worktree stays.
 3. **Stop and ask** whether to push `main` to its upstream. Approval to merge is
    not approval to push, and neither is running this skill.
 4. Push only after a separate, explicit yes **in this conversation**. If the repo
@@ -158,7 +200,8 @@ worth re-checking. If that would run past a couple of steps, point at
 `verify` instead.
 
 **In a multi-part project, clear this part's packet** in `<product root>/blueprint/status/<this part>.md`,
-resetting the whole file rather than only the state:
+resetting every field rather than only the state - and leaving the rest of the
+file alone:
 
     **State:** idle
     **Item:** -
@@ -204,6 +247,38 @@ Then point at what is next:
   skill's re-run list and this one was not, so it silently went stale once per
   item.
 - otherwise **`spec`** for the next item.
+
+## Abandoning or parking an item - `--abandon`
+
+For an item that should not be finished now: the direction changed, it was
+spec'd wrong, or something more urgent needs `current-work.md`. **Only when the
+user asked for it by name, with a reason** - an unfinished item is never set
+aside because a skill found it inconvenient.
+
+1. **Keep the branch.** It is what makes this parking rather than deleting: the
+   code stays where `build` left it. **Commit any uncommitted work to it first**
+   (`wip: <name>`), with the user's go-ahead, or leaving the branch loses it.
+   Note the branch name and its last commit. Delete the branch only on a separate,
+   explicit request.
+2. **Move to `main`** - in a git worktree, the main checkout, as Step 4 describes.
+   The record goes to `main`; the code does not.
+3. **Archive the spec** to `blueprint/history/abandoned/YYYY-MM-DD-name.md`, read
+   from the branch (`git show <branch>:<path to current-work.md>`) exactly as it
+   stands, ticks included, followed by `**Abandoned:** <date> - <reason>` and
+   `**Branch:** <name> at <commit>`. Append this item's findings under
+   `## Findings` at their current status - they are about code that never reached
+   `main` - and remove them from the ledger.
+4. **Leave the item unchecked** in `blueprint/build-plan.md` and append a note to
+   its line: `(abandoned <date> - blueprint/history/abandoned/<file>)`. A fix has
+   no plan line.
+5. **Check `current-work.md` and `findings.md` on `main` are the stubs** quoted in
+   Step 2, and reset them if not.
+6. **Commit the record on `main`** - `chore: abandon <name>` - with the user's
+   go-ahead, naming its files so nothing else is swept in.
+7. **In a multi-part project, reset this part's status file** as Step 4 does.
+
+`spec` finds the archive when this item comes up again and offers to resume from
+it - the spec with its ticks, and the branch it names.
 
 ## Rules
 
