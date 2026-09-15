@@ -9,15 +9,12 @@ Where this sits:
 
     ship -> preflight -> host -> deploy -> monitor
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. **A part has no `project-plan.md` of its own** - the conversion removes
-> it - so an unqualified read from inside one finds nothing at all. Everything
-> else named here is this part's own.
-    (`ci` runs much earlier, right after `scaffold`)
+> `architect` writes it at the root, not per part) live at the **product
+> root** - a part has no `project-plan.md` of its own, so an unqualified read
+> finds nothing. `AGENTS.md` records `Product root:` - read it from there.
+> Everything else here is this part's own.
 
 `scaffold` installed everything that can live in the repository. This sets up
 what cannot: the database that must actually exist, the place the app runs, the
@@ -113,19 +110,14 @@ someone sets it up:
   that silently stops is an outage with a date on it**, so say which thing renews
   and how you would know it had failed.
 
-  **Which port the certificate authority validates over depends on the challenge
-  type, and it decides which firewall rule you need**: the HTTP challenge needs
-  **port 80 reachable from the internet**, the TLS-ALPN challenge needs **443**,
-  and the DNS challenge needs neither but needs API credentials for the DNS
-  provider. A closed port 80 is a common reason issuance fails while everything
-  else looks configured.
-
-  **Where more than one challenge port is open, leave more than one challenge
-  type enabled.** Restricting to a single type when the other is available swaps
-  one single point of failure for another - and a renewal is attempted months
-  later, unattended, when whichever port you depended on may have been closed by
-  someone tidying firewall rules. Redundancy here costs nothing and is checked by
-  nobody until it matters.
+  **The challenge type decides which firewall rule you need**: HTTP needs
+  **port 80** reachable from the internet, TLS-ALPN needs **443**, and DNS
+  needs neither but needs API credentials for the DNS provider - a closed port
+  80 is a common reason issuance fails while everything else looks configured.
+  **Where more than one challenge port is open, leave more than one type
+  enabled**: restricting to one swaps a single point of failure for another,
+  and it is checked by nobody until an unattended renewal months later finds
+  its port closed.
 
   **After repeated failures an ACME client may fall back to the CA's staging
   environment and stay there.** Staging certificates are issued happily and
@@ -135,20 +127,16 @@ someone sets it up:
 - **Which user does it run as?** Not root. A service account that owns the
   release directory and nothing else.
 - **Where do secrets live?** A file on the box, readable only by that user -
-  mode 600, outside the repository, referenced by path from the unit. **Not
+  mode 600, outside the repository, referenced by path from the unit, **never
   inline in the unit file**, which is world-readable.
-- **How many files?** **One per environment is the default**, and most projects
-  should stop there. Splitting by service - a file for the database, one for
-  mail, one for object storage - buys something real only when there is a
-  boundary underneath it: a different person owns the credential, it rotates on a
-  different schedule, or one process should be able to read it and another should
-  not. **Where all of them are read by one process on one box, splitting adds
-  files to keep in sync and a new way to have exactly one of them missing** -
-  which fails at start-up, or worse, at the first request that touches the one
-  service whose file was forgotten.
-  Split when the boundary exists, and say which boundary it is. Never split
-  because it looks tidier: one file per environment with every name in it is
-  easier to audit, and auditing is the thing you will actually do with it.
+- **How many files?** **One per environment is the default**, and most
+  projects should stop there. Splitting by service buys something real only
+  when there is a boundary underneath it - a different owner, a different
+  rotation schedule, or one process that should read a secret and another that
+  should not. **Split when the boundary exists**, and say which boundary it is
+  - never because it looks tidier: without one, splitting just adds files to
+  keep in sync and **a new way to have exactly one of them missing**, which
+  fails at start-up or, worse, at the first request that needed it.
 - **What is actually installed on it?** A box you own is not a development
   machine and ships far less than one. Check for what the deploy itself needs
   before planning around it - a real Ubuntu VPS had **no `git`, no `rsync`, no
@@ -311,5 +299,4 @@ add a `dev-notes/decisions.md` entry for the host choice and why.
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

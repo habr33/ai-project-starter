@@ -69,15 +69,9 @@ Then hand off: `build` if there is already a spec covering this area, or
 - **Never report a cause you have not confirmed.** "The most likely explanation,
   unconfirmed" is honest and useful. A guess stated as a finding is neither.
 
-**Evidence, or it didn't happen.** Never report "passes", "works", or "verified"
-without naming what proves it - the command and its output, the screenshot, the
-response body. "I couldn't verify this" and "this failed" are useful, honest
-results. A fabricated pass is worse than no check at all, because it retires the
-question.
+**Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
+proves it, and "could not verify" beats a fabricated pass every time.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

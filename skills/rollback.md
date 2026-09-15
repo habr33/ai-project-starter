@@ -130,7 +130,4 @@ patch under the guards this spec records.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

@@ -13,12 +13,11 @@ This runs *before* there is an app. It works in an empty directory, or after the
 workflow is installed while `blueprint/project-plan.md` is still being filled in.
 
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 
@@ -213,24 +212,21 @@ the current stable" is. For the framework, the language, and the runtime, settle
 **Check the version you are about to name against the runtime that is actually
 installed**, before recording it - one command per runtime (`node --version`,
 `python3 --version`, `dotnet --list-sdks`). Current stable is a fact about the
-registry, not about this machine, and the two come apart routinely: on a real
-run Node 20.18.1 was **one patch short** of what current Vite, its React plugin
-and current Vitest all require, so "Vite 8, current stable" was an unbuildable
-decision that read perfectly on the page.
+registry, not about this machine: a real run named "Vite 8, current stable"
+while the installed Node was one patch short of what Vite, its React plugin and
+Vitest all required - an unbuildable decision that read perfectly on the page.
 
-**And check it against the machine it will *run* on, not only this one.** For
-anything self-hosted those are different computers, and the build machine's
-runtime says nothing about the target's. A real deployment ran Python 3.14.6 in
-development and 3.12.3 on the VPS; it happened to be fine because the framework
-supported both, which is luck rather than a check. Where the target is known and
-reachable, ask it. Where it is not yet, **record the runtime the project needs**
-in the Deployment section so `host` can check it before anything is provisioned -
-finding out at deploy time means the stack decision was never really made.
+**And check it against the machine it will *run* on, not only this one** - for
+anything self-hosted those are different computers (one real deployment ran
+Python 3.14.6 in development and 3.12.3 on the VPS). Where the target is known
+and reachable, ask it. Where it is not yet, **record the runtime the project
+needs** in the Deployment section so `host` can check it before anything is
+provisioned - finding out at deploy time means the stack decision was never
+really made.
 
-`scaffold` makes this check too, and catching it there is not the same thing -
-by then the user has approved a stack that cannot be built, and the remedy is a
-second approval rather than a different first one. **Naming a version the
-machine can run costs one command here.**
+`scaffold` makes this check too, but by then the user has approved a stack that
+cannot be built, and the remedy is a second approval rather than a different
+first one. **Naming a version the machine can run costs one command here.**
 
 When the current version will not run, say so with both options and let the user
 pick: **upgrade the runtime** - system software, so it is theirs to install and
@@ -301,13 +297,10 @@ dependency plus a few hundred megabytes of browser binaries: discovering that
 part-way through a verification is the wrong moment, and `verify` is read-only
 by design and may not install it.
 
-**Why it matters more than it looks.** Without one, `verify` has no way to
-observe a rendered page and every visual claim becomes *could not verify* -
-which is honest, and useless every single time. **A served response is not a
-rendered page**: an element can be present, correctly labelled and reachable by
-keyboard while being zero pixels tall. The alternative to a harness is a person
-looking, every item, forever - and **the person is not always there.** That is
-the case this exists for.
+**Why it matters more than it looks: a served response is not a rendered
+page** - an element can be present, correctly labelled and reachable by
+keyboard while being zero pixels tall, and without a harness `verify` has no
+way to catch that; every visual claim becomes *could not verify* instead.
 
 Take **no harness** as a real answer when the project genuinely has no UI - a
 CLI, a library, a service with no interface - and say so rather than leaving it
@@ -440,7 +433,4 @@ and why; that is a different question and it was answered before this skill ran.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

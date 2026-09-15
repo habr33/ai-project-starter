@@ -204,5 +204,4 @@ loop reads, and it is the last planning step before `spec` starts on items.
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

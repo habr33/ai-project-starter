@@ -20,15 +20,11 @@ beneath it and will silently swallow a sibling project. Deciding this before the
 framework is known means deciding it twice; deciding it after `scaffold` has run
 means moving every path that a generated config file points at.
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
->
-> **This skill normally runs at the product root**, because a layout that spans
-> parts cannot be decided from inside one of them.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 

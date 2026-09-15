@@ -253,11 +253,8 @@ diff small enough to read in full. If a diff is too big to read in one sitting,
 the step was too big - split it. That review gate is the entire point of this
 workflow; batching the work into one large diff defeats it.
 
-**Evidence, or it didn't happen.** Never report "passes", "works", or "verified"
-without naming what proves it - the command and its output, the screenshot, the
-response body. "I couldn't verify this" and "this failed" are useful, honest
-results. A fabricated pass is worse than no check at all, because it retires the
-question.
+**Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
+proves it, and "could not verify" beats a fabricated pass every time.
 
 **Build only what the spec says.** If the spec is wrong, thin, or missing a case,
 stop and fix the spec first - do not improvise past it. Work that nobody spec'd
@@ -275,7 +272,4 @@ is work nobody reviewed.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

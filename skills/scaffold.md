@@ -14,12 +14,11 @@ the framework's CLI** - a stack of "Next.js, Postgres, Prisma, Auth.js, Tailwind
 Vitest" is six installs, a schema init, an environment file, and a test script.
 
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 
@@ -66,24 +65,20 @@ command and the version it will install. Cover:
 same if scaffolded again next month.
 
 **Then check the runtime can actually run them, before installing anything.**
-Compare the installed runtime version against what each package requires. This is
-not theoretical: on a real run, Node 20.18.1 with a floating `latest` pulled a
-framework requiring `^20.19.0` - short by a single patch version. **npm reported
-that as a warning, exited 0, and installed anyway**; the failure surfaced much
-later as an unreadable "cannot find native binding" error at build time, which
-looks like a broken install rather than a version mismatch.
+Compare the installed runtime version against what each package requires -
+**never trust the installer's exit code**: on a real run, Node 20.18.1 with a
+floating `latest` pulled a framework requiring `^20.19.0`, npm reported that as
+a warning, exited 0, and installed anyway, and the failure only surfaced later
+as an unreadable "cannot find native binding" error at build time.
 
-**A missing `engines` field means unknown, not compatible.** Expo declares none
-at all, so there is nothing to compare against - and on that same machine its own
-`expo-doctor` reported the runtime as unsupported anyway. When the metadata is
-silent, **run the framework's own health check** (`expo-doctor`, `flutter
-doctor`), which knows things a manifest does not.
+**A missing `engines` field means unknown, not compatible** - Expo declares
+none, so when the metadata is silent, **run the framework's own health check**
+(`expo-doctor`, `flutter doctor`) instead, which knows things a manifest does not.
 
 So: if the runtime is below what a package requires, **stop and say so before
 installing**. The options are to upgrade the runtime or to pin the package to a
 version the current runtime supports - and the second is usually right, because
-the plan already named a version. In that same run, pinning to the version the
-plan actually specified built cleanly in about a second.
+the plan already named a version.
 
 **Unless the plan is what named the impossible version** - and then neither
 option is available here. `stack` checks the runtime before recording a version,
@@ -124,15 +119,13 @@ Checking the toolchain answers only that *a* toolchain is there. Check the
 specific runtime, target or component the chosen framework needs:
 
 - **.NET** splits into separate packages on most Linux distributions, and
-  **running and building need different ones.** `dotnet --version` reports the
-  SDK happily and `dotnet new console` builds, while `dotnet new webapi`
-  produces a project that cannot build: `NETSDK1226: Prune Package data not
-  found ... Microsoft.AspNetCore.App`. Installing the ASP.NET *runtime* does not
-  fix it - that is what runs an app. Building against it needs the **targeting
-  pack** as well, and the error is identical before and after, so it reads as
-  though the install did nothing. On Arch that is three packages: `dotnet-sdk`,
-  `aspnet-runtime`, `aspnet-targeting-pack`. Check `/usr/share/dotnet/packs/`
-  for a `.Ref` entry, not just `dotnet --list-runtimes`.
+  **running and building need different ones.** `dotnet --version` and
+  `dotnet new console` succeed while `dotnet new webapi` fails to build with
+  `NETSDK1226: Prune Package data not found ... Microsoft.AspNetCore.App` -
+  the ASP.NET *runtime* is not enough, building needs the **targeting pack**
+  too. On Arch that is three packages: `dotnet-sdk`, `aspnet-runtime`,
+  `aspnet-targeting-pack`. Check `/usr/share/dotnet/packs/` for a `.Ref` entry,
+  not just `dotnet --list-runtimes`.
 - **A browser automation tool downloads browsers, and that is the slow part.**
   Installing the package is seconds; fetching its browser binaries is a few
   hundred megabytes and can fail on a slow link long after the install looked
@@ -142,17 +135,15 @@ specific runtime, target or component the chosen framework needs:
   one. Where the download fails, say so and record it in
   `blueprint/context/needs-you.md`: it is a real blocker on every visual check,
   and the project runs fine without it right up until someone needs to see a page.
-- **Python** can have a working interpreter and no `pip`. Several distributions
-  strip it from the system install deliberately: `python3 -m pip` fails while
-  `python3 -m venv` works and pip exists inside the venv. Check the way the
-  project will actually install things.
+- **Python** can have a working interpreter and no `pip` - several distributions
+  strip it from the system install deliberately, so check `python3 -m pip`
+  itself, not just the interpreter.
 
-  **And `import venv` succeeding is not `venv` working.** Debian and Ubuntu ship
-  the module in the standard library and `ensurepip` in a separate package, so
-  the import passes and `python3 -m venv` then fails at the last step with
-  *"ensurepip is not available"*. Checking by importing reports a working
-  toolchain on a machine that has none. **Create a throwaway venv and run `pip`
-  inside it** - that is the only check that distinguishes the two, and it costs a
+  **And `import venv` succeeding is not `venv` working.** Debian and Ubuntu
+  ship the module in the standard library and `ensurepip` in a separate
+  package, so `python3 -m venv` can fail at the last step with *"ensurepip is
+  not available"* even though the import passes. **Create a throwaway venv and
+  run `pip` inside it** - the only check that catches both, and it costs a
   second.
 - **Mobile** needs a platform SDK and often a licence accepted, neither of which
   the language toolchain implies.
@@ -319,14 +310,10 @@ Installed is not the same as usable:
 
   **Build that list from three places and merge them**, the same way `preflight`
   does much later: **the code's own reads**, **what the framework and ORM
-  require without appearing in any source file**, and **anything already in
-  `.env`**. A list built by searching for `process.env` or its equivalent finds
-  what the project reads *explicitly* and misses every variable a framework reads
-  *for* it - which is usually the set that matters. A Next standalone server
-  reads `PORT`, `HOSTNAME` and `NODE_ENV`; none of them appear in the source, and
-  none of them were in a real project's `.env.example` until `preflight` found it
-  five skills later. **`preflight` already mandates this merge; doing it only
-  there guarantees the gap rather than catching it.**
+  require without appearing in any source file** (a Next standalone server
+  reads `PORT`, `HOSTNAME` and `NODE_ENV`, none of them in the source), and
+  **anything already in `.env`**. `preflight` already mandates this merge;
+  doing it only there guarantees the gap rather than catching it.
 
 - **set the security headers the framework has a place for**, and **record the
   one you are not setting.** Where they live is framework-specific -
@@ -350,32 +337,23 @@ Installed is not the same as usable:
 Wiring a scaffold means editing files a tool wrote, and that is where a whole
 class of silent failure lives.
 
-**Anchor on structure, never on a quoted string.** A generator's quote style is
-its own choice and it changes between versions - Django writes
-`path('admin/', ...)` with single quotes, and an edit matching double quotes
-finds nothing, changes nothing, and reports nothing. Use a pattern that tolerates
-either, or parse the file.
+**Anchor on structure, never on a quoted string** - a generator's quote style
+changes between versions (Django writes `path('admin/', ...)` with single
+quotes), so a pattern anchored to one style finds, changes, and reports nothing
+on the other. Use a pattern that tolerates either, or parse the file.
 
-**Then assert the edit applied.** Not "the command exited 0" - the replacement
-either changed the text or it did not, and only one of those is success.
-
-**And a formatter will erase the evidence.** This is the part that makes the
-class so hard to see: run `ruff format`, `prettier` or `gofmt` after a failed
-edit and it normalises the quotes the edit was looking for - so the file ends up
-reading exactly as though the edit had never been attempted. There is nothing
-left to notice.
+**Then assert the edit applied** - not that the command exited 0, but that the
+replacement actually changed the text - because **a formatter will erase the
+evidence**: running `ruff format`, `prettier` or `gofmt` after a failed edit
+normalises the quotes the edit was looking for, so the file ends up reading
+exactly as though the edit had never been attempted.
 
 **Verify by asking the program, not by reading the file.** `INSTALLED_APPS` is
-what `django.apps.get_app_configs()` returns, not what the source appears to say.
-A route exists if the resolver has it. A setting is what the framework resolved,
-not what the assignment looks like. **Three separate wirings failed this way on
-one real project** - an app never installed, a route never registered, and a
-database path never read. The third put the database inside the release
-directory, where the next deploy would have replaced it with an empty one.
-
-**All three passed every check that existed**, because `manage.py check` is happy
-with an app that nothing imports, the tests set the environment variable
-themselves, and the formatter had tidied the wreckage.
+what `django.apps.get_app_configs()` returns, not what the source appears to
+say; a route exists if the resolver has it. **On one real project three
+wirings failed exactly this way and passed every check that existed** - worst
+was a database path silently left inside the release directory, which the next
+deploy would have wiped.
 
 ## Step 7 - audit what landed
 
@@ -544,5 +522,4 @@ that already has code.
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

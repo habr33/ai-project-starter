@@ -9,12 +9,11 @@ Where this sits:
 
     `build` -> verify -> `review` -> `ship`
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 `build` checks each step inline as it lands. This is the deeper gate for
 when a done-when needs the *real running app* rather than a green build: a click
@@ -148,16 +147,14 @@ verification is the wrong moment. If a project that renders has no harness, say
 so, name `stack` as where that gets decided, and carry on with what can be
 observed.
 
-**Where there is no harness, the fallback is a person - and a person is not
-always there.** That is the whole shape of this problem:
+**Where there is no harness, the fallback is a person:**
 
 - **Someone is available** - `--manual` writes them a walkthrough and their
   eyes are the evidence. Better than a harness for judgement: whether it looks
   right, whether it is confusing. Worse for repetition: nobody re-checks item 1
   by hand when item 9 lands.
-- **Nobody is available** - without a harness every visual claim is
-  **could not verify**, which is honest and useless every time it happens. This
-  is the case the harness exists for, and the reason `stack` asks.
+- **Nobody is available** - every visual claim is **could not verify**, honest
+  and useless every time it happens - the case the harness exists for.
 
 Never let a deferred manual check quietly become a pass. **"I have not seen
 this" is the sentence**, and it belongs in the report whether it is waiting on a
@@ -243,22 +240,14 @@ works" by the time anyone reads the report.
 
 ## Rules
 
-**Evidence, or it didn't happen.** Never report "passes", "works", or "verified"
-without naming what proves it - the command and its output, the screenshot, the
-response body. "I couldn't verify this" and "this failed" are useful, honest
-results. A fabricated pass is worse than no check at all, because it retires the
-question.
+**Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
+proves it, and "could not verify" beats a fabricated pass every time.
 
 - **Observe, do not change.** This skill runs the app and reports. It never edits
   source, never commits, never merges. Fixing belongs to `build`.
 - **Check the spec, not vibes.** Verify against the done-whens in
   `blueprint/context/current-work.md`, so "works" means what the spec said it would do.
-- **Honest beats green.** "Could not verify" and "failed" are useful results. A
-  faked pass defeats the gate and retires the question.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

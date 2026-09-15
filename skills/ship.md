@@ -54,11 +54,8 @@ conversation, with their reason recorded) or `invalid` (a `review`
 verdict backed by evidence). **Never set either on the user's behalf.** A missing
 ledger file means no findings.
 
-**Evidence, or it didn't happen.** Never report "passes", "works", or "verified"
-without naming what proves it - the command and its output, the screenshot, the
-response body. "I couldn't verify this" and "this failed" are useful, honest
-results. A fabricated pass is worse than no check at all, because it retires the
-question.
+**Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
+proves it, and "could not verify" beats a fabricated pass every time.
 
 If required evidence is missing, **stop here.** Do not proceed to Step 2 and
 mention it afterwards.
@@ -222,7 +219,4 @@ Then point at what is next:
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

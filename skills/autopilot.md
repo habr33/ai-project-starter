@@ -19,12 +19,11 @@ is waiting at. The gates are the product; this is a deliberate, scoped exception
 to them.
 
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 
@@ -43,13 +42,11 @@ another skill's handoff, or because a range looked convenient, is not opt-in.
 Named skills, inclusive. `autopilot architect..review` takes an idea that is
 already written into the plan and carries it to reviewed code.
 
-**That range used to be `stack..review`, and the loop reordering changed what it
-covers.** `architect` now runs before `stack`, so `stack..review` starts *after*
-the system has been shaped - it no longer carries an idea from the plan, it
-carries an already-designed system to code. Both are legitimate ranges; they are
-not the same one. **Say which end a range starts at and what that assumes**,
-because a range is a string that keeps working after its meaning has changed. With no range, it runs
-`spec..review` on the current spec - the original bounded pass.
+**Say which end a range starts at and what that assumes** - `stack..review` and
+`architect..review` are both legitimate but not the same range, now that
+`architect` runs before `stack`: the former starts *after* the system is
+shaped, the latter carries an idea from the plan to code. With no range, it
+runs `spec..review` on the current spec - the original bounded pass.
 
 **A range resolves against the workflow's order**, which is:
 
@@ -68,11 +65,9 @@ remaining ones are mechanical enough not to want a stop each. **Resume from the
 first unchecked step** in `blueprint/context/current-work.md` - never restart the
 item, and never re-do a ticked step.
 
-**Without this, the choice was one-way and nothing said so.** `spec..review`
-cannot pick up a half-built item either, because `spec` stops when
-`current-work.md` holds an unfinished spec - correctly, since overwriting it
-destroys the ticked steps. So a user who started building by hand was locked into
-finishing that way, having never been told the decision was irreversible.
+**`spec..review` cannot pick up a half-built item** - `spec` stops when
+`current-work.md` holds an unfinished spec, correctly, since overwriting it
+destroys the ticked steps. Starting at `build` is the only way back in.
 
 **Two things are required to start here** rather than at `spec`:
 
@@ -337,18 +332,13 @@ unread too. **A finished run left at `building` with no packet is invisible to t
 review cap** - it is the count that stops a third unattended run, and a packet
 that lives only in this report counts as zero.
 
-**Say plainly that nothing has been pushed or deployed**, and that the work needs
-a real read before it goes anywhere. **The longer the range, the more true that
-is** - a run from `architect` produced a system design, a stack choice, a layout,
-a spec, code, and a review of its own code, and a person has seen none of it.
-
-Then say plainly that **nothing has been merged or pushed**, and that the work
-needs a real read before it ships. An unattended pass has had no human eyes on
-the diffs; this packet is where those eyes go.
+**Say plainly that nothing has been merged, pushed, or deployed**, and that the
+work needs a real read before it ships - an unattended pass has had no human eyes
+on the diffs, and this packet is where those eyes go. **The longer the range, the
+more true that is**: a run from `architect` produced a system design, a stack
+choice, a layout, a spec, code, and a review of its own code, and a person has
+seen none of it.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

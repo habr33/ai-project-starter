@@ -137,5 +137,4 @@ Then point at what is next:
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

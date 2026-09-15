@@ -11,19 +11,12 @@ Where this sits:
 
 Run this once `blueprint/project-plan.md`'s problem, users, and features have real
 content - **before `stack` chooses a technology, and before `scaffold` installs
-anything.**
-
-**That order matters and it used to be the other way round.** `scaffold` builds
-into a shape: one application, or two parts that deploy separately. This skill is
-what decides how many there are and why. Scaffolding first means installing into
-a shape nobody has chosen yet, and then either living with the guess or moving a
-fully installed project afterwards.
-
-**This is not optional, and it used to be.** Under the old order it could be
-skipped and `scaffold` would assume one application. It cannot be skipped now:
-`stack` and `layout` both stop on a placeholder Architecture section, because a
-technology chosen against nothing is precisely what running this skill first
-exists to prevent.
+anything.** Architecture is the design of the system; technology is how it gets
+implemented, chosen *against* that design. Reversed, the architecture becomes
+whatever the chosen technology makes easy, and the questions that should have
+ruled a technology in or out get asked afterwards, when the answer is a rewrite
+rather than a choice. `stack` and `layout` both stop on a placeholder Architecture
+section, so this cannot be skipped.
 
 **But it is short for a small project, and short is the correct outcome - not a
 sign it went wrong.** For most things that is: six no's to the questions in Step
@@ -31,17 +24,12 @@ sign it went wrong.** For most things that is: six no's to the questions in Step
 that says "tens of users, down until I notice". Step 3 says "system design does
 not apply" and stops. **That is a complete run**, and it takes minutes.
 
-What is being prevented is not a missing document. It is discovering the
-structural decision halfway through the third feature, when the answer is a
-rewrite rather than a choice.
 
-
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 
@@ -50,12 +38,6 @@ sections are still placeholder text, **stop and say to run `ideate` first.** Thi
 skill designs structure for a defined idea; it does not invent the idea, and a
 structure designed for a problem nobody has stated is shaped by whatever the
 designer already had in mind.
-
-**This runs before `stack`, and that is deliberate.** Architecture is the design
-of the system; technology is how it gets implemented. Choosing the technology
-first means the architecture is whatever that technology makes easy, and the
-questions that should have ruled it in or out get asked afterwards, when the
-answer is a rewrite rather than a choice.
 
 **So the Tech section will be empty, and that is correct.** Do not stop for it,
 and do not guess at it - `stack` fills it in next, against what this skill
@@ -107,13 +89,6 @@ a framework that has none.
 - more than one **deployable service**?
 - work that must happen **outside a request**?
 - data that must stay **consistent across more than one write**?
-  <!-- Say what this answer does and does not settle. It is a *transaction*
-       requirement, and every relational database provides transactions,
-       single-file ones included - so on its own it rules out no storage engine.
-       What bears on that is concurrent writers, which is the load question
-       below. This skill overstated it for a day, saying a yes here ruled a
-       whole class of storage engine out. It does not, and a rule stated too
-       strongly gets a stack rejected for a reason that is not true. -->
 - a **dependency whose failure is not acceptable**?
 - **real load, or a hard latency target**?
 - an **external API that is rate-limited or unreliable**?
@@ -473,7 +448,4 @@ loop starts**:
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

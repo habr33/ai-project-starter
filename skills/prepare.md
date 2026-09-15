@@ -9,14 +9,12 @@ Where this sits:
 
     any point in the loop -> prepare -> you do it -> back to the loop
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. **A part has no `project-plan.md` of its own** - the conversion removes
-> it - so an unqualified read from inside one finds nothing at all. Everything
-> else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root** - a part has no `project-plan.md` of its own, so an unqualified read
+> finds nothing. Resolve the root from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 **Everything else in this workflow reports what the code is doing. This reports
 what is waiting on a human.** Those are different questions and the second one

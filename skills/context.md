@@ -15,12 +15,11 @@ regenerate, never hand-edit the overview.** A hand-edit is lost on the next run
 and, worse, silently disagrees with the plans until then.
 
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 ## Before you start
 
@@ -42,12 +41,10 @@ through it.
 
 **How to tell a section is unfilled: the seeded instruction sentence is still
 present**, whatever has been added around it. **Do not use length or
-non-emptiness.** A plan can carry a real, useful block *underneath* the seeded
-text - genuine constraints on a stack nobody has chosen yet - and that section is
-still unfilled, because the decision Step 3 generates from has not been made. That
-shape is the careful case, not the exotic one: it is what someone writes while
-waiting for `stack`. A length test reads it as filled and generates a Stack
-section describing no stack.
+non-emptiness** - a plan can carry real content *underneath* the seeded text
+(genuine constraints on a stack nobody has chosen yet) and still be unfilled,
+because the decision Step 3 generates from has not been made; a length test
+reads that as filled and generates a Stack section describing no stack.
 
 **Check both sections before stopping, and report every unfilled one in a single
 stop, in loop order** - `architect` before `stack`. In the normal case they are
@@ -192,7 +189,4 @@ confidently wrong in the one file every other skill trusts.
 
 ## Formatting
 
-Match the conventions in `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options. Otherwise keep
-it brief and direct by the same standard. Long prose blocks are the failure mode
-to avoid - this output gets read while someone is mid-task.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

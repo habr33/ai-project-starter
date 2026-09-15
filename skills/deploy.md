@@ -9,16 +9,12 @@ Where this sits:
 
     preflight -> host -> deploy -> monitor
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. **A part has no `project-plan.md` of its own** - the conversion removes
-> it - so an unqualified read from inside one finds nothing at all. Everything
-> else named here is this part's own.
-                          ^          |
-                          +- rollback +
+> `architect` writes it at the root, not per part) live at the **product
+> root** - a part has no `project-plan.md` of its own, so an unqualified read
+> finds nothing. Resolve the root from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 `host` created the places this runs. This puts code into one of them.
 
@@ -147,28 +143,19 @@ production is not a debugging session.
   rollback possible later
 
 **Check what a returning visitor will actually get.** If the deployed filenames
-are not content-hashed - `style.css`, `main.js`, `app.css` - then a deploy changes
-what a name *means* without changing the name, and a browser holding the previous
-response has no reason to ask again. **Without an explicit `Cache-Control`, the
-release reaches new visitors and not returning ones**, which presents as "it works
-for me" and is close to undiagnosable from the server side.
-
-Either fingerprint the filenames, or send a revalidation policy. For a small
-static site `no-cache` - revalidate every time, a 304 when unchanged - costs one
-round trip and removes the problem.
+are not content-hashed - `style.css`, `main.js`, `app.css` - a browser holding
+the previous response has no reason to ask again, which presents as "it works
+for me" and is close to undiagnosable from the server side. Either fingerprint
+the filenames, or send an explicit `Cache-Control` - for a small static site
+`no-cache` (revalidate every time, a 304 when unchanged) costs one round trip
+and removes the problem.
 
 **Check the monitoring still describes what is now deployed.** A content check
 looks for a known string, and a deploy is precisely the thing that changes it -
-so an intentional release makes the check fail, forever, on something nobody did
-wrong. **A check that cries wolf is one nobody reads**, which costs you the real
-failure later.
-
-This is worse than it sounds when alerts have no delivery channel: the check
-fails, systemd records it, and nothing says so. **The monitoring can be broken by
-a successful deploy and stay broken silently.**
-
-Whatever the check compares against belongs in configuration the deploy updates,
-not as a literal inside the script.
+so an intentional release can make the check fail forever, silently, on
+something nobody did wrong (worse still with no alert delivery channel). **A
+check that cries wolf is one nobody reads.** Whatever it compares against
+belongs in configuration the deploy updates, not as a literal inside the script.
 
 Update `dev-notes/status.md`. **Record the commit** - it is what makes both the
 rollback and the next release's notes possible, since `docs` derives those from
@@ -280,5 +267,4 @@ success from every check you would naturally run.
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

@@ -10,12 +10,11 @@ Where this sits:
     ship -> preflight -> host -> deploy -> monitor
     (`ci` runs much earlier, right after `scaffold`)
 
-> **In a multi-part project**, two files live at the **product root**, not in
-> this part: `blueprint/project-plan.md` (the product plan) and
+> **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` runs at the root and writes one there, not one per part).
-> `AGENTS.md` records `Product root:` - read it from there rather than assuming
-> a path. Everything else named here is this part's own.
+> `architect` writes it at the root, not per part) live at the **product
+> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
+> Everything else here is this part's own.
 
 **There are two different questions, and the rest of the workflow only asks one.**
 `ship` asks *"is this change safe to merge?"* - one item, one branch, one session.
@@ -301,5 +300,4 @@ timing. `prepare` is the skill that reports that list in full.
 
 ## Formatting
 
-Match `blueprint/context/ai-interaction.md` when it exists: short, scannable
-markdown, lists for enumerations, a table when comparing options.
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.
