@@ -15,7 +15,26 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where this stands (2026-09-14)
+## Handoff (2026-09-15)
+
+- **Branch:** `review-fixes`, 4 commits ahead of `main`, last `5306f41`; not
+  pushed, no PR.
+- **Last verified:** `./check.sh` OK (16 rules); `./tests/run.sh` 682 passed,
+  0 failed.
+- **Next:** decide whether `review-fixes` merges to `main` (ask before merging or
+  pushing). Then the best use of time is a real run of the unverified items under
+  *Can be done here* - on a scratch product, never by reading.
+- **Gotchas from this session:**
+  - Never pipe a file-reading command into `grep -q` in `check.sh` or the tests -
+    SIGPIPE under pipefail gives a rare false failure. Use a herestring.
+  - A mutation proves a test only if it changes what the assertion names; two
+    first-draft tests here failed for fixture reasons, not the code.
+  - A product created before `5306f41` ignores all of `blueprint/status/`; a
+    fresh clone of it has no status directory. `install.sh` prints the fix.
+  - Git's "already used by worktree at" path is wrong inside a submodule; the
+    board command in `skills/orchestrate.md` is the reliable one.
+
+## Where this stands (2026-09-15)
 
 27 skills, four scripts, three shared library scripts, a linter with **16 rules**,
 four guides, and a template. No dependencies, nothing to build, no network calls.
@@ -119,45 +138,16 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**Found by running the loop on a two-part CMS (2026-09-15)** - `context`, `spec`,
-`build`, `review`, `ship` and `orchestrate` against a Python api and web part, the
-api item built in a git worktree and the web part claimed from a fresh clone. The
-plans before `context` were filled by hand, not by `ideate`..`ci`. The board
-changes held: every status write left both checkouts clean, and the freeze
-committed one file with an unrelated change staged. The one defect in them - a
-fresh clone had no `status/` directory - is fixed, and so is shipping from a
-worktree: `ship` Step 4 now merges from the main checkout and removes the
-worktree before the branch, and `build` renames the worktree's branch instead of
-making a second. The rest the run found is fixed too: `build` marks a part
-`building`; every status block in a skill sets the board's five fields and a write
-leaves the rest of the file alone; `ship` resets the ledger and the spec to the
-template's exact files, where its own findings stub had been dropping the
-ledger's header; and `architect` writes every planned boundary into the contract,
-while `orchestrate` routes a placeholder `Owner:` and a freeze held by
-contract-extending owner items back to `architect`.
+**Nothing known is open.** The 2026-09-15 review and a run of the loop on a
+two-part CMS were closed in commit `5306f41` - see D9 and D10 in `decisions.md`,
+and the commit message for the full list. One note stays: the handoff seam test
+in `tests/test-seams.sh` matches wording, so rewriting a skill's last step can
+need its list updated.
 
-**Left open by the 2026-09-15 review** - a whole-pack review run in parallel
-slices (skills as a system, linter and tests, scripts, docs). Its highs are fixed
-on branch `review-fixes`. Since closed: `docs`, `ci`, `deploy`, `monitor` and
-`migrate` now say to mark a repaired `preflight` blocker `fixed` and are declared
-ledger writers; `CLAUDE.md` imports `AGENTS.md`; `docs/anatomy.md` has a row for
-every skill; `setup`'s adoption route fills plan sections 5 and 6 and is a
-declared writer of both plans; `verify --all` skips rolled-back features; `stack`
-reconciles the data model in section 6; `ship --abandon` parks an item in flight
-and `spec` resumes it; `preflight` runs in each part, not at the product root;
-`layout` moves an already-seeded part with `lib/seed-part.sh`; `verify` no longer
-contradicts itself; and `check.sh` no longer pipes a file into `grep -q`, which
-had produced one false rule 12 error; and `deploy` no longer applies migrations -
-a pending one routes to `migrate`, the only skill that applies them. The smaller
-rule gaps are closed too, each probed in a copy before its fix: frontmatter is
-read only up to its own terminator (1, 2), a backticked or retired `/name` is a
-tool-specific reference (4, 5), reachability is walked from the entry points (7),
-a script reference is a whole name (8), a description must be one line (11), a
-product-root file named bare is still checked (13), and a word-like mode must be
-backticked in the description (15). Still open:
-
-- **The handoff seam test matches wording**, so rewriting a skill's last step
-  can need its list in `tests/test-seams.sh` updated. Known, not a defect.
+**Unverified, and worth a real run** (all checked by wording tests only):
+`ship --abandon` and `spec`'s resume, `layout` moving a seeded part, `architect`
+writing the whole contract up front, and `setup` filling plan sections 5 and 6 on
+an adoption.
 
 ### Known and accepted
 
