@@ -67,6 +67,11 @@ one at a time with `lib/seed-part.sh`, which does take a path. See *adopt a
 repository that was already multi-part* below; the same sequence works on a
 product you are creating from scratch.
 
+**The parts start with empty build plans, and `architect` fills them.** The root
+has no build plan, so `ideate` there records the first version in the product
+plan, and `architect` splits it into each part's items. Until it has, `spec` in a
+part reports *nothing is queued*.
+
 ## Or convert one that already exists — usually better
 
 Starting single and splitting once `architect` has decided the boundary is
@@ -172,8 +177,11 @@ and installs into it. Also set up what bridges them — the contract file in
 `contracts/`, its generation step, and the one ecosystem-neutral command that
 runs both parts' checks.
 
-**3. Freeze the contract.** `orchestrate` will not move parts into parallel work
-until it is frozen.
+**3. The owner builds the contract, then freeze it.** The part that owns the
+contract specs and builds the items that define it first — they are what gets
+frozen, so they cannot wait for the freeze. `orchestrate` freezes it once they
+have shipped, and will not move the consuming parts into parallel work until
+then.
 
 **4. Parallel.** Each part runs `spec → build → verify → review → ship` in its own
 directory, one session each.
@@ -200,6 +208,12 @@ declared but not served.
 the rules. Each part's live state is a **separate file** at
 `blueprint/status/<part>.md`, also at the product root — never inside the part.
 
+**There is one board, in the main checkout.** A git worktree carries its own copy
+of both, and `Product root:` resolves into that copy — so every skill that reads
+or writes the board resolves it under the main checkout instead, from
+`git rev-parse --git-common-dir` (`orchestrate` gives the command). Outside git,
+or with no worktrees, that is the same directory and nothing changes.
+
 **That separation is load-bearing.** One file per part means no file has two
 writers, so nothing is lost when sessions genuinely run at the same time — which
 is exactly what happens when a subagent drives each part. A single shared table
@@ -207,8 +221,9 @@ would need every writer to rewrite the whole file, and two finishing at the same
 instant would silently drop one. "Writes only its own row" is a convention;
 separate files are a guarantee.
 
-Read it before starting. If the contract is not frozen or your part is blocked,
-stop rather than building work that gets thrown away.
+Read it before starting. If your part is blocked, or the contract is not frozen
+and your part does not own it, stop rather than building work that gets thrown
+away.
 
 **Write the block, do not just say it.** When a part stops because it needs
 something another part owns, `spec`, `build` and `autopilot` record it in that
@@ -221,8 +236,8 @@ confident `-` while two of them wait on each other forever.
 ## autopilot across parts
 
 Runs **within one part, never across**. Its preflight gains three board checks,
-each a stop: the contract is frozen, this part is not blocked, and the review
-queue has room.
+each a stop: the contract is frozen (unless this part owns it), this part is not
+blocked, and the review queue has room.
 
 **It can never change the contract** — that joins `host`, production `deploy`,
 and migrating real data on the permanent block list. Git can undo the edit; it
@@ -240,7 +255,8 @@ unattended one — make that a choice, not an accident. Give subagents an
 `autopilot` range instead, which is honest about what it is.
 
 **Give each its own git worktree.** Parts on separate branches in one working
-tree fight over the index.
+tree fight over the index. The board stays in the main checkout, so the cap and
+the freeze still count across all of them.
 
 Subagents fit perfectly for read-only fan-out — `review full`, `preflight`'s
 checks, surveying a part you do not know. The output is a report, so nothing is

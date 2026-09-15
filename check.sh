@@ -30,6 +30,10 @@ retired_file="$HERE/lib/retired-names"
 retired="$(grep -v '^#' "$retired_file" | grep -v '^[[:space:]]*$' | tr '\n' ' ')"
 [ -n "${retired// /}" ] || { echo "error  lib/retired-names is empty - rule 5 is not checking anything"; exit 1; }
 
+# Names are [a-z0-9-] (rule 11), so neither alternation needs escaping.
+alt_known=$(printf '%s' "$known" | sed 's/^ *//; s/ *$//; s/  */|/g')
+alt_retired=$(printf '%s' "$retired" | sed 's/^ *//; s/ *$//; s/  */|/g')
+
 for f in "$HERE"/skills/*.md; do
   name="$(basename "$f" .md)"
   skills=$((skills + 1))
@@ -54,22 +58,24 @@ for f in "$HERE"/skills/*.md; do
 
   # 4. no tool-specific invocation syntax. Cross-references are plain names, so
   #    the same file reads correctly in every tool and on paper.
-  for k in $known; do
-    if grep -nE "(^|[^[:alnum:]\`/_-])[/\$]$k\b" "$f" >/dev/null; then
-      line=$(grep -nE "(^|[^[:alnum:]\`/_-])[/\$]$k\b" "$f" | head -1 | cut -d: -f1)
-      fail "$rel:$line: tool-specific reference to '$k' - use a plain name instead"
-    fi
-  done
+  #    One grep per file over an alternation of every name, not one per name:
+  #    27 x 27 greps were most of this script's runtime. Each name is still
+  #    reported once, at its first line.
+  hits=$(grep -noE "(^|[^[:alnum:]\`/_-])[/\$]($alt_known)\b" "$f" || true)
+  while IFS= read -r h; do
+    [ -n "$h" ] || continue
+    fail "$rel:${h%%:*}: tool-specific reference to '${h##*[/\$]}' - use a plain name instead"
+  done <<< "$(printf '%s\n' "$hits" | awk '{ k = $0; sub(/.*[\/$]/, "", k) } k != "" && !seen[k]++')"
 
   # 5. no reference to a skill that used to exist but does not any more. The
   #    tool-specific check above cannot see these, because a retired name written
   #    as a plain `name` looks exactly like ordinary prose.
-  for r in $retired; do
-    if grep -n -- "\`$r\`" "$f" >/dev/null; then
-      line=$(grep -n -- "\`$r\`" "$f" | head -1 | cut -d: -f1)
-      fail "$rel:$line: refers to '$r', which is not a skill in this pack"
-    fi
-  done
+  hits=$(grep -noE -- "\`($alt_retired)\`" "$f" || true)
+  while IFS= read -r h; do
+    [ -n "$h" ] || continue
+    r=${h#*:}; r=${r//\`/}
+    fail "$rel:${h%%:*}: refers to '$r', which is not a skill in this pack"
+  done <<< "$(printf '%s\n' "$hits" | awk -F: '$2 != "" && !seen[$2]++')"
 
   # 6. numbered steps run in order, so the file works as a manual worksheet.
   #    A skill with no numbered steps is fine - but `|| true` is load-bearing:
@@ -147,7 +153,9 @@ for n in $named; do
   # qualify it with its directory.
   [ -e "$HERE/lib/$n" ] && continue
   [ -e "$HERE/tests/$n" ] && continue
-  where=$(grep -lE "(^|[^a-z0-9./-])(\./|lib/)?$n" $prose 2>/dev/null | head -1 || true)
+  # tests/ is in the prefix set: without it a name qualified with that directory
+  # never matched here, and the error printed with an empty location.
+  where=$(grep -lE "(^|[^a-z0-9./-])(\./|lib/|tests/)?$n" $prose_named 2>/dev/null | head -1 || true)
   fail "${where#"$HERE"/}: refers to '$n', which is not a script in this repo"
 done
 
@@ -157,23 +165,62 @@ done
 #    in spec and autopilot - and nothing that ever set it. Every reader reported
 #    a confident `-` forever. `Item:` and `Updated:` were the same.
 #
-#    `orchestrate` is excluded on purpose: it is the declared read-only reader of
-#    every part's file, so a field named only there is precisely the bug.
+#    A mention is not a write. The first version of this rule counted any skill
+#    naming `Blocked on:` as its writer, so deleting every status-block line that
+#    set it still passed - `autopilot` also says it finds stale blocks "by
+#    reading `Blocked on:`", and reading counted. So the writers come from the
+#    declaration, the board's own "Who writes what" table, and each one must set
+#    the field the way the board example does: an indented `**Field:**` line.
+#
+#    A backticked name in the writer columns must be a skill or a declared state
+#    (`building`, `idle`...); anything else is a stale name after a rename.
+#    "every write above" in a row means every skill the table names.
 board="$HERE/template/blueprint/orchestration.md"
-if [ -f "$board" ]; then
+if [ ! -f "$board" ]; then
+  fail "template/blueprint/orchestration.md is missing - rule 9 is not checking anything"
+else
   # Field names contain spaces ("Blocked on", "Review packet"), so iterate over
   # lines rather than letting word-splitting take them apart.
   fields=$(sed -n '/^Each status file:/,/^\*\*States:\*\*/p' "$board" \
            | grep -oE '^[[:space:]]+\*\*[^*]+:\*\*' \
            | sed 's/^[[:space:]]*//; s/\*\*//g; s/:$//' || true)
   [ -n "$fields" ] || fail "template/blueprint/orchestration.md: cannot find the status-file example - rule 9 is not checking anything"
+  states=" $(sed -n '/^\*\*States:\*\*/,/^$/p' "$board" | grep -oE '`[^`]+`' | tr -d '`' | tr '\n' ' ') "
+  all_writers=""
+  while IFS= read -r row; do
+    for w in $(printf '%s' "$row" | awk -F'|' '{print $3 "|" $4}' | grep -oE '`[^`]+`' | tr -d '`' || true); do
+      if [ -f "$HERE/skills/$w.md" ]; then
+        case " $all_writers " in *" $w "*) ;; *) all_writers="$all_writers $w" ;; esac
+      else
+        case "$states" in *" $w "*) ;; *) fail "template/blueprint/orchestration.md: writer table names \`$w\`, which is neither a skill nor a declared state" ;; esac
+      fi
+    done
+  done <<< "$(grep -E '^\| `[^`]+` \|' "$board" || true)"
   while IFS= read -r field; do
     [ -n "$field" ] || continue
-    grep -qF -- "| \`$field\` |" "$board" \
-      || fail "template/blueprint/orchestration.md: field '$field' has no row in the writer table"
-    writers=$(grep -l -F -- "$field:" "$HERE"/skills/*.md 2>/dev/null | grep -vc '/orchestrate\.md$' || true)
-    [ "${writers:-0}" -gt 0 ] \
-      || fail "template/blueprint/orchestration.md: field '$field' has no writer - no skill but orchestrate names it, and orchestrate only reads"
+    row=$(grep -F -- "| \`$field\` |" "$board" | head -1 || true)
+    if [ -z "$row" ]; then
+      fail "template/blueprint/orchestration.md: field '$field' has no row in the writer table"
+      continue
+    fi
+    if printf '%s' "$row" | grep -qF 'every write above'; then
+      declared="$all_writers"
+    else
+      declared=""
+      for w in $(printf '%s' "$row" | awk -F'|' '{print $3 "|" $4}' | grep -oE '`[^`]+`' | tr -d '`' || true); do
+        [ -f "$HERE/skills/$w.md" ] && declared="$declared $w"
+      done
+    fi
+    written=0
+    for w in $declared; do
+      if grep -qE "^[[:space:]]+\*\*$field:\*\*" "$HERE/skills/$w.md"; then
+        written=$((written + 1))
+      else
+        fail "template/blueprint/orchestration.md: table says \`$w\` writes '$field', but skills/$w.md never sets it in a status block"
+      fi
+    done
+    [ "$written" -gt 0 ] \
+      || fail "template/blueprint/orchestration.md: field '$field' has no writer - no declared writer sets it, and a reader is not a writer"
   done <<< "$fields"
 fi
 
@@ -246,7 +293,21 @@ done
 #    a file the skills reference must have a row, and a skill named as its writer
 #    must actually mention the file - so the table cannot drift into fiction.
 agents="$HERE/template/AGENTS.md"
-if [ -f "$agents" ]; then
+# Files that are state but whose writer is declared somewhere other than this
+# table. orchestration.md is seeded by lib/seed-product-root.sh, and its fields
+# have their own writer table, checked by rule 9. The list is the rule: an entry
+# here must still be a file the template ships, or it is stale.
+state_declared_elsewhere="blueprint/orchestration.md"
+for sf in $state_declared_elsewhere; do
+  [ -f "$HERE/template/$sf" ] \
+    || fail "check.sh: state_declared_elsewhere names $sf, which the template does not ship - a stale entry"
+done
+
+if [ ! -f "$agents" ]; then
+  # Checked before anything reads it. Missing, this file used to skip rule 12
+  # and then kill the script under pipefail at rule 13 - exit 2, no output.
+  fail "template/AGENTS.md is missing - rules 12 and 13 are not checking anything"
+else
   rows=$(grep -oE '^\| `[^`]+` \| [^|]+ \| [^|]+ \|$' "$agents" || true)
   [ -n "$rows" ] \
     || fail "template/AGENTS.md: cannot find the state/writer table - rule 12 is not checking anything"
@@ -257,15 +318,25 @@ if [ -f "$agents" ]; then
   # fail" this file already got wrong once, so it is negative-tested on the exit
   # code, not on the message.
 
-  # every blueprint/context file named by two or more skills must have a row
+  # Every state file a skill names must have a row - one reader is enough. This
+  # once required two, and the plan's UI/UX section, the bug the rule cites, had
+  # exactly one reader. It also only looked in blueprint/context/ for lowercase
+  # hyphenated names, while the table has rows elsewhere; a file under a
+  # directory row (blueprint/history/) is covered by that row.
+  dir_rows=$(printf '%s\n' "$rows" | sed -n 's/^| `\([^`]*\/\)`.*/\1/p')
   counts=$(for f in "$HERE"/skills/*.md; do
-    grep -oE 'blueprint/context/[a-z-]+\.md' "$f" || true
+    grep -ohE '(blueprint|dev-notes)/[A-Za-z0-9_./-]*[A-Za-z0-9_-]\.md' "$f" | sort -u || true
   done | sort | uniq -c)
   while read -r n path; do
     [ -n "$path" ] || continue
-    [ "$n" -ge 2 ] || continue
-    printf '%s' "$rows" | grep -qF -- "\`$path\`" \
-      || fail "template/AGENTS.md: $path is read by $n skills but has no row in the state/writer table"
+    printf '%s' "$rows" | grep -qF -- "| \`$path\` |" && continue
+    case " $state_declared_elsewhere " in *" $path "*) continue ;; esac
+    covered=""
+    for d in $dir_rows; do
+      case "$path" in "$d"*) covered=1 ;; esac
+    done
+    [ -n "$covered" ] \
+      || fail "template/AGENTS.md: $path is read by $n skill(s) but has no row in the state/writer table"
   done <<< "$counts"
 
   # every declared writer must actually name the file it claims to write
@@ -300,7 +371,8 @@ fi
 #
 #    Carrying the note is what satisfies this. A skill that only mentions a file
 #    inside the note passes, correctly.
-product_files=$(sed -n 's|^ *<product root>/\([A-Za-z0-9_./-]*\).*|\1|p' "$agents" 2>/dev/null \
+product_files=""
+[ -f "$agents" ] && product_files=$(sed -n 's|^ *<product root>/\([A-Za-z0-9_./-]*\).*|\1|p' "$agents" \
                 | sed 's/\.$//' | sort -u)
 if [ -z "$product_files" ]; then
   fail "template/AGENTS.md: no <product root>/ files declared - rule 13 is not checking anything"
@@ -331,12 +403,15 @@ fi
 #    against a bar nobody built to. `stack` sent two different situations to the
 #    same wrong answer.
 #
-#    These four are the skills whose output a project commits to and may later
+#    `host` joined them: it provisions paid infrastructure, and nothing in its
+#    preconditions said what a second run does when hosting is already there.
+#
+#    These are the skills whose output a project commits to and may later
 #    need to change. Read-only reporters and per-item skills are not on the list:
 #    re-running `review` or `progress` costs nothing. **The list is the rule** -
 #    a fifth decision-writing skill has to be added here deliberately, which is
 #    the point at which someone asks the question this rule exists to force.
-decision_skills="ideate stack architect layout prototype"
+decision_skills="ideate stack architect layout prototype host"
 
 for n in $decision_skills; do
   [ -f "$HERE/skills/$n.md" ] \
@@ -350,7 +425,12 @@ for n in $decision_skills; do
   # before acting - not buried in a later step that only runs once it has begun.
   pre=$(sed -n '/^## Before you start/,/^## [^B]/p' "$f")
   [ -n "$pre" ] || { fail "skills/$n.md: on decision_skills but has no '## Before you start'"; continue; }
-  printf '%s' "$pre" | grep -qiE 'already (exists|filled|decided|has|been)|already have' \
+  # The claim is a declared shape, not a phrase: a bold lead - a paragraph or a
+  # bullet opening with `**` - whose bold text says the decision is already
+  # there. Matching "already has" anywhere let "If the user already has an
+  # opinion, ask" satisfy the rule, and `scaffold` passed by accident on "a shape
+  # that has already been chosen", a sentence about somebody else's decision.
+  printf '%s' "$pre" | grep -qE '^(- )?\*\*[^*]*already (exists|filled|recorded|decided|has|have|been)' \
     || fail "skills/$n.md: writes a foundational decision but its preconditions never say what happens when that decision already exists - see rule 14 in check.sh"
 done
 

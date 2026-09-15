@@ -47,7 +47,8 @@ blockers**:
 - **No P0 or P1 finding in `blueprint/context/findings.md` is `open` or `fixed`.**
 
 That last one is the gate. `fixed` still blocks on purpose: the repair exists but
-no review has looked at it - run `review` to close it out. The only ways
+nothing has re-checked it - run `review` to close it out, or `preflight` for a
+finding no code fixes. The only ways
 past without more code are `accepted` (the user's explicit decision in this
 conversation, with their reason recorded) or `invalid` (a `review`
 verdict backed by evidence). **Never set either on the user's behalf.** A missing
@@ -168,7 +169,8 @@ resetting the whole file rather than only the state:
     **Review packet:** -
     **Updated:** <today>
 
-The path is relative to `AGENTS.md`'s `Product root:`. Shipping is what closes a review, and a queue nothing empties
+The path is relative to `AGENTS.md`'s `Product root:`, and **in a git worktree,
+resolve it under the main checkout** (`orchestrate` gives the command). Shipping is what closes a review, and a queue nothing empties
 eventually blocks every unattended run in the product.
 
 **Clearing `Item:` and `Blocked on:` matters as much as clearing the packet.** A

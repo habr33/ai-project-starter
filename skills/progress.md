@@ -46,7 +46,8 @@ view across parts, what is blocked, and what is safe to start next, that is
 `orchestrate`.
 
 **But read the board anyway and lead with it if this part is blocked or the
-contract is not frozen.** Being told what is next in a part that must not start
+contract is not frozen and this part is not its owner** - in a git worktree,
+resolve the board under the main checkout, as `orchestrate` says. Being told what is next in a part that must not start
 is worse than being told nothing - and this is the skill people run first.
 
 ## Step 1 - read the state

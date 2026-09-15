@@ -42,8 +42,8 @@ asserts `check.sh` fails **and names the right problem**; `tests/test-scripts.sh
 runs the scripts and inspects what they produced; `tests/test-seams.sh` checks
 the cross-file invariants nothing else can see.
 
-**The runner fails three assertions on purpose first**, to prove the harness can
-report a failure at all. A rule here once shipped unable to fail, printing its
+**The runner fails every assertion function, and test files broken on purpose,
+first**, to prove the harness can report a failure at all. A rule here once shipped unable to fail, printing its
 error from a subshell and returning 0 — a suite with that flaw reports everything
 clean and hides whatever is underneath. **Before changing the workflow's shape**, read *Changing the workflow's shape*
 in `docs/anatomy.md`. Five kinds of change have broken this pack repeatedly -

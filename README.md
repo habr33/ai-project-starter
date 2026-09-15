@@ -2,7 +2,8 @@
 
 One command creates a project directory with every skill already in it. Open it
 with Claude Code — or any AI coding tool, or nothing at all — and the whole
-lifecycle is there: ideate, stack, scaffold, build, ship, host, deploy, monitor.
+lifecycle is there: ideate, architect, stack, layout, scaffold, build, ship,
+host, deploy, monitor.
 
 ## Install
 
@@ -176,7 +177,7 @@ Skills install to `.claude/skills/<name>/SKILL.md` and `.agents/skills/<name>/SK
 
 **[opencode](https://opencode.ai)** reads `AGENTS.md` (and prefers it over
 `CLAUDE.md` when both exist), and finds the skills in `.agents/skills/` without
-any extra install — verified with `opencode debug skill`, which lists all 26.
+any extra install — verified with `opencode debug skill`, which lists all 27.
 
 But **loading a skill is not the same as being able to type `/spec`.** opencode
 has no `/name` for a skill; the model picks one by matching your request against
@@ -276,6 +277,7 @@ The scripts:
 | `tests/run.sh` | run the test suite |
 | `lib/seed-part.sh` | seed one part; also adds a part to an existing product |
 | `lib/seed-product-root.sh` | seed a product root |
+| `lib/part-name.sh` | part-name checks shared by `new-project.sh` and `convert-to-parts.sh` |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 
 The two `lib/` scripts exist because `new-project.sh --parts` and
@@ -315,8 +317,8 @@ linter rule, `tests/test-scripts.sh` runs the scripts and checks what they
 produced, and `tests/test-seams.sh` checks the invariants that span files -
 which is where every serious defect here has been.
 
-The runner **fails three assertions on purpose before running anything else**,
-to prove the harness reports a failure. A rule in this repo once shipped unable
+The runner **fails every assertion function, and test files broken on purpose,
+before running anything else**, to prove the harness reports a failure. A rule in this repo once shipped unable
 to fail, and a test suite with that flaw hides every defect beneath it.
 
 ## Credit

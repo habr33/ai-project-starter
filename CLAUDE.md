@@ -61,7 +61,8 @@ produced; `tests/test-seams.sh` checks the cross-file invariants nothing else
 can see.
 
 **The runner proves the harness can fail before it trusts a green result** - it
-deliberately fails three assertions on every run and checks they were counted.
+deliberately fails every assertion function, and runs test files broken on
+purpose (one exits early, one fails inside a pipe), checking each failure was counted.
 Rule 12 once shipped unable to fail, printing its error from a subshell and
 returning 0; a suite with that defect reports everything clean and hides
 whatever is underneath.

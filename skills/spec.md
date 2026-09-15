@@ -123,8 +123,15 @@ State which item you are spec'ing, and in which mode, before going further.
 
 **In a multi-part project, claim this part first** by writing
 `<product root>/blueprint/status/<this part>.md` - the path from `AGENTS.md`'s `Product root:`, **not** this part's
-own `blueprint/`, which is a different directory. Read the board before you do. If the contract is not frozen, or this part is blocked, stop
+own `blueprint/`, which is a different directory, and **in a git worktree, resolve
+it under the main checkout** (`orchestrate` gives the command) so every session
+writes one board. Read the board before you do. If this part is blocked, stop
 and say so rather than spec'ing work that gets thrown away.
+
+**If the contract is not frozen, stop - unless this part owns it** (`Owner:`
+under *The contract* in the product root's `AGENTS.md`). **The owner specs and
+builds first**: the items that define the contract are what there is to freeze,
+so they cannot wait for the freeze. Only consuming parts wait for it.
 
 Write **every field, not just `State:`**:
 

@@ -22,14 +22,24 @@ _pass=0
 _fail=0
 _name=""
 
+# Every result is also appended to a log file, because a counter cannot survive
+# a subshell and a file can. `true | assert_eq ...` runs the assertion in a pipe:
+# it printed FAIL and the summary still said 0 failed. `finish` counts the log,
+# and treats any disagreement with the in-process counters as a failure of its
+# own - an assertion that ran where its result could be lost is a broken test
+# even when it happened to pass.
+_log="$TEST_TMP/.assertions"
+: > "$_log"
+rm -f "$TEST_TMP/.result"
+
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   _R=$'\033[31m'; _G=$'\033[32m'; _D=$'\033[2m'; _0=$'\033[0m'
 else
   _R=""; _G=""; _D=""; _0=""
 fi
 
-_ok()  { _pass=$((_pass + 1)); printf '  %sok%s   %s\n' "$_G" "$_0" "$_name"; }
-_no()  { _fail=$((_fail + 1)); printf '  %sFAIL%s %s\n       %s%s%s\n' "$_R" "$_0" "$_name" "$_D" "$1" "$_0"; }
+_ok()  { _pass=$((_pass + 1)); printf 'ok %s\n' "$_name" >> "$_log"; printf '  %sok%s   %s\n' "$_G" "$_0" "$_name"; }
+_no()  { _fail=$((_fail + 1)); printf 'FAIL %s\n' "$_name" >> "$_log"; printf '  %sFAIL%s %s\n       %s%s%s\n' "$_R" "$_0" "$_name" "$_D" "$1" "$_0"; }
 
 section() { printf '\n%s\n' "$1"; }
 
@@ -82,6 +92,16 @@ assert_eq() {
 assert_exists()  { _name="$1"; if [ -e "$2" ]; then _ok; else _no "missing: $2"; fi; }
 assert_absent()  { _name="$1"; if [ ! -e "$2" ]; then _ok; else _no "should not exist: $2"; fi; }
 
+# A pattern that must NOT be in a file that MUST exist. `assert_fails grep -q X
+# file` passes on grep's exit 2 when the file is missing, so a step that deleted
+# the file instead of rewriting it read as "the stale content is gone".
+assert_lacks() {
+  _name="$1"; local file="$2" pattern="$3"
+  if [ ! -f "$file" ]; then _no "missing: $file - cannot show it lacks '$pattern'"
+  elif grep -qE -- "$pattern" "$file"; then _no "'$pattern' found in $file"
+  else _ok; fi
+}
+
 # --- fixtures ---------------------------------------------------------------
 
 # A throwaway copy of the pack, so a rule can be broken and the real tree is
@@ -103,6 +123,17 @@ fresh_repo() {
               new-project.sh convert-to-parts.sh README.md CLAUDE.md AGENTS.md; do
     [ -e "$REPO/$item" ] && cp -R "$REPO/$item" "$d/"
   done
+  # ...but leaving tests/ out entirely made the fixture red before any test broke
+  # it: the prose names tests/lib.sh, run.sh and test-*.sh, so rule 8 reported
+  # five "not a script" errors on the untouched copy, and every negative test got
+  # its non-zero exit from rule 8 instead of the rule it was breaking. Empty stubs
+  # resolve the names without adding any content for rule 8 to count as a
+  # reference. test-lint.sh asserts the unbroken fixture lints green first.
+  mkdir -p "$d/tests"
+  local t
+  for t in "$REPO"/tests/*.sh; do
+    [ -e "$t" ] && : > "$d/tests/$(basename "$t")"
+  done
   printf '%s' "$d"
 }
 
@@ -110,7 +141,19 @@ workdir() {
   mktemp -d "$TEST_TMP/work.XXXXXX"
 }
 
+# Writes $TEST_TMP/.result, which run.sh requires: a file that stopped early -
+# an `exit 0` halfway down - never gets here, and without the marker run.sh
+# reports it failed instead of trusting an exit code that says nothing ran.
 finish() {
-  printf '\n  %d passed, %d failed\n' "$_pass" "$_fail"
-  [ "$_fail" -eq 0 ]
+  local p f
+  p=$(grep -c '^ok ' "$_log" || true)
+  f=$(grep -c '^FAIL ' "$_log" || true)
+  if [ "$p" -ne "$_pass" ] || [ "$f" -ne "$_fail" ]; then
+    f=$((f + 1))
+    printf '  %sFAIL%s harness: %d assertion(s) ran in a subshell (a pipe or $(...)) - their result would have been lost\n' \
+      "$_R" "$_0" "$(( (p + f - 1) - (_pass + _fail) ))"
+  fi
+  printf '\n  %d passed, %d failed\n' "$p" "$f"
+  printf '%d %d\n' "$p" "$f" > "$TEST_TMP/.result"
+  [ "$f" -eq 0 ]
 }

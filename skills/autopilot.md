@@ -167,10 +167,14 @@ it - require it only of the steps that come before the range starts.**
 what would supply it.
 
 **In a multi-part project, read the board first** - `orchestrate` maintains it at
-the product root - and **each of these is a stop**:
+the product root, and **in a git worktree, resolve it under the main checkout**
+(`orchestrate` gives the command) - and **each of these is a stop**:
 
-- **the contract is frozen.** Building against an unfrozen contract with nobody
-  watching is the exact failure the freeze exists to prevent.
+- **the contract is frozen - unless this part owns it** (`Owner:` under *The
+  contract* in the product root's `AGENTS.md`). Building against an unfrozen
+  contract with nobody watching is the exact failure the freeze exists to
+  prevent; but **the owner builds first**, because its contract-defining items
+  are what there is to freeze. Only consuming parts wait.
 - **this part is not blocked.** The board says so; starting anyway produces work
   that gets thrown away.
 - **the review queue has room** - **two waiting packets across the product and
@@ -315,6 +319,23 @@ Stop. Report:
   separately, because over a long range these are the things most likely to be
   wrong and least likely to be noticed in a diff
 - the next action
+
+**In a multi-part project, post the packet** in
+`<product root>/blueprint/status/<this part>.md` - resolved as in Step 1, from
+`AGENTS.md`'s `Product root:` and under the main checkout in a git worktree -
+exactly as `build` does:
+
+    **State:** waiting
+    **Item:** <the item this run worked>
+    **Blocked on:** -
+    **Review packet:** <where to read it>
+    **Updated:** <today>
+
+A run that stopped early and was recorded as `blocked` or `stopped` keeps that
+state, and still fills `Review packet:` if it committed anything - that work is
+unread too. **A finished run left at `building` with no packet is invisible to the
+review cap** - it is the count that stops a third unattended run, and a packet
+that lives only in this report counts as zero.
 
 **Say plainly that nothing has been pushed or deployed**, and that the work needs
 a real read before it goes anywhere. **The longer the range, the more true that

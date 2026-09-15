@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "Turn an approved stack and the problem, users, and features already in `blueprint/project-plan.md` into a concrete structure: routes and pages for a web app or PWA, screens and navigation for a mobile app, or a page list for a website - plus the data model, where logic lives, the auth boundary, and any third-party service a feature actually needs. Sized to the project's real scope. Proposes exact edits to the plan's Architecture section and stops for approval before writing. Use when the user runs `architect`, has a stack chosen and needs structure before building, or asks how to structure a new project."
+description: "Turn the problem, users, features and constraints already in `blueprint/project-plan.md` into a concrete structure, before any technology is chosen: routes and pages for a web app or PWA, screens and navigation for a mobile app, or a page list for a website - plus the data model, where logic lives, the auth boundary, and any third-party service a feature actually needs. Sized to the project's real scope. In a product with parts, also splits the build plan into each part. Proposes exact edits to the plan's Architecture section and stops for approval before writing. Use when the user runs `architect`, has a plan and needs structure before choosing a stack, or asks how to structure a new project."
 ---
 
 # architect - design the structure before you build
@@ -9,8 +9,9 @@ Where this sits:
 
     `ideate` -> architect -> `stack` -> `layout` -> `scaffold` -> `ci` -> `context`
 
-Run this once the stack is settled and `blueprint/project-plan.md`'s problem, users,
-and features have real content - **and before `scaffold` installs anything.**
+Run this once `blueprint/project-plan.md`'s problem, users, and features have real
+content - **before `stack` chooses a technology, and before `scaffold` installs
+anything.**
 
 **That order matters and it used to be the other way round.** `scaffold` builds
 into a shape: one application, or two parts that deploy separately. This skill is
@@ -90,8 +91,9 @@ No argument. Reads `blueprint/project-plan.md` and blueprint/build-plan.md.
 
 ## Step 1 - read what is already decided
 
-Pull the problem, users, features, and Tech section from `blueprint/project-plan.md`,
-and the item list from `blueprint/build-plan.md` if it has entries.
+Pull the problem, users, features, UI/UX and Constraints from
+`blueprint/project-plan.md`, and the item list from `blueprint/build-plan.md` if it
+has entries. The Tech section is still empty - `stack` fills it after this.
 
 That is the brief. Do not re-ask questions it already answers.
 
@@ -202,16 +204,22 @@ Design only what the project needs, from:
   part still has to be scaffolded separately anyway. Convert first, scaffold
   into the parts second.
 
-  **Then split the build plan across the parts - this does not happen by
-  itself.** The conversion moves everything part-local into `--existing` and
-  seeds the others empty, so every item `ideate` wrote lands in one part. Those
-  items describe the **product**: "record a loan" is a form *and* an endpoint,
-  and left whole it is an item one part cannot finish. Meanwhile the other part's
-  plan is empty, so `spec` run there reports *nothing is queued* while its entire
-  surface is unbuilt.
+  **Whenever the product has parts, split the build plan across the parts - this
+  does not happen by itself** - whether they came from this conversion or from
+  `new-project.sh --parts`. A conversion moves everything part-local into
+  `--existing` and seeds the others empty, so every item `ideate` wrote lands in
+  one part. A product created with parts has no build plan at its root at all, so
+  `ideate` there leaves the first version as the features in the product plan and
+  **every** part's plan is empty. Either way `spec` run in a part reports
+  *nothing is queued* while its entire surface is unbuilt. And the items describe
+  the **product**: "record a loan" is a form *and* an endpoint, and left whole it
+  is an item one part cannot finish.
 
-  So rewrite each product item as the part-sized items it implies, in each part's
-  own `blueprint/build-plan.md`, and say which came from which. **`ideate` is the
+  So rewrite each product item - or, with no build plan yet, each first-version
+  feature - as the part-sized items it implies, in each part's own
+  `<part>/blueprint/build-plan.md`, and say which came from which. Show the split
+  with Step 5's proposal and write it in Step 6. A part whose plan already has
+  items keeps them, ticks included; add only what is missing. **`ideate` is the
   only skill that writes an initial item set and it runs once, at the product
   root** - after the split, nothing else will do this. Check the same way for
   anything else written before there were parts: open `needs-you.md` lines belong
@@ -263,7 +271,10 @@ Design only what the project needs, from:
   features when it hurts is a legitimate and common answer** - just say that,
   rather than leaving it undecided.
 
-- **Structure** - branch on the platform recorded in the Tech section. In a
+- **Structure** - branch on the platform - web app, PWA, mobile app, website - as
+  the plan's features, UI/UX and Constraints describe it. **It is not in the Tech
+  section yet**; if the plan does not say, ask rather than guess, and record the
+  answer in Constraints so `stack` does not ask again. In a
   two-part project, apply this per part - the front end has routes or screens,
   the backend has endpoints.
   - *Web app or PWA* - routes and pages, following the framework's own
@@ -385,7 +396,8 @@ partially.
 
 Write only the approved text, only into the Architecture section. Leave the
 problem, users, features, UI/UX, and deployment sections alone - those are the
-user's own planning pass.
+user's own planning pass. **In a product with parts, also write each part's
+build plan** from the approved split in Step 2.
 
 **Everything from Steps 2 and 3 goes *inside* section 6, under `###`
 sub-headings.** The plan's sections are numbered and other skills address them by
@@ -456,7 +468,8 @@ loop starts**:
   is more useful than silence, and stops the question being re-litigated later.
 - **Only what a planned feature needs.** If nothing in the plan calls for it, it
   is not in the architecture.
-- **Never write outside the Architecture section.**
+- **Never write outside the Architecture section**, except what Step 6 names:
+  the Deployment opening, the quality bar, decisions, and each part's build plan.
 
 ## Formatting
 

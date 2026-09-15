@@ -11,6 +11,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/lib/part-name.sh"
 
 usage() {
   cat <<'USAGE'
@@ -110,17 +111,16 @@ clean_parts=()
 if [ -n "$PARTS" ]; then
   IFS=',' read -ra PART_LIST <<< "$PARTS"
   for part in "${PART_LIST[@]}"; do
-    part="$(echo "$part" | tr -d '[:space:]')"
+    # Trim leading/trailing whitespace only. `tr -d '[:space:]'` used to strip
+    # every space in the name, so `--parts "we b,api"` silently became `web`
+    # instead of being rejected - `new-project.sh x --parts "we b,api"` created
+    # web/ with no warning at all.
+    part="$(printf '%s' "$part" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     [ -n "$part" ] || continue
-    # Checked here for a friendlier message, and again in lib/seed-part.sh so no
-    # caller can be the only guard. This one was missing while
-    # convert-to-parts.sh had it - a part name with a slash wrote a directory
-    # outside the product root and exited 0.
     case "$part" in
-      .|..|-*|/*|*..*|*\\*)
+      /*)
         echo "Not a usable part name: '$part'" >&2
-        echo "A part is a directory under the product root: not '.' or '..'," >&2
-        echo "not absolute, no backslash, and it may not start with '-'." >&2
+        echo "A part is a directory under the product root: not absolute." >&2
         exit 1 ;;
       */*)
         # A nested part is a real shape - lib/seed-part.sh takes one, and
@@ -139,6 +139,15 @@ if [ -n "$PARTS" ]; then
         echo "multi-part'." >&2
         exit 1 ;;
     esac
+    # Checked here for a friendlier message, and again in lib/seed-part.sh so no
+    # caller can be the only guard. Shared with convert-to-parts.sh via
+    # lib/part-name.sh so the two cannot drift the way they did:
+    # convert-to-parts.sh checked only '.', '..' and a slash, so
+    # `--parts 'web,-api' --existing web` moved every file in the project into
+    # web/ and only then failed inside lib/seed-part.sh on '-api'.
+    check_part_name "$part" || exit 1
+    # `--parts web,web` used to exit 0 and list web/ twice in AGENTS.md.
+    check_part_name_unique "$part" "${clean_parts[@]}" || exit 1
     clean_parts+=("$part")
     parts_made="$parts_made $part"
   done

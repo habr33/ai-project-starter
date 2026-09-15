@@ -50,6 +50,12 @@ If `architect` has not run at all, say so - the services a project needs are a
 consequence of its structure, and inventing them now means paying for the wrong
 ones.
 
+**If hosting already exists** - rows in the Environments table in `AGENTS.md`, or
+resources the provider already lists - start from what is there, not from a blank
+sheet. Report what is provisioned, change only what the plan now needs, and never
+delete or resize an existing resource without separate, explicit approval. A
+second run that provisions from scratch bills a second database next to the first.
+
 ## Step 1 - work out what is actually needed
 
 From the Deployment and Architecture sections of `blueprint/project-plan.md`, and from anything
@@ -269,6 +275,13 @@ This skill owns secrets from creation to revocation:
 commit message.** If one has leaked, it is a P0 in `blueprint/context/findings.md`, and the
 remedy is **rotation** - removing the commit does not help, because it has
 already been copied.
+
+**When this skill repairs a finding** - that rotation, or a `preflight` blocker
+such as missing backups - **set it to `fixed`** with the evidence in its
+**Resolution** line: the new value works and the old one is revoked, a restore
+from the backup ran. **Never `closed`**: `preflight` re-checks it and closes it,
+because a repair is examined by something other than what made it. Left `open`,
+it blocks every later `ship` in this part.
 
 ## Step 6 - report
 

@@ -63,3 +63,5 @@ blueprint/project-plan.md too, then regenerate the overview.
      confidently in the wrong direction. -->
 
 _No items yet. Run `ideate` to write them from the plan._
+_In a part of a multi-part product, run `architect` at the product root instead -
+it splits the product's features into each part's items._

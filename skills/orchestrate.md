@@ -26,6 +26,26 @@ the contract line somewhere no part will ever look. This skill is the one that
 spans every part, so it is the one where a path resolving to the wrong directory
 does the most damage and shows the fewest symptoms.
 
+**The board lives in the main checkout, even when a session runs in a git
+worktree.** A worktree has its own copy of `blueprint/status/` and
+`blueprint/orchestration.md`, and `Product root:` resolves into that copy - so
+three worktrees would write three boards, this skill would read a fourth, and a
+freeze written here would reach no worktree until it rebased. Every skill that
+reads or writes the board resolves its directory like this (at the root itself,
+`<product root>` is `.`):
+
+    cd "<product root>"
+    if common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
+      echo "$(dirname "$common")/$(git rev-parse --show-prefix)blueprint"
+    else
+      echo "$PWD/blueprint"
+    fi
+
+The shared git directory's parent is the main checkout, and the prefix keeps the
+product root's place inside it. **Outside git, or in the main checkout itself,
+that is the directory `Product root:` already names** - nothing changes. A
+worktree's own copy of the board is never read, edited or committed.
+
 **That separation is deliberate and load-bearing.** One file per part means no
 file has two writers, so nothing is lost when sessions genuinely run at the same
 time - which is exactly what happens when a subagent drives each part. A single
@@ -106,11 +126,19 @@ question that matters is *which* version was frozen. If `contracts/` is empty or
 holds nothing the parts actually use, say that instead of freezing - there is
 nothing to freeze, and recording one would be worse than recording nothing.
 
-**Refuse to freeze** while any part has an open item that would change the
-contract. Freezing a contract that is about to change is worse than not freezing
-it, because parts will build against it in good faith.
+**The owner builds first.** The part named as `Owner:` under *The contract* in
+the product root's `AGENTS.md` may spec and build the items that define the
+contract before any freeze - they are what produces the thing to freeze, so
+making them wait for one is a deadlock. Say so when `contracts/` is empty: the
+next step is the owner's first contract-defining item, not a freeze.
 
-**Refuse to move parts into parallel work while the contract is not frozen.**
+**Refuse to freeze** while any part has an open item that would change the
+contract - in practice, until the owner's contract-defining items have shipped.
+Freezing a contract that is about to change is worse than not freezing it,
+because parts will build against it in good faith.
+
+**Refuse to move the consuming parts into parallel work while the contract is not
+frozen.** The owner working alone before the freeze is sequential, not parallel.
 Parallel work against an unfrozen contract is worse than working sequentially:
 each part invents its own assumptions, all of them look correct alone, and none
 of them find out until `integrate`.
@@ -165,6 +193,8 @@ unfamiliar part. The output is a report, so no gate is skipped.
 
 - **Give each subagent its own git worktree.** Parts on separate branches in one
   working tree fight over the index; a worktree per part removes that entirely.
+  **The board does not move with it** - every worktree resolves the board to the
+  main checkout, as above, so the cap, the blocks and the freeze stay one set.
 - **The cap counts across the product, not per subagent.** Three subagents each
   finishing a run is three packets waiting, and the third refuses to start. That
   is the mechanism working, not an obstruction.
@@ -185,10 +215,12 @@ having read what it did.
   including its `Blocked on:` field, even when the block is plainly stale.
 - **Resolve every path against the product root**, from `AGENTS.md`'s
   `Product root:` when running inside a part. A bare `blueprint/` there is the
-  part's, not the product's.
+  part's, not the product's. **The board resolves one step further, to the main
+  checkout**, when this is a git worktree.
 - **Never start work in a part.** Say what to run; do not run it.
 - **Never freeze a contract that is about to change.**
-- **Never advise parallel work before the freeze.**
+- **Never advise parallel work before the freeze.** Only the contract's owner
+  works before it.
 - **Report drift between the board and the parts** rather than trusting the
   board. It is a record of what sessions claimed, not of what is true.
 

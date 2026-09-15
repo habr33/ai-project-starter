@@ -15,6 +15,11 @@ lint() { (cd "$1" && ./check.sh); }
 section "check.sh passes on the pack as it stands"
 assert_ok "clean tree lints green" lint "$REPO"
 
+# Every assert_refuses below needs a non-zero exit, and a fixture that is already
+# red supplies one for free - rule 8 did, on every copy, and re-introducing the
+# rule-12 pipe bug still left this whole file green. The copy must start clean.
+assert_ok "the fixture lints green before anything breaks it" lint "$(fresh_repo)"
+
 section "rule 1 - frontmatter"
 r=$(fresh_repo); printf '# no frontmatter\n' > "$r/skills/verify.md"
 assert_refuses "missing frontmatter is caught" "missing frontmatter" lint "$r"
@@ -90,6 +95,48 @@ r=$(fresh_repo)
 sed -i 's/^Each status file:$/Each part file:/' "$r/template/blueprint/orchestration.md"
 assert_refuses "a missing example block fails loudly" "rule 9 is not checking anything" lint "$r"
 
+# The historical bug itself, exactly: every status-block line setting the field
+# is gone, and the prose that *reads* it stays - autopilot finds stale blocks "by
+# reading `Blocked on:`". The first version of this rule counted that mention as
+# a writer and reported green.
+r=$(fresh_repo)
+python3 - "$r" <<'RULE9'
+import sys, pathlib, re
+root = pathlib.Path(sys.argv[1]); removed = 0
+for f in (root / "skills").glob("*.md"):
+    if f.name == "orchestrate.md": continue
+    s = f.read_text(); s2, n = re.subn(r'^[ \t]+\*\*Blocked on:\*\*.*\n', '', s, flags=re.M)
+    removed += n; f.write_text(s2)
+assert removed > 0, "no status-block Blocked on: lines found - the test needs updating"
+assert "Blocked on:" in (root / "skills/autopilot.md").read_text(), "no reader mention left - the test no longer reproduces the bug"
+RULE9
+assert_refuses "a field only mentioned, never set, has no writer" "field 'Blocked on' has no writer" lint "$r"
+
+r=$(fresh_repo)
+python3 - "$r/skills/build.md" <<'RULE9'
+import sys, pathlib, re
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+s2, n = re.subn(r'^[ \t]+\*\*Review packet:\*\*.*\n', '', s, flags=re.M)
+assert n > 0, "build.md sets no Review packet - the test needs updating"
+p.write_text(s2)
+RULE9
+assert_refuses "a declared board writer that never sets its field is caught" \
+  "table says \`build\` writes 'Review packet', but skills/build.md never sets it" lint "$r"
+
+r=$(fresh_repo)
+python3 - "$r/template/blueprint/orchestration.md" <<'RULE9'
+import sys, pathlib, re
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+s2 = re.sub(r'^(\| `Review packet` \| )`build`', r'\1`bulid`', s, count=1, flags=re.M)
+assert s2 != s, "Review packet row not found - the test needs updating"
+p.write_text(s2)
+RULE9
+assert_refuses "a stale name in the board's writer table is caught" \
+  "neither a skill nor a declared state" lint "$r"
+
+r=$(fresh_repo); rm "$r/template/blueprint/orchestration.md"
+assert_refuses "a missing board fails loudly" "orchestration.md is missing - rule 9 is not checking anything" lint "$r"
+
 section "rule 10 - preconditions"
 r=$(fresh_repo); sed -i '/^## Before you start$/d' "$r/skills/verify.md"
 assert_refuses "a missing precondition heading is caught" "no '## Before you start'" lint "$r"
@@ -125,6 +172,31 @@ p = pathlib.Path(sys.argv[1]); s = p.read_text()
 p.write_text(re.sub(r'^\|.*coding-standards\.md.*\|\s*$\n', '', s, count=1, flags=re.M))
 PY
 assert_refuses "a read file with no table row is caught" "no row in the state/writer table" lint "$r"
+
+# One reader is enough. The rule once needed two, and the plan's UI/UX section -
+# the bug it cites - had one. It also only saw lowercase hyphenated names under
+# blueprint/context/, so an underscore or another directory was invisible.
+r=$(fresh_repo); printf '\nRead `blueprint/context/risk_register.md` first.\n' >> "$r/skills/verify.md"
+assert_refuses "a state file with one reader and no row is caught" \
+  "blueprint/context/risk_register.md is read by 1 skill(s) but has no row" lint "$r"
+
+r=$(fresh_repo); printf '\nRead `blueprint/risk-register.md` first.\n' >> "$r/skills/verify.md"
+assert_refuses "a state file outside blueprint/context/ is seen" \
+  "blueprint/risk-register.md is read by 1 skill(s) but has no row" lint "$r"
+
+r=$(fresh_repo); rm "$r/template/AGENTS.md"
+assert_refuses "a missing AGENTS.md fails loudly instead of exiting silently" \
+  "template/AGENTS.md is missing" lint "$r"
+
+r=$(fresh_repo)
+python3 - "$r/check.sh" <<'RULE12'
+import sys, pathlib, re
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+s2 = re.sub(r'^(state_declared_elsewhere=")([^"]*)(")$', r'\1\2 blueprint/gone.md\3', s, count=1, flags=re.M)
+assert s2 != s, "state_declared_elsewhere assignment not found - the test needs updating"
+p.write_text(s2)
+RULE12
+assert_refuses "a stale entry in state_declared_elsewhere is caught" "a stale entry" lint "$r"
 
 # The rule that once could not fail. This is the variant that caught it: the
 # message printed and the exit code was still 0, because `fail` ran in a
@@ -225,6 +297,32 @@ p.write_text(s[:i] + s[j:])
 RULE14
 assert_refuses "a decision skill silent about re-deciding is caught" \
   "never say what happens when that decision already exists" lint "$r"
+
+# A phrase is not the claim. "already has" anywhere in the preconditions used to
+# satisfy this, so a sentence about something else entirely passed.
+r=$(fresh_repo)
+python3 - "$r/skills/architect.md" <<'RULE14'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+i = s.index('**If the Architecture section is already filled')
+j = s.index('## Input')
+p.write_text(s[:i] + 'If the user already has an opinion about naming, ask.\n\n' + s[j:])
+RULE14
+assert_refuses "an unrelated 'already has' does not satisfy it" \
+  "skills/architect.md: writes a foundational decision" lint "$r"
+
+# host provisions paid infrastructure; a second run that starts from a blank sheet
+# bills twice. It is on the list, so dropping its re-run paragraph must fail.
+r=$(fresh_repo)
+python3 - "$r/skills/host.md" <<'RULE14'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+i = s.index('**If hosting already exists**')
+j = s.index('\n## ', i)
+p.write_text(s[:i] + s[j + 1:])
+RULE14
+assert_refuses "host silent about existing hosting is caught" \
+  "skills/host.md: writes a foundational decision" lint "$r"
 
 # A declared list naming a skill that does not exist is dead config, and it hides
 # the thing it was meant to check - the defect the other two lists already had.

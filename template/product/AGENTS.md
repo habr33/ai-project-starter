@@ -23,7 +23,8 @@ one.
 - `blueprint/orchestration.md` - the coordination board: the contract line and
   the rules
 - `blueprint/status/<part>.md` - one live-state file per part, each written only
-  by that part's own sessions
+  by that part's own sessions. **In a git worktree the board is the main
+  checkout's**, never the worktree's copy - `orchestrate` gives the command
 - `contracts/` - the boundary between the parts, owned by the part that can
   break it
 - `dev-notes/` - decisions and status for the product as a whole
@@ -73,8 +74,10 @@ still looks correct.
 1. **Together, single-threaded.** `ideate`, `stack`, `architect`, and the contract.
    Parallelising this is how several agents invent several incompatible
    assumptions that only surface at integration.
-2. **Freeze the contract.** `orchestrate` will not move parts into parallel work
-   until it is frozen.
+2. **The owner builds the contract, then freeze it.** The part that owns the
+   contract specs and builds the items that define it first; `orchestrate`
+   freezes it once they have shipped, and will not move the consuming parts into
+   parallel work until then.
 3. **Parallel.** Each part runs `spec -> build -> verify -> review -> ship` in its
    own directory, one session each.
 4. **`integrate`**, then `deploy`.

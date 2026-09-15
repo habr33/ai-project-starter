@@ -1,6 +1,6 @@
 ---
 name: preflight
-description: "The whole-project go-live audit: everything, once, before the first release and again before anything major. Checks security, data and backups, configuration, operations, observability, correctness, accessibility, documentation, and platform specifics across the entire project rather than a diff. Read-only - it reports and never fixes. Returns a go or no-go with blockers, knowingly-accepted risks, and what could not be verified. Use when the user runs `preflight`, is about to launch, or asks whether the project is ready for real users."
+description: "The whole-project go-live audit: everything, once, before the first release and again before anything major. Checks security, data and backups, configuration, operations, observability, correctness, accessibility, documentation, and platform specifics across the entire project rather than a diff. It never fixes: it reports, writes each blocker to the findings ledger, and closes a non-code blocker once a re-run confirms the repair. Returns a go or no-go with blockers, knowingly-accepted risks, and what could not be verified. Use when the user runs `preflight`, is about to launch, or asks whether the project is ready for real users."
 ---
 
 # preflight - is this ready to be live at all?
@@ -24,7 +24,8 @@ ready for real people?"**
 
 That is this skill, and it is a **milestone gate, not a per-deploy one**. Run it
 before the first release, and again before anything major. It audits the whole
-project. It is read-only: it reports, it never fixes.
+project. It never fixes: it reports, and the one file it writes is the findings
+ledger.
 
 ## How this differs from the other two
 
@@ -239,6 +240,13 @@ Sort everything into four buckets, and lead with the verdict:
 
 - **Blockers** - must be fixed before going live. Each one goes into the findings
   ledger as P0 or P1, so the existing machinery carries it.
+
+  **On a re-run, close what was repaired.** A blocker no code fixes - backups, a
+  host, a README, a rotated secret - is marked `fixed` with evidence by the skill
+  that repaired it, and `review` has no code to re-examine, so **this skill is the
+  one that closes it**: re-check the evidence against the real system, move it to
+  `closed` with what you checked in **Resolution**, or back to `open` if it does
+  not hold. Code findings are not yours to close - they wait for `review`.
 - **Risks, accepted** - the user has decided to live with it. **Record who
   accepted it and why.** Only they can put something here.
 - **Not applicable** - with the reason. "No personal data collected, so no
@@ -282,7 +290,9 @@ timing. `prepare` is the skill that reports that list in full.
 
 ## Rules
 
-- **Read-only.** Report; never fix. Repairs go through `spec` and `build`.
+- **Never fix.** Report; the only file this writes is
+  `blueprint/context/findings.md` - blockers in, re-checked non-code repairs
+  closed. Repairs go through the skill named for each blocker.
 - **Never claim compliance.** This checks against a standard; it certifies
   nothing. "Nothing found against the recorded bar" is the strongest true claim.
 - **Unverifiable is never a pass.**

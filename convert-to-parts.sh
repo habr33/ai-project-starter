@@ -14,6 +14,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/lib/part-name.sh"
 
 usage() {
   cat <<'USAGE'
@@ -66,7 +67,10 @@ TARGET="$(cd "$TARGET" && pwd)"
 clean_parts=()
 IFS=',' read -ra PART_LIST <<< "$PARTS"
 for p in "${PART_LIST[@]}"; do
-  p="$(echo "$p" | tr -d '[:space:]')"
+  # Trim leading/trailing whitespace only. `tr -d '[:space:]'` used to strip
+  # every space in the name, so `--parts "we b,api"` silently became `web`
+  # instead of being rejected.
+  p="$(printf '%s' "$p" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
   [ -n "$p" ] || continue
   case "$p" in
     # lib/seed-part.sh takes a nested path and this does not: everything in the
@@ -79,8 +83,17 @@ for p in "${PART_LIST[@]}"; do
       echo "Convert with top-level names, then add a nested part with" >&2
       echo "lib/seed-part.sh - see docs/multi-part.md." >&2
       exit 1 ;;
-    .|..) echo "Not a usable part name: $p" >&2; exit 1 ;;
   esac
+  # Same rules lib/seed-part.sh applies per path segment, shared via
+  # lib/part-name.sh so this and new-project.sh cannot drift apart again:
+  # this loop used to check only '*/*', '.' and '..', so a leading '-' (or a
+  # backslash, or a space smuggled past the old trim) sailed through here and
+  # only failed once lib/seed-part.sh ran below - after this script had
+  # already moved every file in the project into $EXISTING.
+  check_part_name "$p" || exit 1
+  # A duplicate also defeated the "at least two parts" guard just below: with
+  # `--parts web,web` the array below had two entries and only one real part.
+  check_part_name_unique "$p" "${clean_parts[@]}" || exit 1
   clean_parts+=("$p")
 done
 [ "${#clean_parts[@]}" -ge 2 ] || { echo "A multi-part product needs at least two parts." >&2; exit 1; }

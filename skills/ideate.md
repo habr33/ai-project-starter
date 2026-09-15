@@ -132,6 +132,11 @@ and so something works as early as possible.
 Good: `- [ ] 1. **Save a link** - paste a URL, store it with its title`
 Not an item: `- [ ] Backend`, `- [ ] Make it good`
 
+**At a product root** - `blueprint/orchestration.md` exists - there is no build
+plan to write: the build loop belongs to the parts. Put the first version's items,
+in build order, into the Features section, and say `architect` splits them into
+each part's build plan.
+
 **Stop for approval.** These are the user's files, and everything downstream
 reads them.
 

@@ -17,7 +17,7 @@ place that answers "has this skill actually run?".
 
 ## Where this stands (2026-09-14)
 
-27 skills, four scripts, two shared library scripts, a linter with **15 rules**,
+27 skills, four scripts, three shared library scripts, a linter with **15 rules**,
 four guides, and a template. No dependencies, nothing to build, no network calls.
 
 **This file is the public summary.** The chronological record of building the
@@ -78,6 +78,7 @@ convert-to-parts.sh   split a single-part project into a multi-part product
 check.sh              lint the skill sources
 lib/seed-part.sh      seed one part; also adds a part to an existing product
 lib/seed-product-root.sh   seed a product root
+lib/part-name.sh      part-name checks, run before anything is created or moved
 skills/               27 files, one per skill - the only source
 template/             20 files: AGENTS.md, CLAUDE.md, blueprint/, dev-notes/,
                       README, and product/ for a multi-part root

@@ -6,6 +6,11 @@
 > state.
 >
 > Maintained by the `orchestrate` skill. Present only in a multi-part project.
+>
+> **There is one board, in the main checkout.** A git worktree has its own copy
+> of this file and of `blueprint/status/`; nothing reads or writes that copy.
+> Every session resolves the board under the main checkout - `orchestrate` gives
+> the command. Outside git, or with no worktrees, that is simply this file.
 
 **Mode:** orchestrated
 **Contract:** _none yet_ — **NOT FROZEN**
@@ -50,10 +55,10 @@ consuming it reports all-clear on data nobody ever supplied.
 
 | Field | Written by | Cleared by |
 |---|---|---|
-| `State` | `spec` → `spec'ing`, `autopilot` → `building`, `build` → `waiting`, any of the three → `blocked` / `stopped` | `ship` → `idle` |
+| `State` | `spec` → `spec'ing`, `autopilot` → `building`, `build` and `autopilot` → `waiting`, any of the three → `blocked` / `stopped` | `ship` → `idle` |
 | `Item` | `spec` on claiming, `autopilot` and `build` on the item they are working | `ship` |
 | `Blocked on` | `spec`, `build`, `autopilot` — whichever stops for something another part owns | `ship`, or the part's own next session once the dependency lands |
-| `Review packet` | `build` | `ship` |
+| `Review packet` | `build`, `autopilot` | `ship` |
 | `Updated` | every write above | — |
 
 `orchestrate` **reads all of these and writes none of them.** It reports a stale
@@ -72,8 +77,10 @@ A part with a **Review packet** line that is not `-` has work waiting to be read
 
 - **A part writes only its own status file.** Never another part's, and never the
   contract line.
-- **Read before starting.** If the contract is not frozen, or this part is
-  blocked, stop and say so rather than building work that gets thrown away.
+- **Read before starting.** If this part is blocked, or the contract is not
+  frozen and this part does not own it, stop and say so rather than building
+  work that gets thrown away. **The owner builds first**: its contract-defining
+  items are what gets frozen, so only consuming parts wait for the freeze.
 - **Record stopping, not just finishing.** A file still reading `building` after
   a run has stopped is worse than none at all, because it looks like progress.
 - **Write the block, do not just say it.** A part waiting on another part records

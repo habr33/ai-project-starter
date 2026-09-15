@@ -229,7 +229,9 @@ review packet:
 
 That path comes from `AGENTS.md`'s `Product root:` -
 this part's own `blueprint/` is a different directory, and writing there means
-the coordinator never sees it. The packet is not a message to nobody: the
+the coordinator never sees it. **In a git worktree, resolve it under the main
+checkout** (`orchestrate` gives the command); the worktree's own copy is a board
+nobody reads. The packet is not a message to nobody: the
 review queue is what `autopilot` counts before starting another unattended run,
 and a packet that stays in a transcript is invisible to that count. **A cap on
 work nobody has posted counts to zero forever.**

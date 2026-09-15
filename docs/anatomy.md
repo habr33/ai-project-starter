@@ -22,7 +22,7 @@ placeholder; and **advisory** — it says what is missing and continues, which i
 how `review` distinguishes "checked and consistent" from "there was nothing to
 check against". Six skills are exempt and the exemption is declared in `check.sh`
 rule 10: `setup`, `progress`, `preflight`, `debug`, `docs`, `prepare` — the entry
-point for an existing project and the read-only reporters, which work in any
+point for an existing project and the reporters, which work in any
 state. **`ideate` was on that list and came off it**: it was exempt as a
 greenfield entry point, and that stopped being true when it gained `--rescope`
 and could run against a project with built work behind it. An exemption is a
@@ -44,17 +44,17 @@ a row, and a declared writer must actually name the file.
 | File | Holds | Written by | Read by |
 |---|---|---|---|
 | `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` | 13 skills |
-| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job at conversion**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `spec` `ship` | `context` `progress` `monitor` `preflight` |
+| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` | `context` `progress` `monitor` `preflight` |
 | `blueprint/context/project-overview.md` | the source of truth, generated | `context` | `spec` `build` `review` `progress` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
 | `blueprint/context/design.md` | visual decisions, measured values | `prototype` | `spec` `review` `ship` |
 | `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` | 8 skills |
-| `blueprint/context/findings.md` | the findings ledger | `review` `build` `ship` | `spec` `progress` `ship` `preflight` |
+| `blueprint/context/findings.md` | the findings ledger — code findings close through `review`, non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` | `spec` `progress` `ship` `preflight` |
 | `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` | `prepare` `progress` `preflight` |
 | `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `ship` | `progress` `verify` `rollback` `docs` `preflight` |
-| `blueprint/orchestration.md` | the board — multi-part only | `orchestrate` + the scripts | `orchestrate` |
+| `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees | `orchestrate` + the scripts | `orchestrate` |
 | `CHANGELOG.md` | what changed, for users | `docs` | `preflight` |
 | `project-plan.md` · §8 Deployment | target host, build and start commands, env vars by name, storage, health check | `stack` `architect` `scaffold` | `host` `deploy` `preflight` |
 | `AGENTS.md` · Environments | every place this code runs, and which hold real data | `scaffold` `host` | `deploy` `migrate` `preflight` `monitor` |
@@ -70,7 +70,7 @@ rows.
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
 | `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
-| `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions | plan absent, or problem/features still placeholder | `stack` |
+| `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions, each part's build-plan | plan absent, or problem/features still placeholder | `stack` |
 | `stack` | project-plan Architecture + **quality-bar** | project-plan Tech | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
@@ -140,7 +140,7 @@ something is already live. It edits no product code; it isolates and hands back.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `preflight` | plan, overview, standards, findings, quality-bar, history, CHANGELOG | nothing — read-only | *(no gate — it audits any state)* | the skill fixing each blocker |
+| `preflight` | plan, overview, standards, findings, quality-bar, history, CHANGELOG | **findings only** — blockers as P0/P1, and `closed` on a non-code repair it re-checked | *(no gate — it audits any state)* | the skill fixing each blocker |
 | `host` | project-plan Deployment + Architecture | infrastructure, secrets, status | plan names no service, database or domain | `deploy` |
 | `deploy` | build output, env, migrations | the release, status (**the commit**) | *(advisory)* — names missing preflight/ci/host | `monitor`, `docs` |
 | `monitor` | signals, quality-bar, build-plan | status, proposed plan items | nothing is deployed | `debug`, or `spec` |

@@ -223,6 +223,74 @@ w2=$(workdir); (cd "$w2" && "$NP" conv >/dev/null 2>&1)
 assert_refuses "convert-to-parts.sh does the same" \
   "lib/seed-part.sh" env -C "$w2/conv" "$CP" --parts 'apps/web,api' --existing 'apps/web'
 
+section "part-name validation shared by new-project.sh and convert-to-parts.sh"
+# convert-to-parts.sh's own part-list loop checked only '*/*', '.' and '..' -
+# missing the leading '-', backslash, space and empty checks lib/seed-part.sh
+# applies. So `convert-to-parts.sh --parts 'web,-api' --existing web
+# --allow-dirty` moved every file in the project into web/ and only THEN failed
+# inside lib/seed-part.sh on '-api' - after the destructive step had already
+# run. Re-running reported "already a multi-part project", because the move
+# itself had already happened. Both bulk scripts now share one check
+# (lib/part-name.sh) so the two cannot drift apart again.
+
+# (a) a leading dash, checked before convert-to-parts.sh moves anything.
+w=$(workdir); (cd "$w" && "$NP" conv --no-git >/dev/null 2>&1)
+before=$(find "$w/conv" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh refuses a leading dash" "may not start with '-'" \
+  env -C "$w/conv" "$CP" --parts 'web,-api' --existing web --allow-dirty
+after=$(find "$w/conv" -not -path '*/.git/*' | sort)
+assert_eq    "and moves nothing before refusing it"        "$before" "$after"
+assert_absent "and never creates the part directory"        "$w/conv/web"
+
+# (b) a duplicate part name. `new-project.sh dup --no-git --parts web,web`
+# used to exit 0 with web/ listed twice in AGENTS.md; the same duplicate also
+# defeated convert-to-parts.sh's "at least two parts" guard, since two entries
+# in the list is not two real parts.
+w2=$(workdir)
+assert_refuses "new-project.sh refuses a duplicate part name" "listed more than once" \
+  env -C "$w2" "$NP" dup --parts web,web
+assert_absent "and creates nothing at all"                  "$w2/dup"
+
+w3=$(workdir); (cd "$w3" && "$NP" conv2 --no-git >/dev/null 2>&1)
+before3=$(find "$w3/conv2" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh refuses a duplicate part name too" \
+  "listed more than once" \
+  env -C "$w3/conv2" "$CP" --parts 'web,web' --existing web --allow-dirty
+after3=$(find "$w3/conv2" -not -path '*/.git/*' | sort)
+assert_eq "and moves nothing before refusing it, defeating its own guard" \
+  "$before3" "$after3"
+
+# (c) `tr -d '[:space:]'` stripped every space, not just leading and trailing,
+# so `new-project.sh x --parts "we b,api"` silently created web/ instead of
+# refusing 'we b' - trimming only the ends is what lets the existing space
+# check actually see it.
+w4=$(workdir)
+assert_refuses "new-project.sh rejects an internal space instead of trimming it away" \
+  "may not contain a space" env -C "$w4" "$NP" x --parts "we b,api"
+assert_absent "and does not silently create 'web'"          "$w4/x/web"
+assert_absent "and creates nothing at all"                  "$w4/x"
+
+w5=$(workdir); (cd "$w5" && "$NP" conv3 --no-git >/dev/null 2>&1)
+before5=$(find "$w5/conv3" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh rejects an internal space the same way" \
+  "may not contain a space" \
+  env -C "$w5/conv3" "$CP" --parts "we b,api" --existing "we b" --allow-dirty
+after5=$(find "$w5/conv3" -not -path '*/.git/*' | sort)
+assert_eq "and moves nothing before refusing it" "$before5" "$after5"
+
+# A plain "did the command fail" assertion cannot tell a guard that runs before
+# anything is created apart from one that only exists downstream: lib/seed-part.sh
+# has its own copy of these checks, so if new-project.sh's own upfront guard
+# (~line 120, now the check_part_name call above the mkdir) were deleted, a bad
+# name after a good one would still fail the overall command - just after the
+# target directory and every earlier part were already fully seeded, the exact
+# half-made state this guard exists to prevent.
+w6=$(workdir)
+assert_fails "refuses a leading dash even when it is not the first part" \
+  env -C "$w6" "$NP" t6 --parts 'good,-rf'
+assert_absent "and leaves no half-made project - not even the target directory" \
+  "$w6/t6"
+
 section "new-project.sh --parts"
 w=$(workdir); (cd "$w" && "$NP" prod --parts web,api >/dev/null 2>&1)
 p="$w/prod"

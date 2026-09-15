@@ -247,13 +247,21 @@ into a confirmed high severity.
 | `unverified` | Suspected, no confirming evidence yet | No |
 | `open` | Confirmed, not repaired | **Yes** |
 | `fixed` | Repaired, not yet re-reviewed | **Yes** |
-| `closed` | Repaired and re-reviewed against the new code | No |
+| `closed` | Repaired, and re-checked by something other than what repaired it | No |
 | `accepted` | Not fixing, by the user's explicit decision, reason recorded | No |
 | `invalid` | Re-examination proved it wrong, evidence recorded | No |
 
-`fixed` blocking is deliberate. A repair is not done when the code changes; it is
-done when a review has looked at the result. `build` marks repairs
-`fixed`; only a pass of this skill moves one to `closed`.
+`fixed` blocking is deliberate. A repair is not done when the change lands; it is
+done when something other than what made it has looked at the result.
+
+- **A code finding:** `build` marks the repair `fixed`; only a pass of this skill
+  moves it to `closed`.
+- **A finding no code fixes** - no backups, a leaked secret, a missing README,
+  raised by `preflight` or `host`: the skill that does the repair (`host`,
+  `deploy`, `docs`, `ci`, ...) marks it `fixed` with its evidence in
+  **Resolution**, and **the auditor closes it** - `preflight`, on a re-run that
+  re-checks the evidence. This skill does not close those; there is no code for it
+  to re-examine.
 
 Then:
 

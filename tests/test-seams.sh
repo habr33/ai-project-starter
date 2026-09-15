@@ -69,8 +69,10 @@ assert_ok "and says what to run to confirm the tree is intact" \
 # The first version of that instruction pinned an assertion COUNT, and went
 # stale within the same session that wrote it - the suite grew by six before the
 # day ended. A tripwire that fails on every commit is one people learn to skip.
+# `[ -f ]` first: sed on a missing file feeds grep nothing, grep -c prints 0,
+# and the assertion "no stale count" passes on a status file that is gone.
 assert_eq "the tripwire is zero failures, not a total that goes stale" "0" \
-  "$(sed -n '1,40p' dev-notes/status.md | grep -cE '[0-9]{3} assertions' || true)"
+  "$([ -f dev-notes/status.md ] || echo missing; sed -n '1,40p' dev-notes/status.md 2>/dev/null | grep -cE '[0-9]{3} assertions' || true)"
 assert_ok "the confound on the reorder's headline result is recorded" \
   bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'the same session wrote that bar' || tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'same session wrote that bar'"
 assert_ok "and says not to cite it as evidence the reorder works" \
@@ -383,20 +385,49 @@ section "every declared transition is a real handoff, not just a declaration"
 # So this checks the successor is named in prose, outside the "Where this sits"
 # block that every skill already has.
 broken=""
-while read -r from to; do
+while read -r from to where; do
   [ -n "$from" ] || continue
+  # The handoff must be in the section that hands off - the last numbered step,
+  # unless the pair names its section as a third column. A mention anywhere in
+  # the file let spec's real handoff ("and that `build` is next", in its last
+  # step) be deleted while `build` named in the preconditions kept this green.
+  [ -n "$where" ] || where=$(grep -oE '^## Step [0-9]+' "skills/$from.md" | tail -1)
+  if [ -n "$where" ]; then
+    sect=$(awk -v h="$where" 'index($0, h) == 1 {f=1; next} f && /^## /{exit} f' "skills/$from.md")
+  else
+    sect=$(cat "skills/$from.md")
+  fi
+  [ -n "$sect" ] || { broken="$broken $from->$to(no-section)"; continue; }
   # Strip the chain diagrams, not a line range. "Where this sits:" is followed
   # by a BLANK line, so a /start/,/^$/ range ended before the diagram and left
   # it in - the successor matched its own declaration and this test could not
   # fail. Found by removing a real handoff and watching it stay green.
-  body=$(grep -vE '^[[:space:]]+.*(->|→)' "skills/$from.md" | grep -v '^Where this sits:')
+  body=$(grep -vE '^[[:space:]]+.*(->|→)' <<< "$sect" | grep -v '^Where this sits:')
   # Herestring, never a pipe into `grep -q`. grep -q exits on the first match and
   # closes the pipe, the writer takes SIGPIPE, and `set -o pipefail` in lib.sh
   # turns that into a failed pipeline *even though the match succeeded* - so this
   # reported missing handoffs at random, three runs in ten, a different pair each
   # time. Same shape as the rule 12 bug: correct logic, wrong exit status, and
   # only visible because the assertion was run enough times to catch it.
-  grep -q -- "\`$to\`" <<< "$body" || broken="$broken $from->$to"
+  #
+  # And a mention is not a handoff. spec's last step names `build` twice - "and
+  # that `build` is next", and "visible before `build` reaches it" - so deleting
+  # the real handoff left the second mention and this stayed green. A handoff has
+  # a recognisable shape: a bold-led bullet naming the skill (a list of what is
+  # next), or a mention within 200 characters after next / then / hand / point /
+  # run / "ready for" / "name the skill".
+  # ASCII only: grep -ob counts bytes and ${text:n} counts characters, so an em
+  # dash before the successor would shift the window.
+  text=$(tr '\n' ' ' <<< "$body" | LC_ALL=C tr -cd '\40-\176' | tr -s ' ')
+  handed=""
+  grep -qF -- "- **\`$to\`**" <<< "$text" && handed=1
+  for off in $(grep -ob -- "\`$to\`" <<< "$text" | cut -d: -f1); do
+    [ -z "$handed" ] || break
+    start=$((off > 200 ? off - 200 : 0))
+    grep -qE '(next|[Tt]hen|[Hh]and|[Pp]oint|[Rr]un|ready for|[Nn]ame the skill)' \
+      <<< "${text:$start:$((off - start))}" && handed=1
+  done
+  [ -n "$handed" ] || broken="$broken $from->$to"
 #
 # The population is the whole declared loop, not only the plan-and-build path.
 # It stopped at `review ship` when it was written, so the operate phase and the
@@ -420,14 +451,14 @@ ci context
 context spec
 spec build
 build verify
-verify review
+verify review ## Step 4
 review ship
 ship preflight
 preflight host
 host deploy
 deploy monitor
-monitor debug
-architect orchestrate
+monitor debug ## Investigating a live problem
+architect orchestrate ## Step 2
 ship integrate
 integrate deploy
 PAIRS
@@ -453,12 +484,20 @@ section "no skill refers to state without naming a path"
 # Eight skills said "the plan", "the standards", "the findings ledger" with no
 # path. In a multi-part product "the plan" is the product's and "the standards"
 # are the part's own, and the wrong answer is silently plausible.
-for phrase in "the findings ledger" "the coding standards" "the quality bar"; do
+#
+# The file must carry THAT state file's path, not any blueprint/ path: every skill
+# names some blueprint/ file, so "Check it against the quality bar" appended to
+# rollback.md passed while naming no bar at all.
+while IFS=$'\t' read -r phrase path; do
   hits=$(grep -rln "$phrase" skills/ 2>/dev/null | while read -r f; do
-           grep -q 'blueprint/' "$f" || echo "$f"
+           grep -qF "$path" "$f" || echo "$f"
          done | wc -l | tr -d ' ')
-  assert_eq "\"$phrase\" always appears with a blueprint path" "0" "$hits"
-done
+  assert_eq "\"$phrase\" always appears with $path" "0" "$hits"
+done <<'PHRASES'
+the findings ledger	blueprint/context/findings.md
+the coding standards	blueprint/context/coding-standards.md
+the quality bar	blueprint/context/quality-bar.md
+PHRASES
 
 section "every skill is named in at least one document"
 missing=""
@@ -575,7 +614,7 @@ assert_ok "the template records where a rule came from" \
 assert_ok "review follows the file out to what it references" \
   bash -c "tr '\n' ' ' < skills/review.md | tr -s ' ' | grep -q 'Follow the standards file out to what it points at'"
 assert_eq "no duplicate section headings" "0" \
-  "$(grep '^## ' "$cs" | sort | uniq -d | wc -l | tr -d ' ')"
+  "$([ -f "$cs" ] || echo missing; grep '^## ' "$cs" 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')"
 assert_ok "scaffold writes the standards heading" grep -q 'Standards this project follows' skills/scaffold.md
 # Matched against whitespace-collapsed text: the phrase is line-wrapped in
 # setup.md, and a naive grep reports absent for something that is present. That
@@ -1336,5 +1375,85 @@ _d "and that the next deploy silently reverts"         "next deploy silently rev
 # A hotfix ahead of the merge is legitimate; the rule is a stop, not a refusal.
 _d "it stops and asks rather than refusing"            "Not a refusal - a stop and a question"
 _d "and requires recording the exception"              "then record it"
+
+# ==== BEGIN seams-C: board across worktrees, non-code findings, autopilot's packet ====
+
+section "one board across git worktrees"
+# `orchestrate` advised a worktree per subagent, and every board writer resolved
+# `Product root: ..` - which inside a worktree is the worktree's own copy. Ran it:
+# a packet posted from a worktree never reached the main checkout, so
+# `orchestrate` saw every part idle and autopilot's cap counted zero packets.
+# The resolution is run here exactly as orchestrate states it, not paraphrased.
+w=$(workdir)
+(cd "$w" && "$REPO/new-project.sh" wtp --parts web,api >/dev/null 2>&1)
+main=$(cd "$w/wtp" && pwd -P)
+(cd "$main" && git worktree add -q -b feat/web "$w/wtp-web" >/dev/null 2>&1)
+board_cmd=$(sed -n '/^    cd "<product root>"$/,/^    fi$/p' skills/orchestrate.md \
+            | sed 's/^    //; s|<product root>|..|')
+assert_ok "orchestrate states the board resolution as a command" test -n "$board_cmd"
+assert_exists "the fixture really is a worktree of a --parts product" "$w/wtp-web/web/AGENTS.md"
+wt_board=$(cd "$w/wtp-web/web" && bash -c "$board_cmd" 2>/dev/null)
+assert_eq "from a part in a worktree, the board is the main checkout's" "$main/blueprint" "$wt_board"
+assert_eq "from a part in the main checkout, the same board" "$main/blueprint" \
+  "$(cd "$main/web" && bash -c "$board_cmd" 2>/dev/null)"
+if [ -d "$wt_board/status" ]; then
+  printf '**Review packet:** posted-from-worktree\n' >> "$wt_board/status/web.md"
+fi
+assert_ok "a packet posted from the worktree is on the board orchestrate reads" \
+  grep -q 'posted-from-worktree' "$main/blueprint/status/web.md"
+# Outside git nothing changes: the board is where `Product root:` says.
+cp -R "$main" "$w/nogit" && rm -rf "$w/nogit/.git"
+assert_eq "outside git, the board is the product root's, as before" \
+  "$(cd "$w/nogit" && pwd -P)/blueprint" "$(cd "$w/nogit/web" && bash -c "$board_cmd" 2>/dev/null)"
+
+assert_ok "status/ is declared product-root state, so rule 13 checks it" \
+  grep -q '^ *<product root>/blueprint/status/' template/AGENTS.md
+for n in spec build ship autopilot progress; do
+  assert_ok "$n resolves the board under the main checkout" \
+    bash -c "tr '\n' ' ' < skills/$n.md | tr -s ' ' | grep -qi 'resolve [a-z ]*under the main checkout'"
+done
+
+section "autopilot posts its review packet the way build does"
+# The cap counts `Review packet:` lines, and only `build` wrote one. autopilot's
+# Step 5 reported the packet in the conversation and left the part `building`,
+# so two finished unattended runs counted as zero and a third started - the
+# state the cap exists to make unreachable.
+_packet() {  # the status block that follows "post the packet", fields and values
+  awk '/post the packet/{f=1} f&&/^    \*\*[A-Za-z ]+:\*\*/{print; g=1; next} g{exit}'
+}
+_fields() { sed 's/:\*\*.*/:**/'; }
+bp=$(_packet < skills/build.md)
+ap=$(sed -n '/^## Step 5/,/^## [^S]/p' skills/autopilot.md | _packet)
+assert_ok "build's packet block is found (the extraction works)" test -n "$bp"
+assert_ok "autopilot's Step 5 posts a status block" test -n "$ap"
+assert_eq "with exactly the fields build posts" "$(_fields <<< "$bp")" "$(_fields <<< "$ap")"
+assert_ok "setting State to waiting" grep -qx '    \*\*State:\*\* waiting' <<< "$ap"
+assert_ok "and a Review packet that is not '-'" \
+  bash -c 'grep "^    \*\*Review packet:\*\*" <<< "$1" | grep -qv ":\*\* -$"' _ "$ap"
+assert_ok "the board declares autopilot as a Review packet writer" \
+  grep -qE '^\| `Review packet` \| [^|]*`autopilot`' template/blueprint/orchestration.md
+
+section "a finding no code fixes can still close"
+# `preflight` files "no backups" as a P1 and `host` sets backups up - but only
+# `build` set `fixed`, only `review` closed, and `review` closes only code it
+# re-examined. The P1 stayed `open` forever and blocked every `ship` in the part.
+# The route: the repairing skill marks it `fixed`, the auditor re-checks and closes.
+_says() { tr '\n' ' ' < "$1" | tr -s ' ' | grep -qF -- "$2"; }
+assert_ok "host marks a finding it repaired fixed"         _says skills/host.md 'set it to `fixed`'
+assert_ok "and never closes its own repair"                _says skills/host.md 'Never `closed`'
+assert_ok "preflight re-checks and closes non-code repairs" _says skills/preflight.md 'this skill is the one that closes it'
+assert_ok "review names the auditor as closer for those"   _says skills/review.md 'the auditor closes it'
+assert_ok "the ledger's own header carries the route"      _says template/blueprint/context/findings.md '`preflight` re-checks and closes it'
+assert_fails "preflight no longer calls itself read-only"  grep -q 'Read-only' skills/preflight.md
+assert_fails "nor does anatomy"                            grep -q '^| `preflight` |.*nothing — read-only' docs/anatomy.md
+# Every skill that writes the ledger is a declared writer, in both declarations.
+for n in review build ship verify preflight host; do
+  assert_ok "template/AGENTS.md declares $n as a ledger writer" \
+    grep -qE "^\| \`blueprint/context/findings.md\` \|[^|]*\|[^|]*\`$n\`" template/AGENTS.md
+  assert_ok "anatomy declares $n as a ledger writer" \
+    grep -qE "^\| \`blueprint/context/findings.md\` \|[^|]*\|[^|]*\`$n\`" docs/anatomy.md
+done
+
+# ==== END seams-C ====
 
 finish

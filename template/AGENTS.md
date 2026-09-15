@@ -19,7 +19,7 @@ These are already loaded, before you read anything else:
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
 | `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship` |
-| `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship` |
+| `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship`, `verify`, `preflight`, `host` |
 | `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify` |
 
 **These are not loaded. Read them when you need them:**
@@ -29,7 +29,7 @@ These are already loaded, before you read anything else:
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout` |
-| `blueprint/build-plan.md` | the checklist | `ideate`, `spec`, `ship` |
+| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship` |
 | `blueprint/history/` | every completed item, archived | `ship` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold` |
 | `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor` |
@@ -122,7 +122,7 @@ never happened. Two kinds:
   and consistent" and "nothing to check against".
 
 `ideate`, `setup`, `progress`, `preflight`, `prepare`, `debug` and `docs` have none by design:
-they are the entry points and the read-only reporters, and they work in any state.
+they are the entry points and the reporters, and they work in any state.
 
 - **Claude Code** - `.claude/skills/<name>/SKILL.md`, invoked as `/<name>`
 - **Everything else** - `.agents/skills/<name>/SKILL.md`; Codex uses `$<name>`
@@ -161,9 +161,13 @@ Or just ask in plain language - "spec the next item", "run the review".
 
        <product root>/blueprint/project-plan.md
        <product root>/blueprint/orchestration.md
+       <product root>/blueprint/status/
        <product root>/blueprint/context/quality-bar.md
 
      Never assume any of those paths - read the root from the fields above.
+     The board - orchestration.md and status/ - resolves one step further: in
+     a git worktree, to the same path under the main checkout, so every
+     worktree shares one board. `orchestrate` gives the command.
      This list is the declaration check.sh rule 13 reads: every skill that
      names one of these files must also say where it resolves. Add a file here
      and the rule starts requiring it; leave one out and nothing checks it. -->
