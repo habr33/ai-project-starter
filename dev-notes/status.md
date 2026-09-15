@@ -119,9 +119,11 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-- **A 16th rule: no refusal after the first write.** The class has bitten twice -
-  `lib/seed-part.sh` (2026-09-09) and `new-project.sh` (2026-09-10) - both found
-  by running a script. All five scripts are currently clean. Writing the rule
+- **A 16th rule: no refusal after the first write.** The class has bitten three
+  times - `lib/seed-part.sh` (2026-09-09), `new-project.sh` (2026-09-10) and
+  `convert-to-parts.sh` (2026-09-15, which moved every file into the first part
+  before refusing `-api`) - each found by running a script. Part names are now
+  checked up front in `lib/part-name.sh`, but nothing stops a fourth. Writing the rule
   means deciding how a legitimate post-write assertion declares itself; a marker
   comment on `lib/seed-part.sh`'s three is the obvious shape, and line numbers
   are not, because they go stale on the next edit.
@@ -129,6 +131,42 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
   It says the deadlock detection, freeze gate and review cap have not been
   exercised; they have, against constructed state. What is missing is two live
   sessions, which is what the sentence should say.
+
+**Left open by the 2026-09-15 review** - a whole-pack review run in parallel
+slices (skills as a system, linter and tests, scripts, docs). Its highs are fixed
+on branch `review-fixes`; these are not:
+
+- **Is the board committed state or working state?** From a git worktree the
+  board now resolves under the main checkout, so worktree sessions leave edits to
+  tracked `blueprint/status/` files there that nobody commits. Either gitignore
+  it (touches `ship`, `progress` and the seams tests that expect it tracked) or
+  say who commits it. The resolution also assumes an ordinary clone - a bare
+  repository with worktrees, or a submodule, lands elsewhere.
+- **Rule 12 still accepts a reader declared as a writer.** A write-verb heuristic
+  was wrong both ways. It needs a declaration - a `Writes:` line per skill, or a
+  readers column in `template/AGENTS.md` - and `blueprint/orchestration.md` wants
+  its own row there.
+- **Smaller gaps in rules 1, 2, 4, 5, 7, 8, 11, 13 and 15** - e.g. `` `/ship` ``
+  in backticks passes rule 4, two skills routing only to each other pass rule 7,
+  the word `current` satisfies rule 15. The handoff seam test matches wording, so
+  rewriting a skill's last step can need its list updated.
+- **Skill seams, medium:** adopting an existing project cannot get through
+  `context` (sections 5 and 6 have no writer on that route); `verify --all`
+  re-proves rolled-back features; `stack` reconciles the data model in the wrong
+  section; no way to abandon or park an item in flight; the product root is told
+  to run `preflight` without the files it needs; `layout` cannot place parts that
+  already exist; `verify` contradicts itself on preconditions and on being
+  read-only (so does `docs/anatomy.md`); two skills may apply a production
+  migration (unconfirmed).
+- **`docs`, `ci`, `deploy` and `monitor` fix `preflight` blockers** but learn to
+  mark them `fixed` only from the ledger's header.
+- **`tests/test-scripts.sh`:** about a dozen negative `grep` checks pass when the
+  file is missing (use `assert_lacks`); the part-name guard test does not check
+  the refusal message; a `-path '*home*'` check breaks when the temp directory's
+  path contains `home`.
+- **Pack `CLAUDE.md` is a hand-kept paraphrase of `AGENTS.md`**, not an import -
+  the drift this repo warns about. The 15-rule summary is restated in four files,
+  and `docs/anatomy.md` has no reads/writes row for the eight support skills.
 
 ### Known and accepted
 
