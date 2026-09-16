@@ -8,6 +8,9 @@
 > evidence by whichever skill repairs it, and `preflight` re-checks and closes it.
 > `ship` refuses to merge while any P0 or P1 finding
 > is `open` or `fixed`, then archives resolved findings with the work item and
-> resets this file.
+> resets this file. A finding the user puts off rather than abandons is
+> `deferred`, with a `Deferred to:` line naming the skill that will do it: it
+> gates nothing, stays in the ledger through `ship`, and `preflight` reports it
+> at every audit until that skill has run.
 
 _No findings recorded._

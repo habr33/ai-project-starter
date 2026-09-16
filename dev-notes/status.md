@@ -40,6 +40,39 @@ place that answers "has this skill actually run?".
   while the plan still had it wrong. `host` otherwise did well: the setup script
   failed on a missing `libatomic1`, was fixed, and a second run changed nothing
   else.
+- **Open from the `host`/`deploy` section, not yet fixed:** a P1 the user
+  explicitly defers to a later skill has no status that says so. `preflight`
+  raised "nothing alerts when the live system breaks", the user deferred it to
+  `monitor`, and the session left it `open` with a prose note - so `ship` will
+  refuse the next item's merge. `accepted` is the only non-blocking escape and
+  means "not fixing", which is false here. Wants a `deferred` status naming the
+  skill that will do it, non-blocking for `ship`, and reported by `preflight` as
+  an open risk at every release.
+- **Also open: nothing in the loop tests the app behind the proxy that will
+  front it.** `deploy`'s own verification found a P0 on the live site - Caddy
+  terminates TLS and proxies over http, so the framework compared its own
+  `http://` origin against the browser's `https://` and aborted every form POST.
+  Health check, pages and redirects all passed; the one feature did not. The
+  browser tests run direct over http, where the schemes match. Wants a check at
+  `preflight` (and a note where `host` writes the proxy config) that the app
+  trusts the proxy's forwarded scheme - this class is invisible until production.
+- **Also open: `ship` says it deletes `prototypes/` "once the look is built",
+  but a UI is built over several items.** Item 1 used the login mockup and the
+  tokens; `design.md` still points items 2-4 at the editor, posts-list and
+  public-post mockups. The session kept them and said why, against its own text.
+  The rule wants a condition: delete when no unchecked build-plan item still
+  references a mockup, otherwise keep and say which items hold them.
+- **The `deferred` gap above played out twice.** At `ship` the gate refused the
+  merge on the deferred P1, and the user was asked to mark it `accepted` - "not
+  fixing" - to get past; `ship` then archived it with the item. When `monitor`
+  actually repaired it an hour later, **the finding no longer existed in the live
+  ledger**, so the repair had to be written into the archive.
+- **Also open: a restore test took production down for a minute.** The session
+  cleaned up its scratch server with `pkill -f 'node server.js'`, which matched
+  the live one; SIGTERM reads as a clean exit, so `Restart=on-failure` left it
+  down, and nothing alerted. Wants a rule where server work is done - **signal
+  the PID you started, never a pattern, on a machine running the real thing** -
+  and a note that a drill against production needs the same care as a deploy.
 - **The strongest result of the run** is not a fix: an independent `review` in a
   fresh session found a P1 - login rate limits bypassed by concurrent requests -
   that `autopilot`'s own review, verify and tests all passed. That is the

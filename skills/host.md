@@ -306,6 +306,14 @@ add a `dev-notes/decisions.md` entry for the host choice and why.
   makes building on the target look possible in the first place.
 - **Never delete or resize an existing resource** without separate, explicit
   approval - that is someone's data.
+- **Stop a process by the PID you started, never by a pattern.** `pkill -f` on a
+  machine that runs the real thing matches the real thing: a restore drill's
+  cleanup killed the live server, and because `SIGTERM` reads as a clean exit,
+  `Restart=on-failure` left it down. The same holds for a scratch database, a
+  test port or a temporary unit - name what you created, and clean up only that.
+- **A drill against production is a production change.** Restores, rollbacks and
+  failover tests get the same care as a deploy: say what you will run, what it
+  touches, and how you will put it back.
 - **Record everything.** An unrecorded resource is one nobody will find until it
   bills them.
 

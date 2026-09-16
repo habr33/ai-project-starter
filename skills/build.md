@@ -249,7 +249,7 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
   Tick the step and mark the finding `fixed` together.
 - **Then run `review`** so those repairs are re-reviewed and can move to
   `closed`. A repair never closes itself.
-- **Never set `accepted` or `invalid`.** `accepted` is the user's explicit
+- **Never set `accepted`, `deferred` or `invalid`.** `accepted` is the user's explicit
   decision with a recorded reason; `invalid` is a `review` verdict backed
   by evidence. Neither is this skill's call.
 

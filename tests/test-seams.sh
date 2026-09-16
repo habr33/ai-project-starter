@@ -1849,4 +1849,53 @@ assert_eq "no architect example fixes performance as server-side" "" \
 assert_ok "architect tells the agent to ask where the numbers are measured" \
   _says skills/architect.md 'ask the user which they mean'
 
+section "a finding put off has a status that says so, and survives ship"
+# preflight raised "nothing alerts when the live system breaks"; the user deferred
+# it to monitor. No status meant that, so ship's gate refused the merge until it
+# was marked `accepted` - "not fixing" - and archived. monitor repaired it an hour
+# later, by which time the finding was gone from the ledger.
+assert_ok "the ledger has a deferred status that gates nothing" \
+  grep -qE '^\| `deferred` \|.*\| No \|$' skills/review.md
+assert_ok "and it must name what will do the work" \
+  _says skills/review.md 'only with a target'
+assert_ok "review sets it only on the user's decision, like accepted" \
+  _says skills/review.md 'Set `deferred` the same way'
+assert_ok "build never sets it" _says skills/build.md 'Never set `accepted`, `deferred` or `invalid`'
+assert_ok "ship names deferred as a way past its gate" _says skills/ship.md 'past without more code are `deferred`'
+assert_ok "and keeps a deferred finding in the ledger instead of archiving it" \
+  _says skills/ship.md 'is not resolved and stays in the ledger'
+assert_ok "preflight reports every deferred finding at every audit" \
+  _says skills/preflight.md 'Deferred, and to what'
+assert_ok "the ledger template explains the status to the skills that read it" \
+  _says template/blueprint/context/findings.md '`Deferred to:` line naming the skill that will do it'
+
+section "preflight checks the app against the proxy that will front it"
+# The first deploy served every page and rejected every form post: Caddy
+# terminates TLS and proxies over http, so the framework compared its own http
+# origin against the browser's https one. Tests, CI and verify all talk to the
+# app directly, where the schemes match, so nothing earlier could see it.
+assert_ok "preflight asks whether the app is built to sit behind its proxy" \
+  _says skills/preflight.md 'a proxy terminates TLS in front of the app'
+assert_ok "and wants evidence through the proxy, not just a health check" \
+  _says skills/preflight.md 'reaches a state-changing action'
+
+section "ship deletes only the mockups no unbuilt item still needs"
+# ship said it deletes prototypes/ "once the look is built", but a look is built
+# over several items: item 1 consumed the theme and the login screen while
+# design.md still pointed items 2-4 at the editor, list and public page. The
+# session kept the directory and explained why, against this skill's own text.
+assert_ok "ship checks remaining mockups against unchecked build-plan items" \
+  _says skills/ship.md 'Delete only the mockups nothing unbuilt still needs'
+assert_ok "and says which files stayed and for which item" \
+  _says skills/ship.md 'which files stayed and which item holds each'
+
+section "a process on a production machine is stopped by PID, not by pattern"
+# A restore drill's cleanup ran pkill -f 'node server.js', which matched the live
+# server; SIGTERM reads as a clean exit, so Restart=on-failure left production
+# down for a minute, and nothing alerted.
+assert_ok "host says to kill the PID you started" \
+  _says skills/host.md 'Stop a process by the PID you started, never by a pattern'
+assert_ok "and treats a drill against production as a production change" \
+  _says skills/host.md 'A drill against production is a production change'
+
 finish
