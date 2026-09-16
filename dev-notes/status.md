@@ -17,62 +17,44 @@ place that answers "has this skill actually run?".
 
 ## Handoff (2026-09-16)
 
-- **Branch:** `run-findings` off `main`, **uncommitted**; not pushed, no PR.
+- **Branch:** `run-findings` off `main`, two commits (`b6e3c2c`, `8f9c619`);
+  not pushed, no PR, not merged.
   `main` already holds the 2026-09-15 review fixes and this handoff's predecessor.
 - **Last verified:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed across
   all three files.
-- **What this branch is:** fixes for the 14 defects a full run of the loop found
+- **What this branch is:** fixes for the 18 defects a full run of the loop found
   on a new project - a React Router 8 + PostgreSQL CMS taken from `ideate` to a
   shipped login feature by a session that did not know the pack's arguments.
   `coverage.md` has the per-skill results (project `cms-rr`), and each fix has a
   test under `seams-D` in `tests/test-seams.sh` (one in `test-scripts.sh`),
   every one proven to fail against the unfixed file.
 - **All of those tests check wording.** They prove the skills now say the right
-  thing, not that an agent following them behaves differently. **Next:** commit
-  (ask first), then the same project's `host` -> `deploy` -> `monitor` run, which
-  exercises the new server rule and `host`'s removal check, and item 2, which
-  exercises the Decisions section, the approval marker and `ship`'s PR route.
-- **`host` then ran on the same project with the old skills installed** (the
-  fixes are not in it yet). Two of the fixed defects recurred, confirming them:
-  asked to remove old sites, it went to run the deletion *before* listing what
-  would go - a permission classifier stopped it, then it listed and the user ran
-  it; and `context` wrote a seventh stale plan line into the overview, correct,
-  while the plan still had it wrong. `host` otherwise did well: the setup script
-  failed on a missing `libatomic1`, was fixed, and a second run changed nothing
-  else.
-- **Open from the `host`/`deploy` section, not yet fixed:** a P1 the user
-  explicitly defers to a later skill has no status that says so. `preflight`
-  raised "nothing alerts when the live system breaks", the user deferred it to
-  `monitor`, and the session left it `open` with a prose note - so `ship` will
-  refuse the next item's merge. `accepted` is the only non-blocking escape and
-  means "not fixing", which is false here. Wants a `deferred` status naming the
-  skill that will do it, non-blocking for `ship`, and reported by `preflight` as
-  an open risk at every release.
-- **Also open: nothing in the loop tests the app behind the proxy that will
-  front it.** `deploy`'s own verification found a P0 on the live site - Caddy
-  terminates TLS and proxies over http, so the framework compared its own
-  `http://` origin against the browser's `https://` and aborted every form POST.
-  Health check, pages and redirects all passed; the one feature did not. The
-  browser tests run direct over http, where the schemes match. Wants a check at
-  `preflight` (and a note where `host` writes the proxy config) that the app
-  trusts the proxy's forwarded scheme - this class is invisible until production.
-- **Also open: `ship` says it deletes `prototypes/` "once the look is built",
-  but a UI is built over several items.** Item 1 used the login mockup and the
-  tokens; `design.md` still points items 2-4 at the editor, posts-list and
-  public-post mockups. The session kept them and said why, against its own text.
-  The rule wants a condition: delete when no unchecked build-plan item still
-  references a mockup, otherwise keep and say which items hold them.
-- **The `deferred` gap above played out twice.** At `ship` the gate refused the
-  merge on the deferred P1, and the user was asked to mark it `accepted` - "not
-  fixing" - to get past; `ship` then archived it with the item. When `monitor`
-  actually repaired it an hour later, **the finding no longer existed in the live
-  ledger**, so the repair had to be written into the archive.
-- **Also open: a restore test took production down for a minute.** The session
-  cleaned up its scratch server with `pkill -f 'node server.js'`, which matched
-  the live one; SIGTERM reads as a clean exit, so `Restart=on-failure` left it
-  down, and nothing alerted. Wants a rule where server work is done - **signal
-  the PID you started, never a pattern, on a machine running the real thing** -
-  and a note that a drill against production needs the same care as a deploy.
+  thing, not that an agent following them behaves differently. **Next:** re-install
+  the pack into that project (`./install.sh --target <it> --force`) so item 2 runs
+  on the fixed skills - it exercises the spec's Decisions section, the
+  approval marker, `ship`'s PR route and the spent-mockup rule. Merging this
+  branch to `main` is a separate ask.
+- **The first section ran on the old skills and repeated two fixed defects**,
+  confirming them: asked to remove old sites `host` went to delete before listing
+  what would go (a permission classifier stopped it), and `context` wrote a
+  seventh stale plan line into the overview while the plan still had it wrong.
+- **The `host` -> `deploy` -> `monitor` section then ran on the same project,
+  still on the old skills.** It repeated two of the defects above, confirming
+  them, and found four more - all now fixed here, each with a test proven to
+  fail:
+  - a **`deferred`** status for a finding the user puts off rather than
+    abandons. `accepted` meant "not fixing" and was doing both jobs: `ship`
+    archived a deferred P1 an hour before `monitor` repaired it, so the repair
+    had to be written into an archive nobody reads.
+  - **`preflight` checks the proxy seam.** The first deploy served every page
+    and rejected every form post - behind a TLS-terminating proxy the framework
+    compared its own `http://` origin with the browser's `https://`. Nothing
+    earlier can see it: tests, CI and `verify` all talk to the app directly.
+  - **`ship` deletes only spent mockups**, not the directory, and says which
+    items still hold the rest.
+  - **`host` stops a process by the PID it started.** A restore drill's
+    `pkill -f` matched the live server, and because SIGTERM reads as a clean
+    exit, production stayed down for a minute with nothing watching.
 - **The strongest result of the run** is not a fix: an independent `review` in a
   fresh session found a P1 - login rate limits bypassed by concurrent requests -
   that `autopilot`'s own review, verify and tests all passed. That is the
