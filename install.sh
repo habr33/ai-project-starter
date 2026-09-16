@@ -410,7 +410,8 @@ echo "  $skill_count skill file(s) across 2 adapters"
 [ -n "$pruned_names" ] && echo "  retired skill(s) removed:$pruned_names"
 [ -n "$unknown" ] && {
   echo "  kept, not from this pack:$unknown"
-  echo "    Your own skills, or from a version this pack does not know about."
+  echo "    Your own skills, one a framework's generator installed (create-react-router"
+  echo "    adds one), or from a version this pack does not know about."
   echo "    Nothing here removes them - delete any you no longer want."
 }
 echo "  $command_count opencode command wrapper(s) in .opencode/command/"

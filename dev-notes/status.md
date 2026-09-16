@@ -15,16 +15,38 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Handoff (2026-09-15)
+## Handoff (2026-09-16)
 
-- **Branch:** `review-fixes`, 4 commits ahead of `main`, last `5306f41`; not
-  pushed, no PR.
-- **Last verified:** `./check.sh` OK (16 rules); `./tests/run.sh` 682 passed,
-  0 failed.
-- **Next:** decide whether `review-fixes` merges to `main` (ask before merging or
-  pushing). Then the best use of time is a real run of the unverified items under
-  *Can be done here* - on a scratch product, never by reading.
+- **Branch:** `run-findings` off `main`, **uncommitted**; not pushed, no PR.
+  `main` already holds the 2026-09-15 review fixes and this handoff's predecessor.
+- **Last verified:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed across
+  all three files.
+- **What this branch is:** fixes for the 14 defects a full run of the loop found
+  on a new project - a React Router 8 + PostgreSQL CMS taken from `ideate` to a
+  shipped login feature by a session that did not know the pack's arguments.
+  `coverage.md` has the per-skill results (project `cms-rr`), and each fix has a
+  test under `seams-D` in `tests/test-seams.sh` (one in `test-scripts.sh`),
+  every one proven to fail against the unfixed file.
+- **All of those tests check wording.** They prove the skills now say the right
+  thing, not that an agent following them behaves differently. **Next:** commit
+  (ask first), then the same project's `host` -> `deploy` -> `monitor` run, which
+  exercises the new server rule and `host`'s removal check, and item 2, which
+  exercises the Decisions section, the approval marker and `ship`'s PR route.
+- **`host` then ran on the same project with the old skills installed** (the
+  fixes are not in it yet). Two of the fixed defects recurred, confirming them:
+  asked to remove old sites, it went to run the deletion *before* listing what
+  would go - a permission classifier stopped it, then it listed and the user ran
+  it; and `context` wrote a seventh stale plan line into the overview, correct,
+  while the plan still had it wrong. `host` otherwise did well: the setup script
+  failed on a missing `libatomic1`, was fixed, and a second run changed nothing
+  else.
+- **The strongest result of the run** is not a fix: an independent `review` in a
+  fresh session found a P1 - login rate limits bypassed by concurrent requests -
+  that `autopilot`'s own review, verify and tests all passed. That is the
+  self-review weakness `autopilot.md` describes, now seen on real code.
 - **Gotchas from this session:**
+  - Wording tests join lines with `tr` before matching, so a `sed` mutation
+    fails silently when the phrase wraps. One did here; mutate the joined text.
   - Never pipe a file-reading command into `grep -q` in `check.sh` or the tests -
     SIGPIPE under pipefail gives a rare false failure. Use a herestring.
   - A mutation proves a test only if it changes what the assertion names; two
@@ -60,13 +82,21 @@ client-rendered SPA because the quality bar required a server-side render
 measurement an SPA cannot produce - a technology ruled out by a requirement
 written before any technology existed, which is exactly what the reorder is for.
 
-**But the same session wrote that bar, knowing what the reorder was meant to
-demonstrate.** "Measured server-side" was its phrasing. A bar reading "loads in
-under 400ms as the user experiences it" would have let the SPA through. **The
-result is real and the independence is not.** Until a session that does not know
-the argument runs `architect` then `stack` on a different project and the bar
-still discriminates, treat this as promising rather than proven - and do not cite
-it as evidence the reorder works.
+**But the bar's deciding phrase came from the skill, not from the project.**
+"Measured server-side" was the example in `skills/architect.md` from 2026-09-06,
+two days before the reorder - not wording that session invented. A second run on
+2026-09-16, by a session that did not know the argument, wrote the same phrase
+into its own bar. So a fresh session was never going to make the result
+independent: the example decided where the bar is measured, for every project. A
+bar reading "loads in under 400ms as the user experiences it" would have let the
+SPA through. **The result is real and the independence is not.**
+
+That second run also could not test it: the user named the technology up front,
+and `stack` ruled a framework out on install size and the server's memory, not on
+the bar. The example is now gone - `architect` asks the user where performance is
+measured - so **the check that still has to happen is a run where the user
+answers that question and the bar then decides a stack choice.** Until then, do
+not cite this as evidence the reorder works.
 
 **The reorder is also not strictly better.** It closed one class of seam and
 opened another: the data model is now written before the stack, so a library
@@ -195,7 +225,8 @@ Judgment, not fact - kept separate on purpose.
 
 1. **Run a skill for real before changing it.** Every defect worth fixing this
    month was found that way; none was found by reading.
-2. **The reorder's headline result needs an independent run** - a session that
-   does not know the argument, running `architect` then `stack` on a new project.
+2. **The reorder's headline result still needs a real test** - a project where
+   the user answers `architect`'s "measured where?" themselves, has not already
+   named the technology, and `stack` then rules something out on a bar line.
 3. **Pin versions in the plan, always.** The first real run failed precisely
    because a floating `latest` was used instead of the version the plan named.

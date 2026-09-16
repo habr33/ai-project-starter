@@ -77,10 +77,13 @@ assert_ok "and says what to run to confirm the tree is intact" \
 # and the assertion "no stale count" passes on a status file that is gone.
 assert_eq "the tripwire is zero failures, not a total that goes stale" "0" \
   "$([ -f dev-notes/status.md ] || echo missing; sed -n '1,40p' dev-notes/status.md 2>/dev/null | grep -cE '[0-9]{3} assertions' || true)"
+# The confound was first recorded as "the same session wrote that bar". A later
+# run showed the deciding phrase was architect's own example, which a session that
+# did not know the argument copied too - so the caveat now names the skill.
 assert_ok "the confound on the reorder's headline result is recorded" \
-  bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'the same session wrote that bar' || tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'same session wrote that bar'"
+  bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'deciding phrase came from the skill, not from the project'"
 assert_ok "and says not to cite it as evidence the reorder works" \
-  bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'do not cite it as evidence'"
+  bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'do not cite this as evidence'"
 assert_ok "and records that the reorder traded seams rather than removing them" \
   bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'Better seams, not fewer'"
 
@@ -1709,5 +1712,141 @@ for n in review build ship verify preflight host docs ci deploy monitor migrate;
 done
 
 # ==== END seams-C ====
+
+# ==== seams-D: found by running the whole loop on a new web app (2026-09-16) ====
+
+section "prototype writes the durable record after the user has seen the mockups"
+# design.md was Step 4 and looking at the mockups Step 5, which never said to
+# update design.md. Any iteration on theme.css left the measured contrast table
+# describing colours that no longer existed - and review measures the built UI
+# against that file.
+_look=$(grep -n '^## Step [0-9] - look at them' skills/prototype.md | cut -d: -f1)
+_rec=$(grep -n '^## Step [0-9] - write the durable design record' skills/prototype.md | cut -d: -f1)
+assert_ok "the review-and-iterate step comes before the design record" \
+  test "${_look:-999}" -lt "${_rec:-0}"
+assert_ok "and contrast is measured against the tokens after the last iteration" \
+  _says skills/prototype.md 'after the last iteration'
+
+section "throwaway mockups are kept out of the project's checks"
+# prototypes/ sat inside the linter's globs: placeholder href="#" links failed
+# `npm run verify`, and would have failed CI once committed. build excluded the
+# directory in a step whose spec never mentioned it.
+assert_ok "scaffold excludes prototypes/ from the tools it configures" \
+  _says skills/scaffold.md "keep the pack's own directories out of every check you configure"
+assert_ok "and prototype runs the check once and excludes the directory if it trips" \
+  _says skills/prototype.md 'If the check now fails on files under prototypes'
+
+section "a standard the quality bar hands to design.md is pointed at, not marked missing"
+# scaffold writes "Standards this project follows" before prototype writes
+# design.md, so accessibility read "not recorded yet" beside a design.md recording
+# WCAG 2.2 AA - and review decides what its accessibility lens checks from that line.
+assert_ok "scaffold points the accessibility standard at design.md" \
+  _says skills/scaffold.md 'Accessibility: as recorded in `blueprint/context/design.md`'
+
+section "a step built but not yet approved is recorded in the file, not only the conversation"
+# build showed step 4, unticked, awaiting a yes; the user started autopilot
+# build..review instead. Its preflight ticked step 4 unannounced - and the run's
+# own stop mid-step 10 left the same shape. build resumes from the first unchecked
+# step and autopilot refuses unrelated uncommitted changes, so a cold session
+# meets written files under an unticked step and rebuilds or refuses.
+assert_ok "build marks a step waiting for approval in current-work" \
+  _says skills/build.md 'add `_(built, awaiting approval)_` right after its bold title'
+assert_ok "and a resume shows that step's diff instead of rebuilding it" \
+  _says skills/build.md 'Never build it again over itself'
+assert_ok "and knows a partly built step from a stopped run" \
+  _says skills/build.md '`_(partly built, stopped: <reason>)_`'
+assert_ok "autopilot asks before accepting a step still awaiting approval" \
+  _says skills/autopilot.md 'ask once, before the run starts'
+assert_ok "and marks the step it stops in" \
+  _says skills/autopilot.md 'gets `_(partly built, stopped: <reason>)_`'
+assert_ok "and the cold-start instructions name both markers" \
+  _says template/AGENTS.md '`_(built, awaiting approval)_`'
+
+section "a decision made during an item reaches decisions.md"
+# The spec, build and two reviews settled UUID ids, the password hash cost, NFC
+# normalisation, logout on every device, a cookie path, a request-size cap and a
+# folder the layout never named. decisions.md still ended at the planning entries:
+# spec and build never write it, and ship only suggested docs.
+assert_ok "the spec template has a Decisions section" \
+  grep -qE '^    ## Decisions$' skills/spec.md
+assert_ok "build adds a choice the spec did not make to that section" \
+  _says skills/build.md "add it under the spec's \`## Decisions\` now"
+assert_ok "ship records the item's decisions in decisions.md" \
+  _says skills/ship.md "Record the item's decisions in \`dev-notes/decisions.md\`"
+assert_ok "ship declares decisions.md in its Writes line" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/decisions.md`' skills/ship.md
+assert_ok "and template/AGENTS.md names ship as a decisions.md writer" \
+  grep -qE '^\| `dev-notes/decisions.md` \|[^|]*\|[^|]*`ship`' template/AGENTS.md
+
+section "ship offers to merge through CI when CI exists"
+# ship squash-merged into local main; the item branch was never pushed, so CI -
+# configured on pull requests - never ran on the item before it reached main.
+assert_ok "ship offers the pull-request route when there is a remote and CI" \
+  _says skills/ship.md 'CI that runs on pull requests, offer that route first'
+assert_ok "and says so when the item merges without CI having seen it" \
+  _says skills/ship.md 'say that CI has not seen this item'
+
+section "the plans are committed before anything installs"
+# ideate, architect, stack and layout each wrote files and none committed; four
+# skills of decisions sat only in the working tree until scaffold, unprompted,
+# committed them - its own text never said to.
+assert_ok "scaffold commits the planning files as part of its approval gate" \
+  _says skills/scaffold.md 'Commit the plans first, as part of that yes'
+
+section "a change to a server is host's, and a removal is shown before it happens"
+# A hosting question during layout became removing an app, its Caddy block and
+# sixty packages (apt autoremove, unsimulated) from a shared server - approved
+# by the user, with no skill in charge and nothing asking what autoremove takes.
+assert_ok "the project's standing rules route server changes to host" \
+  _says template/AGENTS.md 'Changes to a server go through `host`'
+assert_ok "host asks what else already runs on a managed server" \
+  _says skills/host.md 'What else already runs on it?'
+assert_ok "and simulates a package change before making it" \
+  _says skills/host.md 'simulate the package change first'
+
+section "context reports the plan against the repository, and never fixes the overview first"
+# The plan said PostgreSQL was installed on the server (stack had found it was
+# not) and named an image tag scaffold did not use. context reported "no
+# contradictions", then generated the overview with the corrections while the
+# plan edits waited for approval - so the overview disagreed with its source.
+assert_ok "context checks the plan against the repository" \
+  _says skills/context.md 'The plan against the repository.'
+assert_ok "context never writes a correction into the overview before the plan" \
+  _says skills/context.md 'Never write a correction into the overview before it is in the plan'
+assert_ok "and the standing rules say a false plan line is corrected when found" \
+  _says template/AGENTS.md 'A plan line you have found to be false gets corrected in the same change'
+
+section "ci asks which host when there is no remote, and names the tests it leaves out"
+# With no remote, ci wrote a GitHub Actions file and never said which host it
+# assumed - the skill only told it to "say" so. And stack chose Playwright, but
+# the pipeline ran only verify; nothing required saying so where it would be read.
+assert_ok "ci stops and asks for the host when there is no remote" \
+  _says skills/ci.md 'stop and ask which host the repository will live on'
+assert_ok "ci reports every test command the pipeline does not run" \
+  _says skills/ci.md 'every test command the project has that the pipeline does not run'
+
+section "stack ties each choice to a bar line, and declares the decisions it writes"
+# stack ruled out a framework on install size and memory, and its decision entry
+# never named a quality-bar line - the instruction to do so lived only in Step 1
+# prose. Its Step 4 also wrote decisions.md entries while neither its Writes line
+# nor the state table named it as a writer.
+assert_ok "stack names the bar line beside each choice at its approval gate" \
+  _says skills/stack.md 'name the line of `blueprint/context/quality-bar.md` it answers'
+assert_ok "and in each decision entry" \
+  _says skills/stack.md 'which bar line it answers, or that none did'
+assert_ok "stack declares decisions.md in its Writes line" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/decisions.md`' skills/stack.md
+assert_ok "and template/AGENTS.md names stack as a decisions.md writer" \
+  grep -qE '^\| `dev-notes/decisions.md` \|[^|]*\|[^|]*`stack`' template/AGENTS.md
+
+section "architect asks where performance is measured instead of supplying the answer"
+# Both of architect's bar examples said "measured server-side". An independent
+# session copied it into a new project's bar - the phrase that, on the reorder's
+# headline run, ruled out a client-rendered SPA. The example was deciding where
+# to measure for every project, and the reorder's evidence rested on it.
+assert_eq "no architect example fixes performance as server-side" "" \
+  "$(grep -nE '"[^"]*measured server-side[^"]*" is (a bar|a requirement)' skills/architect.md || true)"
+assert_ok "architect tells the agent to ask where the numbers are measured" \
+  _says skills/architect.md 'ask the user which they mean'
 
 finish

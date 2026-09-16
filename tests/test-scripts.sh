@@ -778,6 +778,24 @@ assert_eq "every current skill is still installed" "$NSKILLS" \
 assert_refuses "the report names what it kept" "not from this pack" \
   bash -c '"$0" --target "$1" --force | grep "not from this pack" && exit 1' "$IN" "$p"
 
+section "a skill a framework's generator installed survives a re-install whole"
+# create-react-router writes its own react-router skill, with a references/
+# directory, into .claude/skills and .agents/skills. Only the top-level SKILL.md
+# of an unrecognised skill was ever tested, and the report called anything
+# unrecognised "your own, or from an unknown version" - neither describes it.
+w=$(workdir); (cd "$w" && "$NP" gen >/dev/null 2>&1)
+p="$w/gen"
+for a in .claude/skills .agents/skills; do
+  mkdir -p "$p/$a/react-router/references"
+  printf -- '---\nname: react-router\n---\n' > "$p/$a/react-router/SKILL.md"
+  printf 'framework docs\n' > "$p/$a/react-router/references/routing.md"
+done
+out=$("$IN" --target "$p" --force 2>&1)
+assert_eq "its nested reference files are kept in both adapters" "2" \
+  "$(find "$p/.claude/skills/react-router/references" "$p/.agents/skills/react-router/references" -name routing.md | wc -l | tr -d ' ')"
+assert_ok "and the report says a generator can be where it came from" \
+  grep -q "framework's generator installed" <<< "$out"
+
 section "check.sh and install.sh read the same retired list"
 # Two copies of that list is how the two stop agreeing - the same reason the
 # seed scripts are shared between new-project.sh and convert-to-parts.sh.

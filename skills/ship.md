@@ -5,7 +5,7 @@ description: "Close out finished work: run a final safety pass, archive the spec
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -87,6 +87,15 @@ accordingly:
   a short note to its line with the date and the rollback's archive path. Keep
   the item's number stable.
 
+**Record the item's decisions in `dev-notes/decisions.md`** before the spec is
+archived. Every entry under the spec's `## Decisions`, and every rule a repair
+settled - a size cap, a concurrency limit - becomes a numbered entry in that file's
+own format: what was chosen, what lost, what it costs. **Show them with the rest
+of this step's changes**, since they land in the same commit. The archive keeps
+the spec, but nobody reads an archive to learn why the project is shaped as it
+is: on a real run eight decisions a later item depended on lived only there,
+and `docs` was merely suggested.
+
 **Archive the resolved findings with it.** Append a `## Findings` section to the
 archive file holding every `closed`, `accepted`, or `invalid` entry at its final
 status, with `accepted` entries keeping their recorded reason. Prefix each ID
@@ -160,6 +169,17 @@ The project's verification command must pass first.
 
 ## Step 4 - merge, then stop
 
+**If the repository has a remote and CI that runs on pull requests, offer that
+route first.** A local merge lands the item on `main` without CI ever having run
+on it: the branch was never pushed, so the only pre-merge check was this
+machine's verification command, and CI first sees the code after `main` is
+pushed. On a real run a login feature reached `main` that way. The pull-request
+route is: push the branch, open a pull request, wait for its checks, then
+squash-merge on the host and delete the remote branch - **the push is a push, so
+it needs its own explicit yes**, like step 4 below. If the user declines, or there
+is no remote or no CI, merge locally as below and **say that CI has not seen this
+item** until `main` is pushed.
+
 1. **Squash-merge the branch into `main`, only with the user's explicit
    go-ahead.** The item lands as one commit.
 2. Delete the branch after a clean merge. **A squash-merge needs `git branch -D`,
@@ -224,8 +244,8 @@ Then point at what is next:
 - **`ci`** only if it was never set up, or if this item changed what the checks
   are. It normally runs right after `scaffold`, long before here. A green suite that only
   runs when someone remembers is a suite that will eventually stop being run.
-- **`docs`** if this item made a decision worth recording, or if the README still
-  does not describe what the project actually does now.
+- **`docs`** if the README still does not describe what the project actually does
+  now. Its decisions are already recorded - Step 2 did that.
 - **`integrate`** if this project has more than one part. This part passing its
   own checks says nothing about whether it still agrees with the others - and
   agreeing is what breaks when parts are built in parallel.

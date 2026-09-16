@@ -31,7 +31,7 @@ These are already loaded, before you read anything else:
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
 | `blueprint/history/` | every completed item, archived | `ship` |
-| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate` |
+| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
 | `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
 | `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
@@ -44,7 +44,9 @@ means nothing.
 
 **Resuming interrupted work:** `current-work.md` records which build steps are
 done with `- [x]`. Continue from the **first unchecked step**. Never start over,
-never redo a ticked step.
+never redo a ticked step. An unchecked step marked `_(built, awaiting approval)_`
+or `_(partly built, stopped: ...)_` already has code in the tree - `build` says
+what to do with it.
 
 **If anything is unclear, run `progress`.** It reports where things stand, what
 is next, and any drift between what the files claim and what git shows.
@@ -142,6 +144,16 @@ Or just ask in plain language - "spec the next item", "run the review".
   its output, the screenshot, the response.
 - **Never print or commit a secret.** Report the category, file, and line.
 - **Follow the recorded versions, not remembered ones.** See below.
+- **Changes to a server go through `host`**, whichever skill the question came up
+  in. Answer the question where it is asked; make the change in `host`, which
+  checks what else the machine runs and shows what a removal takes before doing
+  it. A hosting question during `layout` once became removing an app and sixty
+  packages from a shared server, with no skill in charge.
+- **A plan line you have found to be false gets corrected in the same change.**
+  A server checked and found without the database the plan says it has, an image
+  tag chosen that differs from the one the plan names: fix the line, with the
+  user's yes, when you learn it. Left for later, `context` meets a plan that
+  disagrees with the repository and nobody remembers which is right.
 
 ## Stack and versions
 

@@ -74,7 +74,7 @@ rows.
 |---|---|---|---|---|
 | `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
 | `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions, each part's build-plan and needs-you | plan absent, or problem/features still placeholder | `stack` |
-| `stack` | project-plan Architecture + **quality-bar** | project-plan Tech | Architecture section empty or placeholder | `layout` |
+| `stack` | project-plan Architecture + **quality-bar** | project-plan Tech, decisions | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
 | `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `context` |
@@ -121,7 +121,7 @@ against *this project's* recorded values rather than a generic standard.
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify) — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
 | `review` | source, standards, quality-bar, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
-| `ship` | current-work, findings, build-plan | history, build-plan, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
+| `ship` | current-work, findings, build-plan | history, build-plan, decisions, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the
 point:
