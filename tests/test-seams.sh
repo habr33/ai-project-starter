@@ -1916,4 +1916,16 @@ assert_ok "build writes a repair's test from the finding's own reproduction" \
 assert_ok "and proves it by reverting the repair, not by some other break" \
   _says skills/build.md 'revert the repair and watch that test fail'
 
+section "a changed file git shows as binary is reported, not silently skipped"
+# On a real run a regex held raw NUL/DEL bytes instead of escapes, so git called
+# the item's core new file binary. `git diff` and the pull request showed
+# "Binary files differ" - the item's main change reached a reviewer as nothing
+# at all, and no skill in the loop noticed.
+assert_ok "review checks the changed set for a file git calls binary" \
+  _says skills/review.md 'git diff --numstat'
+assert_ok "and reads that file whole instead of skipping it" \
+  _says skills/review.md 'Read that file whole'
+assert_ok "and records it, because the diff is all a PR reviewer sees" \
+  _says skills/review.md 'the only thing a pull-request reviewer sees'
+
 finish

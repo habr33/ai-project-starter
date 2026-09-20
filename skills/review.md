@@ -107,6 +107,17 @@ and never claim the committed work was fully covered.
 For `full`, state the excluded paths before starting, so generated code,
 dependencies, and build output do not consume the review.
 
+**A changed file git calls binary is a file nobody else can see.** `git diff`
+prints "Binary files a/x and b/x differ" for any file holding a NUL byte, and a
+text source file gets one when a raw control character is written into it
+instead of an escape - inside a regex is the usual way. Check the changed set
+for it explicitly: `git diff --numstat` prints `-` for both counts on such a
+file. **Read that file whole** rather than letting an empty diff read as no
+change, and **record it as a finding** - the diff is the only thing a
+pull-request reviewer sees, so the item's main change would otherwise ship
+reviewed by nothing but this skill. On a real run that file was the item's core
+new file, and neither `review` nor `ship` noticed.
+
 ## Step 2 - run the signals that already exist
 
 Use the project's existing commands. **Do not install tools.** Run only what the

@@ -15,61 +15,69 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Handoff (2026-09-16)
+## Handoff (2026-09-21)
 
-- **Branch:** `run-findings` off `main`, two commits (`b6e3c2c`, `8f9c619`);
-  not pushed, no PR, not merged.
-  `main` already holds the 2026-09-15 review fixes and this handoff's predecessor.
-- **Last verified:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed across
-  all three files.
-- **What this branch is:** fixes for the 18 defects a full run of the loop found
-  on a new project - a React Router 8 + PostgreSQL CMS taken from `ideate` to a
-  shipped login feature by a session that did not know the pack's arguments.
-  `coverage.md` has the per-skill results (project `cms-rr`), and each fix has a
-  test under `seams-D` in `tests/test-seams.sh` (one in `test-scripts.sh`),
-  every one proven to fail against the unfixed file.
-- **All of those tests check wording.** They prove the skills now say the right
-  thing, not that an agent following them behaves differently. **Next:** re-install
-  the pack into that project (`./install.sh --target <it> --force`) so item 2 runs
-  on the fixed skills - it exercises the spec's Decisions section, the
-  approval marker, `ship`'s PR route and the spent-mockup rule. Merging this
-  branch to `main` is a separate ask.
-- **The first section ran on the old skills and repeated two fixed defects**,
-  confirming them: asked to remove old sites `host` went to delete before listing
-  what would go (a permission classifier stopped it), and `context` wrote a
-  seventh stale plan line into the overview while the plan still had it wrong.
-- **The `host` -> `deploy` -> `monitor` section then ran on the same project,
-  still on the old skills.** It repeated two of the defects above, confirming
-  them, and found four more - all now fixed here, each with a test proven to
-  fail:
-  - a **`deferred`** status for a finding the user puts off rather than
-    abandons. `accepted` meant "not fixing" and was doing both jobs: `ship`
-    archived a deferred P1 an hour before `monitor` repaired it, so the repair
-    had to be written into an archive nobody reads.
-  - **`preflight` checks the proxy seam.** The first deploy served every page
-    and rejected every form post - behind a TLS-terminating proxy the framework
-    compared its own `http://` origin with the browser's `https://`. Nothing
-    earlier can see it: tests, CI and `verify` all talk to the app directly.
-  - **`ship` deletes only spent mockups**, not the directory, and says which
-    items still hold the rest.
-  - **`host` stops a process by the PID it started.** A restore drill's
-    `pkill -f` matched the live server, and because SIGTERM reads as a clean
-    exit, production stayed down for a minute with nothing watching.
-- **The strongest result of the run** is not a fix: an independent `review` in a
-  fresh session found a P1 - login rate limits bypassed by concurrent requests -
-  that `autopilot`'s own review, verify and tests all passed. That is the
-  self-review weakness `autopilot.md` describes, now seen on real code.
-- **Gotchas from this session:**
-  - Wording tests join lines with `tr` before matching, so a `sed` mutation
-    fails silently when the phrase wraps. One did here; mutate the joined text.
-  - Never pipe a file-reading command into `grep -q` in `check.sh` or the tests -
-    SIGPIPE under pipefail gives a rare false failure. Use a herestring.
-  - A mutation proves a test only if it changes what the assertion names; two
-    first-draft tests here failed for fixture reasons, not the code.
-  - A product created before `5306f41` ignores all of `blueprint/status/`; a
-    fresh clone of it has no status directory. `install.sh` prints the fix.
-  - Git's "already used by worktree at" path is wrong inside a submodule; the
-    board command in `skills/orchestrate.md` is the reliable one.
+**Goal:** close the defects a full real run of this workflow found (project
+`cms-rr` in `coverage.md`), each with a test proven to fail against the unfixed
+file.
+
+- **Branch:** `run-findings`, five commits ahead of `main`; **not merged, not
+  pushed**. The user has not been asked about merging.
+- **Verified 2026-09-21:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed
+  across all three files.
+
+**Done - all 21 findings fixed**, tests under `seams-D` in `tests/test-seams.sh`
+(one in `test-scripts.sh`); the commit messages list them. The last three:
+**19** - `spec` makes a done-when needing a new kind of test name the command
+that runs it and where, and check that place can run it; **20** - `build`'s
+findings gate writes a repair's test from the finding's own reproduction and
+proves it by reverting the repair; **21** - `review` Step 1 checks the changed
+set for a file git calls binary, reads it whole, and records it, because the
+diff is all a pull-request reviewer sees.
+
+**Still open in `cms-rr`, untouched by this session** (item 2b built and
+uncommitted, Repair F-47 awaiting the owner's approval; the user chose to leave
+the project alone for now):
+
+- **A second real case of 20.** F-47 was "a crafted save containing U+0000
+  answers 500". The repair's tests are module-level, never drive a save, and
+  the post title still reaches the database unfiltered - so the reported 500
+  still happens, while the finding is `fixed`. The project was built on the
+  pre-fix `build` skill.
+- **The binary regex behind 21 is still there**, and F-47 should be extended to
+  the title before it is approved. The cause (maybe a lint rule on control
+  characters in regexes) was never confirmed - the pack fix does not need it,
+  but the project's does.
+
+**Next:**
+
+1. Ask before merging `run-findings` into `main`.
+2. Re-install the pack into `cms-rr` (`./install.sh --target <dir> --force`) so
+   its next repair runs on the fixed `build` and `review`; more findings are
+   likely from `deploy` and item 3.
+3. The two `cms-rr` items above, when the user wants to go back to it.
+
+**Gotchas:**
+
+- Wording tests join lines with `tr` before matching, so a mutation fails
+  silently when the phrase wraps - **and so does the `grep` you check the
+  mutation with**, which then reports the phrase gone when it is not. This bit
+  again on 21: the mutation looked applied, the test passed, and both were
+  wrong. Mutate a word that sits on one line, and verify with the same
+  `tr | grep -F` the test uses.
+- `ship.md` quotes the findings template verbatim; changing one without the
+  other fails a seam test - which is how it was caught.
+- Never pipe a file-reading command into `grep -q` in `check.sh` or the tests:
+  SIGPIPE under pipefail gives a rare false failure. Use a herestring.
+- A product installed before these fixes keeps its old skills until
+  `./install.sh --target <dir> --force` is re-run; the ledger's header is not
+  updated by that, only the skills.
+
+**Verify with:**
+
+    ./check.sh
+    ./tests/run.sh
+
 
 ## Where this stands (2026-09-15)
 
