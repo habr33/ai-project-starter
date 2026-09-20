@@ -247,6 +247,13 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
   spec's build steps (`- [ ] Repair F-03 - <title>`) so the repair is on the record
   and survives a context clear, then run it through Step 3 like any other step.
   Tick the step and mark the finding `fixed` together.
+- **A repair's test is written from that finding's own reproduction** - the
+  input, the path and the sequence the finding describes, not a nearby case the
+  repair makes easy to assert. Then **revert the repair and watch that test
+  fail**; put the repair back and watch it pass. A test that stays green with
+  the repair reverted asserts the repair, not the failure. On a real run a P1
+  was marked fixed with a passing test while the defect stood, because the test
+  never went down the failing path.
 - **Then run `review`** so those repairs are re-reviewed and can move to
   `closed`. A repair never closes itself.
 - **Never set `accepted`, `deferred` or `invalid`.** `accepted` is the user's explicit

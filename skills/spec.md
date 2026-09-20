@@ -276,6 +276,16 @@ criterion is decoration. If the item breaches the bar and that is intended, say 
 and route back to `architect`: changing the bar is an architecture decision, not
 something a spec settles quietly.
 
+**A done-when that needs a new kind of test says where that test runs.** A test
+that needs a database, a browser, a device or a network service cannot run
+wherever the others do. When a done-when asks for one, say which command runs
+it and where that command runs - locally, inside `verify`, in CI - and check
+that place has what the test needs. On a real run a spec asked for
+database-backed unit tests while `npm test` sat inside `verify`, which CI runs
+with no database: a done-when the project's own checks could never satisfy. If
+the place does not have it, the spec either adds a step that provides it or
+puts the test under a separate command and says CI does not run it.
+
 **A design record can be wrong, and building is how you find out.** `prototype`
 writes `design.md` from static mockups, which cannot show everything — a decision
 that reads well in HTML can turn out to be unbuildable, or to contradict another
@@ -333,7 +343,8 @@ step. Run the draft against each of these:
 - **Scope honesty.** Is anything creeping in that belongs to a later item? Is
   anything pushed out of scope that this genuinely cannot ship without?
 - **Done-whens.** Is each one observable and checkable by `verify`, or is
-  it a vague "it works"? Make it concrete.
+  it a vague "it works"? Make it concrete. Where does the test behind it run?
+  Can the command that checks it actually run there?
 - **Visual fidelity.** If this is visual work, is a reference actually linked, or
   are we about to build a design blind from prose?
 

@@ -1898,4 +1898,22 @@ assert_ok "host says to kill the PID you started" \
 assert_ok "and treats a drill against production as a production change" \
   _says skills/host.md 'A drill against production is a production change'
 
+section "a done-when names where its test runs, and that place can run it"
+# A spec asked for database-backed unit tests, but `npm test` sits inside
+# `verify`, which is what CI runs - with no database. Nothing in spec asked where
+# a new kind of test would run, so the done-when could not be met where it was
+# checked.
+assert_ok "spec asks where a new kind of test runs" \
+  _says skills/spec.md 'say which command runs it and where that command runs'
+assert_ok "and its red-team checks the done-when against that environment" \
+  _says skills/spec.md 'Can the command that checks it actually run there?'
+
+section "a finding's test reproduces that finding and is proven by reverting the repair"
+# A P1 was "fixed" and its test passed while the defect stood: the test never
+# submitted down the failing path, so it asserted the repair, not the failure.
+assert_ok "build writes a repair's test from the finding's own reproduction" \
+  _says skills/build.md "written from that finding's own reproduction"
+assert_ok "and proves it by reverting the repair, not by some other break" \
+  _says skills/build.md 'revert the repair and watch that test fail'
+
 finish
