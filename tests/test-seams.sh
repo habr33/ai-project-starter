@@ -581,6 +581,24 @@ assert_eq "status.md's guide count is right" \
   "$(ls docs/*.md | wc -l | tr -d ' ')" \
   "$(grep -oE '^docs/ +[0-9]+ guides' dev-notes/status.md | grep -oE '[0-9]+')"
 
+# The same listing names the test suites, and AGENTS.md names them a second
+# time. A suite added without updating either is invisible to a reader deciding
+# what to run - and `tests/run.sh` finds its files by glob, so nothing else in
+# the repo would ever mention the new one. That is rule 8's case exactly: the
+# fourth suite failed the linter on the day it was written, for having no
+# reference anywhere, which is how this assertion came to exist.
+# The entry, not its first line: these listing rows wrap, and a grep for one
+# line reported the last-named suite missing purely because it had been pushed
+# onto the continuation. Read from `tests/` to the next row or the block's end.
+suite_line=$(awk '/^tests\/ +run\.sh/{f=1} f&&/^[a-z]/&&!/^tests\//{exit} f&&/^```/{exit} f' dev-notes/status.md)
+unnamed=""
+for t in tests/test-*.sh; do
+  n=$(basename "$t" .sh); n="${n#test-}"
+  case "$suite_line" in *"$n"*) ;; *) unnamed="$unnamed $n(status.md)" ;; esac
+  grep -qF "tests/test-$n.sh" AGENTS.md || unnamed="$unnamed $n(AGENTS.md)"
+done
+assert_eq "every test suite is named in status.md's listing and in AGENTS.md" "" "$unnamed"
+
 section "the retired list covers every rename"
 # Renaming without adding the old name to `retired` is what leaves the gap;
 # the rule is not the gap.

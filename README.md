@@ -317,8 +317,9 @@ throughout: **what the pack owns, it replaces; what you own, it never touches.**
 
 `tests/lib.sh` holds the assertions; `tests/test-lint.sh` negative-tests every
 linter rule, `tests/test-scripts.sh` runs the scripts and checks what they
-produced, and `tests/test-seams.sh` checks the invariants that span files -
-which is where every serious defect here has been.
+produced, `tests/test-seams.sh` checks the invariants that span files - which is
+where every serious defect here has been - and `tests/test-routing.sh` checks
+that a realistic user prompt still reaches the right skill's description.
 
 The runner **fails every assertion function, and test files broken on purpose,
 before running anything else**, to prove the harness reports a failure. A rule in this repo once shipped unable

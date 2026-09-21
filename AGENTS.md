@@ -54,15 +54,28 @@ because dead config hides the thing it was meant to check.
 
 ```bash
 ./tests/run.sh          # everything
-./tests/run.sh lint     # one file: lint | scripts | seams
+./tests/run.sh lint     # one file: lint | scripts | seams | routing
 ```
 
-`tests/run.sh` runs three files through `tests/lib.sh`:
+`tests/run.sh` runs four files through `tests/lib.sh`:
 `tests/test-lint.sh` breaks one linter rule at a time in a throwaway copy of the
 pack and asserts check.sh both fails **and names the right problem**;
 `tests/test-scripts.sh` runs the scripts and inspects what they actually
 produced; `tests/test-seams.sh` checks the cross-file invariants nothing else
-can see.
+can see; `tests/test-routing.sh` asks whether a realistic user prompt reaches
+the right skill at all.
+
+**`tests/test-routing.sh` is the only thing here that reads the 27
+`description:` lines as a set.** The linter checks one at a time, so a skill
+whose description omits the words people actually type stays lintable and
+unreachable - which is what it found on `monitor`, whose description covered
+"a production issue" and never *down*, *outage*, *alert* or *slow*. Its
+declared prompt list is the rule, in the same way: every skill must have one,
+so adding a skill forces the question "what would someone type to get here?".
+**It ranks with TF-IDF, which is not an agent** - a result there is evidence
+about the description's vocabulary, never about how an agent would route. The
+file says so at length, and the tie margin in it was measured rather than
+picked.
 
 **The runner proves the harness can fail before it trusts a green result** - it
 deliberately fails every assertion function, and runs test files broken on

@@ -1,6 +1,6 @@
 ---
 name: monitor
-description: "Set up and read the signals that tell you whether the live project is healthy - error tracking, uptime checks, logs, and enough usage data to know if anyone is using it. Wires up the specific signals architect said would reveal each failure mode, rather than collecting everything and reading none of it. Also used to investigate a live problem. Use when the user runs `monitor`, has just deployed, asks how to know when something breaks, or is looking into a production issue."
+description: "Set up and read the signals that tell you whether the live project is healthy - error tracking, uptime checks, logs, and enough usage data to know if anyone is using it. Wires up the specific signals architect said would reveal each failure mode, rather than collecting everything and reading none of it. Also used to investigate a live problem. Use when the user runs `monitor`, has just deployed, asks how to know when something breaks, or is looking into a live production incident - the site down or slow, an alert that fired, errors users are hitting right now."
 ---
 
 # monitor - know when it breaks, before someone tells you

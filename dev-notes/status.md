@@ -6,7 +6,7 @@ place that answers "has this skill actually run?".
 
 > **Before doing anything else, check what is not committed** (`git status`),
 > then run `./check.sh` and `./tests/run.sh`. They must report `OK` and **all
-> three test files passing with zero failures**. If they do not, the tree has
+> every test file passing with zero failures**. If they do not, the tree has
 > been disturbed since the last recorded run - find out why before changing
 > anything.
 >
@@ -19,12 +19,15 @@ place that answers "has this skill actually run?".
 
 **Goal:** close the defects a full real run of this workflow found (project
 `cms-rr` in `coverage.md`), each with a test proven to fail against the unfixed
-file.
+file. All 21 are now fixed and committed.
 
-- **Branch:** `run-findings`, five commits ahead of `main`; **not merged, not
-  pushed**. The user has not been asked about merging.
+- **Branch:** `run-findings`, merged into `main` and pushed on 2026-09-21 with
+  the user's approval. Both are on the new repository.
+- **The repository moved** to `github.com/habr33/ai-project-starter`. Both
+  branches are on it; `main` was force-pushed over the new repo's LICENSE-only
+  initial commit (unrelated history), with the user's approval.
 - **Verified 2026-09-21:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed
-  across all three files.
+  across all four files.
 
 **Done - all 21 findings fixed**, tests under `seams-D` in `tests/test-seams.sh`
 (one in `test-scripts.sh`); the commit messages list them. The last three:
@@ -35,36 +38,69 @@ proves it by reverting the repair; **21** - `review` Step 1 checks the changed
 set for a file git calls binary, reads it whole, and records it, because the
 diff is all a pull-request reviewer sees.
 
-**Still open in `cms-rr`, untouched by this session** (item 2b built and
-uncommitted, Repair F-47 awaiting the owner's approval; the user chose to leave
-the project alone for now):
+**The routing eval is built** - `tests/test-routing.sh`, the fourth suite. It is
+the only thing here that reads the 27 `description:` lines as a set: the linter
+checks one at a time, so a skill whose description omits the words people type
+stays lintable and unreachable. It gates three things - every skill has a
+declared prompt, no two descriptions collide, and every skill wins its own
+prompt unless it is on `known_misses` with a reason.
 
-- **A second real case of 20.** F-47 was "a crafted save containing U+0000
-  answers 500". The repair's tests are module-level, never drive a save, and
-  the post title still reaches the database unfiltered - so the reported 500
-  still happens, while the finding is `fixed`. The project was built on the
-  pre-fix `build` skill.
-- **The binary regex behind 21 is still there**, and F-47 should be extended to
-  the title before it is approved. The cause (maybe a lint rule on control
-  characters in regexes) was never confirmed - the pack fix does not need it,
-  but the project's does.
+- **The monitor finding reproduced and is fixed.** Written blind - the earlier
+  prototype was gone and the prompts were rewritten from scratch - `monitor`
+  still lost "the site is down and i need to know why" to `prepare`, by 0.0332.
+  Its description now says *down, slow, alert, incident, errors*. Seen failing
+  first; reverting the wording makes it fail again.
+- **The rebuilt ranker is not the old one and its numbers do not carry over.**
+  The worst pair here is `review` <-> `ship` at 0.28, not `integrate` <->
+  `orchestrate` at 0.42. Any threshold has to be set against this ranker.
+- **24 of 27 skills won their own prompt on the first run**, against 6 of 14
+  before. That is mostly better prompts, not better descriptions: a prompt that
+  paraphrases the description proves only that a sentence matches itself, so the
+  file now rejects any prompt repeating five consecutive words of its own
+  description. It caught `prototype`'s prompt immediately, and `verify`'s was a
+  paraphrase too - rewritten, `verify` wins outright and its excuse was deleted.
+  Only `stack` is excused now ("build this with" is lexically owned by `build`).
+- **All 27 descriptions share one IDF table, so editing any one reweights every
+  other skill.** Adding *down* to `monitor` diluted the only term separating
+  `spec` from `progress`, and `spec` went from first to second on a margin of
+  **0.0003**. Gating top-1 on that is gating on noise and would make every
+  description edit break an unrelated skill, so a gap under `tie_margin` is a
+  tie, not a miss.
+- **The margin was measured, not picked**: 0.0003 for the `spec` noise, 0.0332
+  for the real `monitor` miss, a factor of 100 apart, line drawn at 0.02. That
+  claim was checked by raising it to 0.05 and watching the unfixed `monitor`
+  pass as a tie - the defect class really does go invisible above ~0.03.
+- Six mutations, each confirmed to land and to fail the assertion it names.
+- **Rule 8 caught the new file on the day it was written** - nothing referenced
+  it, because `run.sh` finds its files by glob. A seam test now requires every
+  suite to be named in status.md's listing and in `AGENTS.md`.
+- Still deferred: their Tier 3 (headless agent + graded trace) with **pressure
+  cases** - time pressure, sunk cost, authority - the one test our gates have
+  never had. It spends tokens per run.
+
+**Still open in `cms-rr`, untouched** (item 2b built and uncommitted, Repair
+F-47 awaiting the owner's approval): a second real case of 20 - F-47's tests
+never drive a save, so the reported 500 still happens while the finding reads
+`fixed` - and the binary regex behind 21 is still in its source.
 
 **Next:**
 
-1. Ask before merging `run-findings` into `main`.
-2. Re-install the pack into `cms-rr` (`./install.sh --target <dir> --force`) so
-   its next repair runs on the fixed `build` and `review`; more findings are
-   likely from `deploy` and item 3.
-3. The two `cms-rr` items above, when the user wants to go back to it.
+1. Re-install the pack into `cms-rr` (`./install.sh --target <dir> --force`) so
+   its next repair runs on the fixed `build` and `review`. **The directory is
+   not on this machine** - nothing under `~` matches, and the local diary that
+   recorded where it lives does not exist here. Ask for the path.
+2. The routing eval is a regression guard, not a bug-finder, and it has found
+   its one bug. The thing that would find more is the deferred pressure-case
+   tier, which needs a token budget decided first.
 
 **Gotchas:**
 
 - Wording tests join lines with `tr` before matching, so a mutation fails
   silently when the phrase wraps - **and so does the `grep` you check the
   mutation with**, which then reports the phrase gone when it is not. This bit
-  again on 21: the mutation looked applied, the test passed, and both were
-  wrong. Mutate a word that sits on one line, and verify with the same
-  `tr | grep -F` the test uses.
+  on 21: the mutation looked applied, the test passed, and both were wrong.
+  Mutate a word that sits on one line, and verify with the same `tr | grep -F`
+  the test uses.
 - `ship.md` quotes the findings template verbatim; changing one without the
   other fails a seam test - which is how it was caught.
 - Never pipe a file-reading command into `grep -q` in `check.sh` or the tests:
@@ -72,6 +108,8 @@ the project alone for now):
 - A product installed before these fixes keeps its old skills until
   `./install.sh --target <dir> --force` is re-run; the ledger's header is not
   updated by that, only the skills.
+- `./tests/run.sh` takes minutes. Do not start a second one while one is
+  running - two concurrent runs slow each other badly.
 
 **Verify with:**
 
@@ -155,7 +193,8 @@ skills/               27 files, one per skill - the only source
 template/             21 files: AGENTS.md, CLAUDE.md, blueprint/, dev-notes/,
                       README, and product/ for a multi-part root
 docs/                 4 guides: walkthrough, anatomy, mobile, multi-part
-tests/                run.sh, lib.sh, and three suites - lint, scripts, seams
+tests/                run.sh, lib.sh, and the suites - lint, scripts, seams,
+                      routing
 ```
 
 **Keep these counts current.** `tests/test-seams.sh` reads the listing above
