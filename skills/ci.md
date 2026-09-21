@@ -89,7 +89,8 @@ toolchain and runs each part's checks - Node plus the .NET SDK, `npm test` plus
 `dotnet test`. Either one job doing both in sequence, or one job per part in
 parallel.
 
-**If a contract is generated between them, verify it is current**: regenerate it
+**If a contract is generated between them** - `Kind:` in the product root's
+`AGENTS.md` says which it is - **verify it is current**: regenerate it
 and fail if the result differs from what is committed in `contracts/` at the
 product root - `architect` records the filename and the regeneration command in
 `AGENTS.md`. A stale contract is a

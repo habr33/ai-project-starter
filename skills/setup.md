@@ -81,9 +81,15 @@ picking.
   still holds its seeded instruction text. Tech is the stack as detected in Step
   1, versions as installed; Architecture is what the code already is - the
   deployable parts, routes or screens, the data model as the schema or models
-  define it, where the logic lives, the auth boundary. **Replace the seeded
-  instruction sentence in each** rather than writing beneath it: `context` tells a
-  section is unfilled by that sentence still being there, whatever surrounds it.
+  define it, where the logic lives, the auth boundary. **Replace every seeded
+  paragraph in each section, not only the first one** rather than writing beneath
+  it: `context` tells a section is unfilled by seeded text still being there,
+  whatever surrounds it. Section 5 ends with a note that it is filled in after
+  section 6, and section 6 with a note that `layout` adds the directory tree -
+  **those go too.** They sit below the sentence that obviously had to go, they
+  describe skills that never run on this route, and leaving either one has
+  `context` stop and send the user to `architect` and `stack` for a section that
+  is in fact filled.
   Both are discovered, like the quality bar - mark anything the code does not
   show as unknown rather than choosing it.
 

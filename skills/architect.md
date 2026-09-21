@@ -229,7 +229,13 @@ Design only what the project needs, from:
   reads as `api`'s private business when it is the one thing both parts are
   bound by. Record the actual filename (`contracts/openapi.yaml`,
   `contracts/schema.graphql`), the command that regenerates it, and the command
-  each consumer runs to generate its client.
+  each consumer runs to generate its client. **Set `Kind:` to `generated` or
+  `hand-written` while you are there** - it is the field `ci` branches on when it
+  decides whether there is a regeneration to check, and it is the one field in
+  that block no skill was ever told to write. A hand-written contract has no
+  regenerate command, so say `hand-written` rather than leaving the line empty:
+  the checks are genuinely weaker then, and the block is where that gets
+  admitted.
 
   **A contract nobody can name is a contract nobody checks.** `integrate` and
   `ci` both regenerate it and fail on a difference; neither can do that against

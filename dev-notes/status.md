@@ -65,9 +65,38 @@ input: **40 false failures out of 40**. Now a herestring; 0 of 40, and it still
 reports a genuinely absent phrase as absent, so the fix is not vacuous. **This
 one produces false red**, which trains people to re-run until green.
 
-**Next:** `layout` moving a seeded part, `architect` writing the whole contract
-up front, and `setup` filling plan sections 5 and 6 are the unverified paths
-left. The two `cms-rr` items below are unchanged and still need the path.
+**Then the other three ran too**, in the same session - so the unverified list
+is now empty. Three more defects:
+
+5. **`layout`'s move of a seeded part loses what the part was.** The refusal
+   fires as documented and `Product root:` comes back `../..`, correct for two
+   levels down - but step 2 deletes the listing line and step 3 re-seeds it from
+   the template, so a line reading "the reader-facing site: article pages,
+   search, and the home feed" came back as `<what this part is>`, in the file
+   every session reads to learn what the parts are, with nothing reporting it.
+6. **`setup`'s adoption leaves seeded text that `context` then stops on.**
+   Sections 5 and 6 each carry a *second* seeded paragraph below the obvious one
+   - the note that 5 is filled after 6, and the note that `layout` adds the
+   directory tree. "Replace the seeded instruction *sentence*" leaves both;
+   `context` reads seeded text as unfilled "whatever has been added around it"
+   and routes to `architect` and `stack`, **the two skills this route says never
+   run**, for sections that are in fact filled.
+7. **`Kind:` in the contract block had no writer and no reader.** It appears
+   exactly once in the whole pack - in `template/product/AGENTS.md` - inside a
+   block whose own text says "These are read, not decorative". It is also the
+   field `ci` branches on: *"if a contract is generated between them"*. Rule 9
+   covers the coordination board's fields; this is a different file and nothing
+   covered it. `architect` now sets it and `ci` reads it.
+
+Eight more assertions, all seen failing against the unfixed files.
+
+**Worth considering next:** 7 is rule 9's class in a file rule 9 does not read.
+The move this repo keeps making - declare the fields, let the rule follow -
+would make it a 17th rule over `template/product/AGENTS.md`'s contract block.
+That touches the rule counts in `AGENTS.md`, `docs/anatomy.md` and this file, so
+it was left as a decision rather than taken unilaterally.
+
+**Next:** the two `cms-rr` items below are unchanged and still need the path.
 
 ## Handoff (2026-09-21)
 
@@ -290,11 +319,11 @@ and the commit message for the full list. One note stays: the handoff seam test
 in `tests/test-seams.sh` matches wording, so rewriting a skill's last step can
 need its list updated.
 
-**Unverified, and worth a real run** (all checked by wording tests only):
-`layout` moving a seeded part, `architect` writing the whole contract up front,
-and `setup` filling plan sections 5 and 6 on an adoption. **`ship --abandon` and
-`spec`'s resume came off this list on 2026-09-22** - the run found four defects
-between them, and a fifth in the test harness.
+**Unverified, and worth a real run:** none. **The list was emptied on
+2026-09-22** - `ship --abandon`, `spec`'s resume, `layout` moving a seeded part,
+`setup` filling plan sections 5 and 6, and the contract block `architect` writes
+were all run, between them finding seven defects in the skills and one in the
+test harness. What is left unproven needs a person or a resource, not work here.
 
 ### Known and accepted
 

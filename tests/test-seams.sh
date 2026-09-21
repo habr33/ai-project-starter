@@ -1993,4 +1993,44 @@ assert_ok "and says the branch already carries the spec and the ledger" \
 assert_ok "and strips the abandon record from a spec restored from the archive" \
   _says skills/spec.md 'that is the record of the attempt, not part of the spec'
 
+section "moving a seeded part keeps what the listing said the part was"
+# The move deletes the part's line from the root AGENTS.md and lets seed-part.sh
+# write a fresh one, which is the template's `<what this part is>`. Run on a
+# product whose line read "the reader-facing site: article pages, search, and
+# the home feed", the move put the placeholder back and reported success.
+assert_ok "layout keeps the listing line's text before deleting it" \
+  _says skills/layout.md 'keep the text of its line in the root `AGENTS.md` listing'
+assert_ok "and writes the description back after seeding the new path" \
+  _says skills/layout.md "write the part's description back onto its new listing line"
+
+section "an adopted plan has no seeded text left for context to stop on"
+# Sections 5 and 6 each carry a second seeded paragraph below the obvious one -
+# the note that 5 is filled after 6, and the note that `layout` adds the tree.
+# Replacing only "the seeded instruction sentence" leaves them, `context` reads
+# seeded text as unfilled "whatever has been added around it", and it routes to
+# `architect` and `stack` - the two skills this route says never run.
+assert_ok "setup replaces every seeded paragraph, not just the first" \
+  _says skills/setup.md 'not only the first one'
+assert_ok "and names the two that are easy to leave behind" \
+  _says skills/setup.md 'those go too'
+assert_ok "and says what leaving one costs" \
+  _says skills/setup.md 'for a section that is in fact filled'
+
+section "every field in the product root's contract block has a writer"
+# `Kind:` appeared exactly once in the whole pack - in the template. No skill
+# wrote it and no skill read it, in a block whose own text says "These are read,
+# not decorative". It is also the field ci branches on: "if a contract is
+# generated between them". Rule 9 covers the coordination board's fields; this
+# block is a different file and nothing covered it.
+for field in 'Owner' 'File' 'Kind' 'Regenerate'; do
+  assert_ok "the contract block still declares $field" \
+    grep -qE "^- $field:" template/product/AGENTS.md
+done
+assert_ok "architect sets the contract's Kind" \
+  _says skills/architect.md 'Set `Kind:` to `generated` or `hand-written`'
+assert_ok "and says a hand-written one is recorded, not left blank" \
+  _says skills/architect.md 'say `hand-written` rather than leaving the line empty'
+assert_ok "ci reads Kind rather than inferring it" \
+  _says skills/ci.md '`Kind:` in the product root'
+
 finish
