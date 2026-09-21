@@ -15,6 +15,60 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
+## Handoff (2026-09-22)
+
+**Goal:** run one of the paths that had only ever been checked by wording tests.
+Picked `ship --abandon` - the biggest untested surface of the five, and the only
+one that needed no interview. Its paired half, `spec`'s resume, ran with it.
+
+**Verified 2026-09-22:** `./check.sh` OK (16 rules); `./tests/run.sh` 783 passed,
+0 failed, run twice.
+
+**The run was real**: a scratch project, an item with two steps ticked and a
+third half-built in a *new* file, a four-entry ledger (a `fixed` P1, an `open`
+P2, a `deferred` P3, an `unverified` P3), and uncommitted work. Then the skill's
+steps followed literally. **Four defects, none of them findable by reading** -
+each was a command whose output disagreed with what the step claimed:
+
+1. **The `wip:` commit lost the work it exists to save.** `git commit -am`
+   reported `1 file changed` and left the half-built step - an untracked new
+   file - behind, for Step 2 to carry onto `main` as a stray. It fails loudly
+   only when *everything* pending is untracked; with one tracked edit alongside,
+   it succeeds and drops the rest. Now `git add -A`, never `git commit -a`, and
+   a `git status` check before moving off the branch.
+2. **Step 3 archived the findings from the wrong place.** The *spec*'s read is
+   branch-qualified (`git show <branch>:...`); the *findings* read, in the same
+   sentence, is not - and Step 2 has just moved you to `main`, where the ledger
+   is its stub. So the archive gets an empty `## Findings`, "remove them from the
+   ledger" is a no-op, and **both read as success** while a P1 sits on a parked
+   branch. The asymmetry inside one step is the tell.
+3. **Archived IDs were not prefixed.** The merge path turns item 12's `F-03`
+   into `12/F-03` precisely so it stays unique after leaving the ledger;
+   `--abandon` said nothing, so the next item's first finding is `F-01` again -
+   and the abandon reason itself cites `F-01`.
+4. **`spec`'s resume is written in an order git refuses.** "Restore it to
+   `current-work.md` ... check out the branch it names" - the checkout then
+   aborts on the local change, because the branch carries its own committed
+   `current-work.md`. It also carries the ledger, so on a kept branch there is
+   nothing to restore at all.
+
+Nine assertions under **`seams-E`** in `tests/test-seams.sh`, all seen failing
+against the unfixed files, with the absence re-checked through the same
+`tr | grep -F` the assertions use.
+
+**A fifth defect, in the harness itself.** A full run failed one assertion that
+passed when the file ran alone. `_says` was `tr ... | grep -qF` - a pipeline
+ending in `grep -q` under `set -o pipefail`, the exact hazard this file already
+warns about twice. grep exits on its first match, `tr` takes SIGPIPE, and the
+pipeline reports **failure for a phrase that is present**. Forced with a large
+input: **40 false failures out of 40**. Now a herestring; 0 of 40, and it still
+reports a genuinely absent phrase as absent, so the fix is not vacuous. **This
+one produces false red**, which trains people to re-run until green.
+
+**Next:** `layout` moving a seeded part, `architect` writing the whole contract
+up front, and `setup` filling plan sections 5 and 6 are the unverified paths
+left. The two `cms-rr` items below are unchanged and still need the path.
+
 ## Handoff (2026-09-21)
 
 **Goal:** close the defects a full real run of this workflow found (project
@@ -237,9 +291,10 @@ in `tests/test-seams.sh` matches wording, so rewriting a skill's last step can
 need its list updated.
 
 **Unverified, and worth a real run** (all checked by wording tests only):
-`ship --abandon` and `spec`'s resume, `layout` moving a seeded part, `architect`
-writing the whole contract up front, and `setup` filling plan sections 5 and 6 on
-an adoption.
+`layout` moving a seeded part, `architect` writing the whole contract up front,
+and `setup` filling plan sections 5 and 6 on an adoption. **`ship --abandon` and
+`spec`'s resume came off this list on 2026-09-22** - the run found four defects
+between them, and a fifth in the test harness.
 
 ### Known and accepted
 

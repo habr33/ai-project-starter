@@ -124,10 +124,19 @@ progress is trackable from here on. Proceed either way.
 State which item you are spec'ing, and in which mode, before going further.
 
 **If `blueprint/history/abandoned/` holds a spec for this item**, say so, with its
-reason and branch, and ask whether to resume from it: restore it to
-`blueprint/context/current-work.md` with its ticks, check out the branch it
-names, and remove the abandoned note from the item's plan line - or write a new
-spec, leaving the archive as the record of the first attempt.
+reason and branch, and ask whether to resume from it - or write a new spec,
+leaving the archive as the record of the first attempt.
+
+To resume, **check out the branch before restoring anything.** The branch still
+carries its own committed `current-work.md` and `findings.md`, so checking it out
+brings the spec back with its ticks and the ledger back with it, and there is
+nothing to copy. Writing the archive onto `main` first only makes the checkout
+refuse: git will not overwrite a local change to that file. Restore from the
+archive only when the branch is gone, and then **drop the `**Abandoned:**` and
+`**Branch:**` lines and the whole `## Findings` section** that `ship --abandon`
+appended - that is the record of the attempt, not part of the spec, and its IDs
+are prefixed for the archive. Either way, remove the abandoned note from the
+item's plan line.
 
 **In a multi-part project, claim this part first** by writing
 `<product root>/blueprint/status/<this part>.md` - the path from `AGENTS.md`'s `Product root:`, **not** this part's

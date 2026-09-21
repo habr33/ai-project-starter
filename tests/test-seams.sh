@@ -1708,7 +1708,13 @@ section "a finding no code fixes can still close"
 # `build` set `fixed`, only `review` closed, and `review` closes only code it
 # re-examined. The P1 stayed `open` forever and blocked every `ship` in the part.
 # The route: the repairing skill marks it `fixed`, the auditor re-checks and closes.
-_says() { tr '\n' ' ' < "$1" | tr -s ' ' | grep -qF -- "$2"; }
+# The join runs inside a command substitution and the match reads a herestring:
+# as a pipeline ending in `grep -q` under `set -o pipefail`, grep exits on its
+# first match, `tr` takes SIGPIPE, and the pipeline reports failure for a phrase
+# that is present. That is a false FAIL, and it is timing-dependent - it showed
+# up once in a full run and never when the file ran alone. Forced with a large
+# input it is 40 failures out of 40.
+_says() { grep -qF -- "$2" <<<"$(tr '\n' ' ' < "$1" | tr -s ' ')"; }
 # Every skill preflight routes a non-code blocker to repairs it, so each must say
 # so itself - the review found ci, docs, deploy and monitor learning it only from
 # the ledger's header, which ship used to overwrite. migrate is routed too.
@@ -1945,5 +1951,46 @@ assert_ok "and reads that file whole instead of skipping it" \
   _says skills/review.md 'Read that file whole'
 assert_ok "and records it, because the diff is all a PR reviewer sees" \
   _says skills/review.md 'the only thing a pull-request reviewer sees'
+
+# ==== seams-E: found by running `ship --abandon` end to end (2026-09-22) ====
+# A real park-and-resume on a scratch project: two steps ticked, one half-built
+# in a new file, a four-entry ledger. Every one of these was seen happening.
+
+section "parking an item commits the new files too, not just the modified ones"
+# `git commit -am` reported "1 file changed" and left the half-built step - a new,
+# untracked file - behind, to be carried onto main by the next step. The step
+# exists precisely so the branch does not lose it.
+assert_ok "ship stages new files when parking work" \
+  _says skills/ship.md 'git add -A`, never `git commit -a'
+assert_ok "and checks the tree is clean before it moves off the branch" \
+  _says skills/ship.md 'Check `git status` is clean before moving on'
+
+section "an abandoned item's findings are read from the branch that holds them"
+# Step 2 moves to main, where the ledger is the stub; the entries are on the
+# branch. Reading the ledger from where you stand archives an empty section and
+# removes nothing, and both read as success - a P1 stayed on a parked branch.
+assert_ok "ship reads the abandoned findings from the branch" \
+  _says skills/ship.md 'git show <branch>:<path to findings.md>'
+assert_ok "and says why standing on main is the wrong place to read it" \
+  _says skills/ship.md 'archives an empty section and reports it as done'
+assert_ok "and leaves the branch ledger for the resume to bring back" \
+  _says skills/ship.md "Leave the branch's own ledger as it is"
+
+section "an archived finding's ID stays unique once it leaves the ledger"
+# The normal path prefixes archived IDs (12/F-03); abandoning did not, so the
+# next item's first finding is F-01 again and the abandon reason cites an F-01
+# that now means two things.
+assert_ok "ship prefixes an abandoned finding with the archive name" \
+  _says skills/ship.md 'each ID prefixed with the archive name'
+
+section "resuming an abandoned item checks out the branch before restoring"
+# Following the written order, git refused: "Your local changes to
+# blueprint/context/current-work.md would be overwritten by checkout".
+assert_ok "spec checks out the branch first" \
+  _says skills/spec.md 'check out the branch before restoring anything'
+assert_ok "and says the branch already carries the spec and the ledger" \
+  _says skills/spec.md 'brings the spec back with its ticks'
+assert_ok "and strips the abandon record from a spec restored from the archive" \
+  _says skills/spec.md 'that is the record of the attempt, not part of the spec'
 
 finish

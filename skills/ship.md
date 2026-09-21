@@ -296,6 +296,12 @@ aside because a skill found it inconvenient.
 1. **Keep the branch.** It is what makes this parking rather than deleting: the
    code stays where `build` left it. **Commit any uncommitted work to it first**
    (`wip: <name>`), with the user's go-ahead, or leaving the branch loses it.
+   **Stage new files too - `git add -A`, never `git commit -a`**, which commits
+   modified files and leaves an untracked one behind while reporting success. On
+   a real run the half-built step was a new file: the `wip:` commit said
+   `1 file changed`, and the only work the step exists to save stayed untracked,
+   to be carried onto `main` by Step 2 as a stray. **Check `git status` is clean
+   before moving on** - an instruction with no check is a suggestion.
    Note the branch name and its last commit. Delete the branch only on a separate,
    explicit request.
 2. **Move to `main`** - in a git worktree, the main checkout, as Step 4 describes.
@@ -303,9 +309,18 @@ aside because a skill found it inconvenient.
 3. **Archive the spec** to `blueprint/history/abandoned/YYYY-MM-DD-name.md`, read
    from the branch (`git show <branch>:<path to current-work.md>`) exactly as it
    stands, ticks included, followed by `**Abandoned:** <date> - <reason>` and
-   `**Branch:** <name> at <commit>`. Append this item's findings under
+   `**Branch:** <name> at <commit>`. **Read this item's findings from the branch
+   as well** (`git show <branch>:<path to findings.md>`): Step 2 has just moved
+   you to `main`, where the ledger is its stub, while the entries live on the
+   branch beside the code they describe. Reading the ledger from where you are
+   standing archives an empty section and reports it as done. Append them under
    `## Findings` at their current status - they are about code that never reached
-   `main` - and remove them from the ledger.
+   `main` - **each ID prefixed with the archive name**, so `F-01` becomes
+   `2026-09-22-submit-a-link/F-01`: the entries are leaving the ledger, the next
+   item's first finding will be `F-01` again, and the reason recorded above cites
+   these by ID. **Leave the branch's own ledger as it is** - it is what `spec`'s
+   resume brings back with the branch - and remove these entries from `main`'s
+   ledger only where they are actually in it.
 4. **Leave the item unchecked** in `blueprint/build-plan.md` and append a note to
    its line: `(abandoned <date> - blueprint/history/abandoned/<file>)`. A fix has
    no plan line.
