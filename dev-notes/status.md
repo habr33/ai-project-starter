@@ -15,56 +15,30 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Handoff (2026-09-23) - principles file, idea gate, build's verify handoff
+## Where work stopped (2026-09-23)
 
-**Goal:** close two gaps a comparison against public prior art (spec-kit,
-BMAD-METHOD, ai-blueprint) surfaced - no project-level "non-negotiable
-commitments" file, no explicit go/kill verdict in `ideate` - plus a `build`
-handoff fix. Then a review of that work against what the commands print.
+**Nothing is pending and the tree is clean.** The principles-file work was
+committed as `dac5d79` and fast-forwarded onto `main`, which is pushed;
+`add-principles-file` points at the same commit and can be deleted. Verified
+before the merge: `./check.sh` -> OK (16 rules, 27 skills), `./tests/run.sh` ->
+**806 passed, 0 failed**, five consecutive clean runs.
 
-**Branch:** `add-principles-file`, **nothing committed**. 12 files modified -
-that count includes `tests/test-seams.sh` **and this file**, which is the one a
-count like this always forgets. Nothing is half-built.
+What shipped in it, with the detail beside the assertions rather than here:
+`blueprint/context/principles.md` (`D11`), `ideate`'s advisory Step 2 gate,
+`build`'s conditional handoff to `verify`, the rescope path that stranded
+`setup`'s pointer, and the `grep -q` SIGPIPE hazard in `test-seams.sh`. The
+commit message lists each with its evidence; `seams-F` holds the ten checks.
 
-**Done, with evidence:**
+**Pick up from *Still open* below** - the 17th rule is the only item there that
+needs a decision rather than a resource.
 
-- **`blueprint/context/principles.md`** - what the project will never trade
-  away, distinct from `quality-bar.md` (numbers). Written once by `ideate`,
-  product-root in multi-part products, read by `architect`/`review`/
-  `preflight`. `setup` never infers one - a commitment cannot be read off code.
-  `D11`. Files: `template/AGENTS.md`, five skills, `docs/anatomy.md`, `README`.
-- **`ideate` Step 2** - advisory Go / Not yet / Doesn't clear the bar, before
-  scope-cutting. Old Steps 2-4 renumbered 3-5.
-- **`build`'s review packet** names `verify` first when any behavioral
-  done-when was proven only by a green check, and `review` directly only when
-  every one was run live in Step 3.
-- **Fixed: the rescope path stranded `setup`'s pointer.** `setup` sends an
-  adopted project to `ideate --rescope` as the only writer of `principles.md`;
-  that path said "leave it alone unless the user raises it", so every adopted
-  project was routed to a skill told not to do the thing. Rule 8 cannot see it -
-  the writer row exists and the declining sentence is *inside* the writer.
-- **Fixed: the `grep -q` SIGPIPE hazard was still live in `test-seams.sh`.**
-  One full run failed; seven were clean. Two parent-shell pipelines gated a
-  counter on `&& n=$((n+1))`, so a SIGPIPE **undercounts silently** and reads
-  as an off-by-one. Forced with a 60k-line file: 40 false failures out of 40,
-  0 as a herestring. The rule against this read only `check.sh`; now covers the
-  suites, `bash -c` exempt (pipefail is not inherited - checked, not assumed).
-- **Ten new checks under `seams-F`**, each seen failing against a mutated file,
-  each mutation confirmed to land through the same `tr | grep -F` they use.
-- **`./check.sh` -> OK** (16 rules, 27 skills); **`./tests/run.sh` -> 806
-  passed, 0 failed**, five consecutive clean runs.
+**Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
+have one here: advisory prose gates nothing, so no command can disagree with it.
+Also unacted from the same prior-art comparison: no single binding
+"constitution" (rejected - `D11`), no planning surface for a non-technical
+stakeholder, no partial install of the 27 skills.
 
-**Next:**
-
-1. **Ask whether to commit the 12 files**, then whether to merge to `main` or
-   open a PR. Nothing else is pending on this branch.
-2. `ideate`'s Step 2 has **no test and cannot usefully have one here** -
-   advisory prose gates nothing, so no command can disagree with it. Do not
-   cite it as proven. Also unacted from the same comparison: no single binding
-   "constitution" (rejected - `D11`), no planning surface for a non-technical
-   stakeholder, no partial install of the 27 skills.
-
-**Gotchas:**
+**Gotchas from that session:**
 
 - A product-root file needs **two** declarations in `template/AGENTS.md`: the
   writer row *and* a line in the MULTI-PART MARKER block. Only the second makes
@@ -72,17 +46,12 @@ count like this always forgets. Nothing is half-built.
 - Renumbering an `ideate` step touches prose cross-references, not just
   headings - grep the old heading text repo-wide after any renumber.
 - **A file count in a handoff forgets the handoff**, and the opening
-  instruction treats a mismatch as a disturbed tree. It was wrong twice here.
-- `check.sh` still has small `printf ... | grep -q` pipelines. Same shape, but
-  single table rows fit the pipe buffer, so they were left alone.
+  instruction treats a mismatch as a disturbed tree. It was wrong twice there.
+- `check.sh` still has small `printf ... | grep -q` pipelines. Same shape as the
+  SIGPIPE defect, but single table rows fit the pipe buffer, so they were left
+  alone.
 
-**Verify with:**
-
-    git status --short   # 12 modified files, nothing else
-    ./check.sh           # OK - 27 skills ... 16 rules
-    ./tests/run.sh       # total: 806 passed, 0 failed across 4 file(s)
-
-## Closed, and where the detail lives (2026-09-21 to 2026-09-22)
+## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
 
 Two sessions of findings, all fixed and tested; 2026-09-21's are merged and
 pushed. **The per-defect narrative is deliberately not repeated here** - it is
@@ -103,8 +72,8 @@ Each section comment says what shipped broken and why the linter could not see
 it. The commit messages list the rest, `D12` records what the routing eval
 measured, and `coverage.md` says which skills have actually run.
 
-- **The repository is `github.com/habr33/ai-project-starter`.** Both branches
-  are on it; `main` was force-pushed on 2026-09-21 over the new repo's
+- **The repository is `github.com/habr33/ai-project-starter`.** `main` is the
+  only branch on it, and was force-pushed on 2026-09-21 over the new repo's
   LICENSE-only initial commit (unrelated history), with the user's approval.
 - **One defect was in the harness, not the pack.** `_says` was a pipeline
   ending in `grep -q` under `pipefail`: grep exits on its first match, `tr`
