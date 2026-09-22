@@ -20,8 +20,9 @@ place that answers "has this skill actually run?".
 **Nothing is pending and the tree is clean.** The principles-file work was
 committed as `dac5d79` and fast-forwarded onto `main`, which is pushed;
 `add-principles-file` has been deleted. Verified before the merge and again
-after: `./check.sh` -> OK (16 rules, 27 skills), `./tests/run.sh` ->
-**806 passed, 0 failed**.
+after: `./check.sh` -> OK (17 rules, 27 skills), `./tests/run.sh` -> **every
+file passing, zero failures** - the total is deliberately not recorded here, for
+the reason the opening gives.
 
 What shipped in it, with the detail beside the assertions rather than here:
 `blueprint/context/principles.md` (`D11`), `ideate`'s advisory Step 2 gate,
@@ -29,8 +30,10 @@ What shipped in it, with the detail beside the assertions rather than here:
 `setup`'s pointer, and the `grep -q` SIGPIPE hazard in `test-seams.sh`. The
 commit message lists each with its evidence; `seams-F` holds the ten checks.
 
-**Pick up from *Still open* below** - the 17th rule is the only item there that
-needs a decision rather than a resource.
+**Pick up from *Still open* below.** Every item left there needs a person or a
+resource - a phone, a managed account, two live sessions, a second OS - not more
+work in this repo. The 17th rule, the last one that needed only a decision, is
+done (`D13`).
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
@@ -76,6 +79,8 @@ cannot drift out of date:
   contract block `architect` writes. This emptied the unverified list.
 - **`seams-F`** - the principles route and `build`'s packet, from the session
   above.
+- **`seams-G`** - the linter's rule count, which rule 17 spread across five
+  files. Taken from `check.sh`'s own rule comments rather than restated.
 
 Each section comment says what shipped broken and why the linter could not see
 it. The commit messages list the rest, `D12` records what the routing eval
@@ -100,11 +105,12 @@ measured, and `coverage.md` says which skills have actually run.
    Two findings there are untouched: a second real case of finding 20 (repair
    F-47's tests never drive a save, so the reported 500 still happens while the
    finding reads `fixed`), and the binary regex behind 21, still in its source.
-2. **A 17th rule, over `template/product/AGENTS.md`'s contract block.** The
-   `Kind:` defect in `seams-E` is rule 9's class in a file rule 9 does not read,
-   and the move this repo keeps making is to declare the fields and let the rule
-   follow. It touches the rule counts in `AGENTS.md`, `docs/anatomy.md` and this
-   file, so it was left as a decision rather than taken unilaterally.
+2. **Done on 2026-09-23 - rule 17 over the contract block.** `D13`. The fields
+   are declared in a table beside the block and bound to the skills that write
+   and read them; writing the rule found **nine missing bindings**, including
+   `Generate clients:`, which no file in the pack mentioned at all. The count
+   was in five files, not three - `check.sh`'s OK line and `README.md` as well -
+   and a seam test now takes it from `check.sh` and holds the rest to it.
 3. **The pressure-case tier** - a headless agent and a graded trace under time
    pressure, sunk cost and authority - is the one test these gates have never
    had, and the only thing likely to find more than the routing eval can. It
@@ -130,7 +136,7 @@ measured, and `coverage.md` says which skills have actually run.
 
 ## Where this stands (2026-09-15)
 
-27 skills, four scripts, three shared library scripts, a linter with **16 rules**,
+27 skills, four scripts, three shared library scripts, a linter with **17 rules**,
 four guides, and a template. No dependencies, nothing to build, no network calls.
 
 **This file is the public summary.** The chronological record of building the
@@ -241,9 +247,9 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**One thing is: the 17th rule** over `template/product/AGENTS.md`'s contract
-block - item 2 under *Still open* above. It needs a decision about the rule
-counts, not a resource. Everything else known is closed: the 2026-09-15 review
+**Nothing known is open here.** The 17th rule, the last item that needed a
+decision rather than a resource, went in on 2026-09-23 - see `D13` and item 2
+above. Everything else known is closed: the 2026-09-15 review
 and a run of the loop on a two-part CMS went in commit `5306f41` - see D9 and
 D10 in `decisions.md`, and the commit message for the full list. One note
 stays: the handoff seam test in `tests/test-seams.sh` matches wording, so

@@ -46,6 +46,20 @@ same before a deploy. Both need the real command, and "the contract file" in the
 abstract is not one. A hand-written contract has no regenerate command - say so
 here, because it makes those checks weaker and the report should admit it.
 
+**Who is bound to each field.** `architect` fills the block; the skills below are
+the ones that act on it. A field with no reader is decoration in a block whose
+own text says otherwise - which is exactly what `Kind:` was until 2026-09-22,
+present in this file and named by no skill at all. Rule 17 in `check.sh` reads
+this table, and requires each skill named here to name the field itself.
+
+| Field | Written by | Read by |
+| --- | --- | --- |
+| `Owner:` | `architect` | `orchestrate`, `spec`, `autopilot` |
+| `File:` | `architect` | `ci`, `integrate` |
+| `Kind:` | `architect` | `ci` |
+| `Regenerate:` | `architect` | `ci`, `integrate` |
+| `Generate clients:` | `architect` | `ci` |
+
 ## Paths mean something different here
 
 **At this root, `blueprint/` is the product's.** Inside a part, `blueprint/` is

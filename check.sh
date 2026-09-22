@@ -642,6 +642,76 @@ for s in $r16_scripts; do
   done <<< "$(awk -v refusers="$r16_refusers" -v rel="$s" "$r16_awk" "$HERE/$s")"
 done
 
+# 17 - every field in the product root's contract block has a writer and a
+#      reader, and both name the field.
+#
+#    Rule 9's class, in a file rule 9 does not read. `Kind:` appeared exactly
+#    once in the whole pack - in template/product/AGENTS.md itself - written by
+#    no skill and read by none, inside a block whose own text says "These are
+#    read, not decorative". It is also the field `ci` branches on when it decides
+#    whether there is a regeneration to check. Every file was individually valid;
+#    the block simply described a contract nothing was bound to.
+#
+#    The fields come from the block and the bindings from the table beside it,
+#    and a binding must be a literal `Field:` in the skill. **The paraphrase is
+#    what hid this**: `ci` said "if a contract is generated between them" while
+#    the field that says so went unread, and `integrate` said "the regeneration
+#    command" without naming `Regenerate:`. Writing the rule found two more
+#    orphans - `Regenerate:` with no reader that named it, and `Generate
+#    clients:` with no reader at all, referenced nowhere in the pack.
+contract_file="$HERE/template/product/AGENTS.md"
+if [ ! -f "$contract_file" ]; then
+  fail "template/product/AGENTS.md is missing - rule 17 is not checking anything"
+else
+  # The end pattern is searched from the line after the start, so the block's own
+  # heading does not close the range.
+  c_block=$(sed -n '/^## The contract/,/^## /p' "$contract_file")
+  c_fields=$(grep -oE '^- [A-Za-z][A-Za-z ]*:' <<< "$c_block" | sed 's/^- //; s/:$//' || true)
+  c_rows=$(grep -E '^\| `[A-Za-z][A-Za-z ]*:` \|' "$contract_file" || true)
+  if [ -z "$c_fields" ]; then
+    fail "template/product/AGENTS.md: cannot find the contract block's fields - rule 17 is not checking anything"
+  elif [ -z "$c_rows" ]; then
+    fail "template/product/AGENTS.md: cannot find the contract writer/reader table - rule 17 is not checking anything"
+  else
+    # A row for a field the block does not have is dead config, and it hides the
+    # field it was meant to bind - the same reason a stale name in any declared
+    # list here is an error rather than a harmless leftover.
+    while IFS= read -r row; do
+      [ -n "$row" ] || continue
+      rf=$(sed 's/^| `\([^`]*\):`.*/\1/' <<< "$row")
+      grep -qxF -- "$rf" <<< "$c_fields" \
+        || fail "template/product/AGENTS.md: the contract table has a row for '$rf:', which is not a field in the contract block"
+    done <<< "$c_rows"
+
+    # Herestrings throughout, never pipes: `fail` increments a counter, and a
+    # pipe would run it in a subshell - the rule would print and still exit 0.
+    while IFS= read -r field; do
+      [ -n "$field" ] || continue
+      row=$(grep -F -- "| \`$field:\` |" <<< "$c_rows" | head -1 || true)
+      if [ -z "$row" ]; then
+        fail "template/product/AGENTS.md: contract field '$field:' has no row in the writer/reader table"
+        continue
+      fi
+      for col in 3 4; do
+        if [ "$col" = 3 ]; then what=writer; verb=writes; else what=reader; verb=reads; fi
+        names=$(awk -F'|' -v c="$col" '{print $c}' <<< "$row" | grep -oE '`[a-z-]+`' | tr -d '`' || true)
+        if [ -z "$names" ]; then
+          fail "template/product/AGENTS.md: contract field '$field:' has no $what - a field nothing $verb is decoration, and this block says it is read"
+          continue
+        fi
+        for n in $names; do
+          if [ ! -f "$HERE/skills/$n.md" ]; then
+            fail "template/product/AGENTS.md: contract field '$field:' names \`$n\` as a $what, which is not a skill"
+            continue
+          fi
+          grep -qF -- "\`$field:\`" "$HERE/skills/$n.md" \
+            || fail "template/product/AGENTS.md: table says \`$n\` is a $what of '$field:', but skills/$n.md never names the field - a paraphrase is what hid \`Kind:\`"
+        done
+      done
+    done <<< "$c_fields"
+  fi
+fi
+
 if [ "$errors" -gt 0 ]; then
   echo
   echo "$errors error(s) across $skills skill(s)."
@@ -653,4 +723,5 @@ echo "     every script referenced, every board field written, every skill state
 echo "     its preconditions, frontmatter within host limits, every state file a writer,"
 echo "     every product-root file named as one, every decision skill says what"
 echo "     happens when its decision already exists, every declared mode named"
-echo "     in its description, no script refusing after it has written"
+echo "     in its description, no script refusing after it has written,"
+echo "     every contract field written and read"

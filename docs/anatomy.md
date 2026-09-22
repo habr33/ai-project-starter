@@ -215,8 +215,8 @@ none of them execute:
 
 ## What holds this together mechanically
 
-`check.sh` has 16 rules. Eleven were added *after* a specific bug got through,
-which is the only reason they are the right eleven:
+`check.sh` has 17 rules. Twelve were added *after* a specific bug got through,
+which is the only reason they are the right twelve:
 
 | Rule | Catches | Added because |
 |---|---|---|
@@ -231,6 +231,7 @@ which is the only reason they are the right eleven:
 | 14 | a decision skill silent on re-deciding | `ideate` re-run erased the `- [x]` marks that are the resume mechanism |
 | 15 | a mode missing from its skill's description | `docs --check` was reachable only by someone who already knew |
 | 16 | a script that refuses after it has written | `convert-to-parts.sh` moved every file into a part, then refused `-api` - the third time |
+| 17 | a contract field with no writer or no reader | `Kind:` appeared once in the pack, in the block that calls itself read |
 
 **One class was recorded here as unlintable for months and is now rule 13.** A
 path that resolves to the wrong directory — every file valid, only the runtime
@@ -266,7 +267,7 @@ never rewritten in place.
 
 ## Changing the workflow's shape
 
-Five kinds of change have broken this pack repeatedly, and each has one step
+Six kinds of change have broken this pack repeatedly, and each has one step
 that is easy to skip and invisible afterwards. **The step is always a
 declaration** - the rules here can only check what has been written down, which
 is why every one of them is driven by a list in `template/AGENTS.md` rather than
@@ -327,7 +328,26 @@ in one part. `convert-to-parts.sh` lists what it moved; `architect` owns the
 split. Nothing splits it automatically, and nothing can: telling a product
 feature from a front-end-only one is judgement.
 
-**The general rule behind all four:** when a mechanism spans files, the question
+**Adding a linter rule** - a new class made checkable.
+
+1. **Write the declaration first, then the rule.** Every cross-file rule here
+   reads a list someone wrote down - `decision_skills`, the product-root marker,
+   the contract table rule 17 reads. A rule clever enough to need no declaration
+   is a rule that guesses.
+2. **Run it before fixing anything.** Rule 13 found five more skills the moment
+   it existed; rule 17 found nine missing bindings, one of them a field no file
+   in the pack mentioned. What the rule finds on its first run is the argument
+   for it, and it belongs in the decision entry.
+3. **Update the count in all five places** - `AGENTS.md`, `README.md`, this
+   file, `dev-notes/status.md`, and `check.sh`'s own OK line, which is what a
+   person actually reads after a run. `tests/test-seams.sh` now takes the count
+   from `check.sh`'s rule comments and holds the rest to it, so this is checked
+   rather than remembered.
+4. **Negative-test it, then delete the rule and watch every one of those tests
+   fail.** A rule that cannot fail reports everything clean; rule 12 shipped
+   that way once, printing its error from a subshell and returning 0.
+
+**The general rule behind all five:** when a mechanism spans files, the question
 is *who writes this, on this route, and where does it actually land* - and the
 answer is only trustworthy if you ran it. Every defect in this file was found by
 comparing what a command produced against what was claimed.

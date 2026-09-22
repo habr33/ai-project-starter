@@ -33,7 +33,9 @@ decision says what happens when that decision already exists**, and **that every
 mode a skill declares is named in its description** — the description is what an
 agent matches on, so a mode missing from it cannot be reached — and **that no
 script refuses after its first write**, including by calling a script that can,
-unless an `after-write:` comment says why nothing is left half-made — 16 rules.
+unless an `after-write:` comment says why nothing is left half-made, and **that
+every field of the product root's contract block has a writer and a reader that
+name it** — a paraphrase binds nothing — 17 rules.
 
 **The cross-file rules exist because the file-level ones could not see the worst
 bugs found here**: a script nothing routed to, a board field with four readers
@@ -96,7 +98,7 @@ to be broken. **A test verified by a mutation that changes nothing is not
 verified**, and it reads exactly like one that is. Mutate the thing the assertion
 actually names, and if the test still passes, suspect the mutation before the
 test. That is what these files automate, and nothing else here does
-it. See *Changing the workflow's shape* in `docs/anatomy.md` for the five kinds
+it. See *Changing the workflow's shape* in `docs/anatomy.md` for the six kinds
 of change that have broken this pack before, and the step each one hides. That step
 is always a **declaration**: these rules can only check what has been written
 down, which is why every one of them reads a list in `template/AGENTS.md`.

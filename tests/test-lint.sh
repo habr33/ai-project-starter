@@ -509,4 +509,73 @@ r=$(fresh_repo)
 after_line "$r/new-project.sh" 'mkdir -p "$TARGET"' '# A refusal down here would need an `after-write:` note.'
 assert_ok "a comment mentioning after-write: is not a marker" lint "$r"
 
+section "rule 17 - every contract field has a writer and a reader that name it"
+# The rule that would have caught `Kind:`: a field sitting in the product root's
+# contract block, written by no skill and read by none, in a block whose own text
+# says "These are read, not decorative". Writing it found two more - `Regenerate:`
+# read only as "the regeneration command", and `Generate clients:`, which no file
+# in the pack mentioned at all.
+CB=template/product/AGENTS.md
+
+# The binding must be the literal field. A paraphrase is exactly what hid the
+# original defect, so the reader losing the name has to fail even though every
+# sentence around it still describes the same work.
+r=$(fresh_repo)
+sed -i 's/`Kind:` in the product root/whether a contract is generated, per the product root/' "$r/skills/ci.md"
+assert_refuses "a reader that paraphrases the field instead of naming it is caught" \
+  "table says \`ci\` is a reader of 'Kind:', but skills/ci.md never names the field" lint "$r"
+
+r=$(fresh_repo)
+sed -i 's/^  - `Generate clients:` - the command each consuming part runs/  - the command each consuming part runs/' "$r/skills/architect.md"
+assert_refuses "a writer that stops naming the field is caught" \
+  "table says \`architect\` is a writer of 'Generate clients:'" lint "$r"
+
+# A field with a row but an empty column is the `Kind:` shape exactly: declared,
+# and bound to nothing.
+r=$(fresh_repo)
+sed -i 's/^| `Kind:` | `architect` | `ci` |$/| `Kind:` | `architect` |  |/' "$r/$CB"
+assert_refuses "a field with no reader is caught" \
+  "contract field 'Kind:' has no reader" lint "$r"
+
+r=$(fresh_repo)
+sed -i 's/^| `Kind:` | `architect` | `ci` |$/| `Kind:` |  | `ci` |/' "$r/$CB"
+assert_refuses "a field with no writer is caught" \
+  "contract field 'Kind:' has no writer" lint "$r"
+
+# A field added to the block and to nothing else - the way `Generate clients:`
+# entered the pack.
+r=$(fresh_repo)
+sed -i 's|^- Kind: .*|&\n- Version: <the contract version>|' "$r/$CB"
+# The block writes its fields plain (`- Kind: <...>`) and the table backticks
+# them; a mutation aimed at the wrong one changes nothing and still reads green.
+assert_eq "the new field actually landed in the block" "1" \
+  "$(grep -c '^- Version:' "$r/$CB")"
+assert_refuses "a new field bound to nothing is caught" \
+  "contract field 'Version:' has no row in the writer/reader table" lint "$r"
+
+# A row naming a field the block no longer has is dead config, and it hides the
+# field it was meant to bind - the same reason a stale name in any declared list
+# here is an error rather than a harmless leftover.
+r=$(fresh_repo)
+sed -i 's/^| `Kind:` | `architect` | `ci` |$/| `Flavour:` | `architect` | `ci` |/' "$r/$CB"
+assert_refuses "a table row for a field the block does not have is caught" \
+  "has a row for 'Flavour:', which is not a field in the contract block" lint "$r"
+
+r=$(fresh_repo)
+sed -i 's/^| `Kind:` | `architect` | `ci` |$/| `Kind:` | `architect` | `cimode` |/' "$r/$CB"
+assert_refuses "a reader that is not a skill is caught" \
+  "names \`cimode\` as a reader, which is not a skill" lint "$r"
+
+# A rule that cannot see its own input passes everything. Both halves of rule 17
+# read the same file, so losing either must be loud rather than green - this is
+# the "rule that reports but cannot fail" shape the runner exists to catch.
+r=$(fresh_repo)
+sed -i '/^| `[A-Za-z][A-Za-z ]*:` |/d' "$r/$CB"
+assert_refuses "losing the whole table is caught, not skipped" \
+  "cannot find the contract writer/reader table" lint "$r"
+
+r=$(fresh_repo); rm -f "$r/$CB"
+assert_refuses "a missing product AGENTS.md is caught, not skipped" \
+  "rule 17 is not checking anything" lint "$r"
+
 finish

@@ -227,3 +227,42 @@ may be excused by name on `known_misses` with a reason; only `stack` is, because
 "build this with" is lexically owned by `build`. Prompts that paraphrase their
 own description prove only that a sentence matches itself, so the file rejects
 any prompt repeating five consecutive words of it.
+
+## D13 - The contract block's fields are declared, and rule 17 binds them (2026-09-23)
+
+`template/product/AGENTS.md` carries the contract between the parts as five
+fields, under a paragraph that says **"These are read, not decorative."** They
+were not. `Kind:` appeared **exactly once in the whole pack** - in that block -
+written by no skill and read by none, while `ci` branched on "if a contract is
+generated between them" in prose. It was fixed in `seams-E` as a one-off.
+
+**This is rule 9's class in a file rule 9 does not read**, so it was left open
+as item 2 under *Still open* rather than patched again. Closed here by the move
+this repo keeps making: **declare the fields, and let the rule follow.** A
+`| Field | Written by | Read by |` table now sits beside the block, and rule 17
+reads it.
+
+**Writing the rule found two more orphans**, which is the whole argument for it:
+`Regenerate:` had readers that only ever said "the regeneration command", and
+**`Generate clients:` was referenced nowhere in the pack at all** - a command
+the block promises `ci` will run, that no skill had ever been told to run. Nine
+bindings were missing in total, across `architect`, `ci` and `integrate`.
+
+**The binding must be the literal `Field:`, not a paraphrase.** That is the
+strict part, and it is strict because the paraphrase is exactly what hid the
+original defect: every sentence around `Kind:` described the right work, and
+nothing was bound to the field. A rule satisfied by "if a contract is generated"
+would have passed the bug it exists to catch.
+
+**Rejected: inferring the fields from the block alone**, with no table. It would
+have caught `Generate clients:` having no reader only by guessing which skills
+ought to read it. The table is a claim someone has to write down, and writing it
+is the moment the question gets asked - the same reason `decision_skills` is a
+list rather than a heuristic.
+
+**The rule count now lives in five files.** Adding this rule meant editing
+`AGENTS.md`, `README.md`, `docs/anatomy.md`, `dev-notes/status.md` and
+`check.sh`'s own OK line, and nothing checked that they agreed. `test-seams.sh`
+now takes the count from `check.sh`'s rule comments - asserting they run 1..n
+with no gaps, so a deleted rule cannot leave the maximum unchanged - and holds
+the four prose files to it.

@@ -90,12 +90,18 @@ toolchain and runs each part's checks - Node plus the .NET SDK, `npm test` plus
 parallel.
 
 **If a contract is generated between them** - `Kind:` in the product root's
-`AGENTS.md` says which it is - **verify it is current**: regenerate it
-and fail if the result differs from what is committed in `contracts/` at the
-product root - `architect` records the filename and the regeneration command in
-`AGENTS.md`. A stale contract is a
+`AGENTS.md` says which it is - **verify it is current**: run `Regenerate:` from
+the directory that field names, and fail if the result differs from what is
+committed at `File:` under `contracts/` at the product root. `architect` fills
+both. A stale contract is a
 runtime failure that no unit test on either side will catch, because each part is
 individually correct against its own copy.
+
+**Then do the same for the clients.** `Generate clients:` gives a command per
+consuming part and the directory each runs from; run each one and fail on any
+difference. A generated client drifts exactly the way the contract does, and a
+part built against a stale client passes every check it owns - the contract
+itself being current says nothing about what was generated from it.
 
 **This job is the only check that runs without anyone asking.** `integrate`
 makes the same check, but only when someone remembers to run it - so if the

@@ -1046,6 +1046,35 @@ for _doc in dev-notes/status.md docs/anatomy.md; do
               | grep -oE '^[a-z]+' | head -1)")"
 done
 
+# ==== seams-G: the rule count, spread across five files by rule 17 (2026-09-23) ====
+section "the linter's rule count agrees everywhere it is written down"
+# Adding rule 17 meant editing the number in five files, and nothing checked that
+# they agreed - the same shape as the file listing above, which is read against
+# the tree for exactly this reason. A count is a claim about check.sh, so it is
+# taken from check.sh: the highest `# <n> -` or `# <n>.` rule comment in it.
+# Written down in four prose files and one status line, it is four chances to
+# update three of them.
+_rules=$(grep -oE '^[[:space:]]*# ([0-9]+)[ .-]' check.sh | grep -oE '[0-9]+' | sort -n | tail -1)
+assert_eq "check.sh's rule comments are numbered and readable" "yes" \
+  "$([ -n "$_rules" ] && [ "$_rules" -ge 10 ] && echo yes || echo no)"
+# The rules are numbered from 1 with no gaps, so the highest number IS the count.
+# Without this a deleted rule leaves the maximum unchanged and every prose file
+# agreeing with a number that is one too high.
+_seq=$(grep -oE '^[[:space:]]*# ([0-9]+)[ .-]' check.sh | grep -oE '[0-9]+' | sort -n -u | tr '\n' ' ')
+assert_eq "the rule numbers run 1..$_rules with no gaps" \
+  "$(seq 1 "$_rules" | tr '\n' ' ')" "$_seq"
+for _doc in AGENTS.md README.md docs/anatomy.md dev-notes/status.md; do
+  _flat=$(tr '\n' ' ' < "$_doc" | tr -s ' ')
+  assert_eq "$_doc states check.sh's rule count" "$_rules" \
+    "$(grep -oE '\*?\*?[0-9]+ rules\*?\*?' <<< "$_flat" | grep -oE '[0-9]+' | sort -u | head -1)"
+  assert_eq "$_doc states it only once, and consistently" "1" \
+    "$(grep -oE '[0-9]+ rules' <<< "$_flat" | grep -oE '[0-9]+' | sort -u | wc -l | tr -d ' ')"
+done
+# The OK line is what a person actually reads after a run, and it listed every
+# rule but the new one for as long as it took to notice.
+assert_ok "check.sh's OK line names as many clauses as it has rules" \
+  bash -c './check.sh | tr "\n" " " | tr -s " " | grep -qF "every contract field written and read"'
+
 # anatomy names them as well as counting them. A correct count naming the wrong
 # skills is the version of this that reads as right.
 _named=$(tr '\n' ' ' < docs/anatomy.md | tr -s ' ' \
@@ -2044,12 +2073,16 @@ section "every field in the product root's contract block has a writer"
 # not decorative". It is also the field ci branches on: "if a contract is
 # generated between them". Rule 9 covers the coordination board's fields; this
 # block is a different file and nothing covered it.
-for field in 'Owner' 'File' 'Kind' 'Regenerate'; do
+for field in 'Owner' 'File' 'Kind' 'Regenerate' 'Generate clients'; do
   assert_ok "the contract block still declares $field" \
     grep -qE "^- $field:" template/product/AGENTS.md
 done
+# The wording moved into a per-field list when rule 17 was written, which is the
+# rule that now enforces the binding itself. This still holds the part rule 17
+# cannot see: that the two legal VALUES are named. `Kind: yes` satisfies a rule
+# checking the field is mentioned and tells `ci` nothing.
 assert_ok "architect sets the contract's Kind" \
-  _says skills/architect.md 'Set `Kind:` to `generated` or `hand-written`'
+  _says skills/architect.md '`Kind:` - `generated` or `hand-written`'
 assert_ok "and says a hand-written one is recorded, not left blank" \
   _says skills/architect.md 'say `hand-written` rather than leaving the line empty'
 assert_ok "ci reads Kind rather than inferring it" \
