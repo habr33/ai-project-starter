@@ -19,9 +19,9 @@ place that answers "has this skill actually run?".
 
 **Nothing is pending and the tree is clean.** The principles-file work was
 committed as `dac5d79` and fast-forwarded onto `main`, which is pushed;
-`add-principles-file` points at the same commit and can be deleted. Verified
-before the merge: `./check.sh` -> OK (16 rules, 27 skills), `./tests/run.sh` ->
-**806 passed, 0 failed**, five consecutive clean runs.
+`add-principles-file` has been deleted. Verified before the merge and again
+after: `./check.sh` -> OK (16 rules, 27 skills), `./tests/run.sh` ->
+**806 passed, 0 failed**.
 
 What shipped in it, with the detail beside the assertions rather than here:
 `blueprint/context/principles.md` (`D11`), `ideate`'s advisory Step 2 gate,
@@ -50,6 +50,15 @@ stakeholder, no partial install of the 27 skills.
 - `check.sh` still has small `printf ... | grep -q` pipelines. Same shape as the
   SIGPIPE defect, but single table rows fit the pipe buffer, so they were left
   alone.
+- **`git log --all` is not "what is public".** An audit on 2026-09-23 reported a
+  personal address in 17 of 36 commits and was **wrong on both numbers**:
+  `--all` sweeps `refs/original/*`, the local backup refs a previous
+  `filter-branch` leaves behind, so the pre-scrub history was counted as live.
+  `main` had 19 commits and all were already clean. **`git ls-remote origin` is
+  the only answer to what is published** - it lists what the remote actually
+  holds, and here that was one ref. The unnecessary rewrite that followed was
+  reverted; nothing was force-pushed. Check the remote before rewriting history,
+  not the local ref graph.
 
 ## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
 
@@ -253,6 +262,14 @@ test harness. What is left unproven needs a person or a resource, not work here.
   scripts, the cross-file invariants. Every defect worth finding came from
   running a skill against a real project instead. That is not a gap to close; it
   is the reason the coverage table exists.
+- **The private-name guard is inert on any machine without the diary.** The
+  half of the split that checks no public file names a private project
+  (`tests/test-seams.sh`, the `dev-notes/journal.md` block) can only run where
+  the diary exists, because the list of names lives in the diary and a list in
+  the test would publish them. Everywhere else it prints `skip` and says why.
+  **So a green suite is not evidence the public files are clean** - only a run
+  on the machine that holds the diary is. The skip is deliberate and the loud
+  message is the mitigation; there is no fix that does not publish the list.
 - **Every project created before 2026-09-02 is missing the `build` skill from
   git.** The `.gitignore` this pack wrote had `build/`, which matches at any
   depth. Fixed for new projects; `convert-to-parts.sh` repairs it in passing. To
