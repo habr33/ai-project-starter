@@ -27,11 +27,12 @@ that says "tens of users, down until I notice". Step 3 says "system design does
 not apply" and stops. **That is a complete run**, and it takes minutes.
 
 
-> **Multi-part project:** `blueprint/project-plan.md` and
+> **Multi-part project:** `blueprint/project-plan.md`,
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` writes it at the root, not per part) live at the **product
-> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
-> Everything else here is this part's own.
+> `architect` writes it at the root, not per part), and
+> `blueprint/context/principles.md` (the product's own, from `ideate`) live at
+> the **product root**, not this part. Resolve it from `AGENTS.md`'s
+> `Product root:` field. Everything else here is this part's own.
 
 ## Before you start
 
@@ -71,13 +72,21 @@ change to the directory names alone is `layout`'s, not this skill's.
 
 ## Input
 
-No argument. Reads `blueprint/project-plan.md` and blueprint/build-plan.md.
+No argument. Reads `blueprint/project-plan.md`, `blueprint/build-plan.md`, and
+`blueprint/context/principles.md` if it exists.
 
 ## Step 1 - read what is already decided
 
 Pull the problem, users, features, UI/UX and Constraints from
 `blueprint/project-plan.md`, and the item list from `blueprint/build-plan.md` if it
 has entries. The Tech section is still empty - `stack` fills it after this.
+
+**Read `blueprint/context/principles.md` too, if `ideate` wrote one.** It holds
+what the project will never trade away - not a number to hit, like the quality
+bar this skill writes next, but a commitment the structure itself must not
+quietly violate. A structure that would cost one of them - "one person
+maintains this" ruling out a service that needs its own on-call, say - is a
+finding to raise here, not a detail to route around in silence.
 
 That is the brief. Do not re-ask questions it already answers.
 

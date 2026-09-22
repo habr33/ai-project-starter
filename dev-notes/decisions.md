@@ -167,3 +167,63 @@ table did not credit - `rollback`, `build`, `architect`, `ideate`, `host`,
 `migrate`, `ci` between them - and `docs/anatomy.md` called `verify` read-only
 while it raises findings. `orchestration.md` and `status/` now have rows, which
 retired rule 12's `state_declared_elsewhere` list.
+
+## D11 - Principles are their own file, and only `ideate` writes them (2026-09-22)
+
+A review against public prior art (GitHub's spec-kit) named a gap: nothing here
+holds project-level, non-negotiable commitments - "no ads, ever", "nothing
+leaves this machine" - the way spec-kit's constitution does. The closest
+existing file, `blueprint/context/quality-bar.md`, is a numeric bar `architect`
+writes and `preflight` checks the running project against.
+
+**Considered folding this into `quality-bar.md`** - one more section, no new
+file, no new row anywhere. Rejected: that file answers *what number does this
+project hit*, and a commitment is not a number - "no ads" is not a performance
+target that can be missed by degree, it either holds or it does not. Merging
+the two would make `architect` (who writes the bar) also the owner of
+commitments that are properly `ideate`'s, since they are decided at the same
+time as the problem and the users, not at the same time as the structure.
+
+**Chose: a third file, `blueprint/context/principles.md`, written once by
+`ideate`** in the same step as the two plans, following the same
+already-exists discipline. Read by `architect` (a structure must not quietly
+design around one), `review` (a violation is a finding), and `preflight` (a
+blocker, at the same standing as a missed quality-bar line).
+
+**Asymmetric with `quality-bar.md` on one point, deliberately**: `setup`
+discovers a quality bar for an existing project by measuring what is already
+true. It does not write a principles file, and says so - a commitment cannot be
+read off the code, because the absence of ads today is not the same claim as a
+promise never to add them. An existing project's principles are unrecorded
+until someone states them through `ideate --rescope`, and that gap is reported,
+not filled in on its behalf. **That makes the rescope path the only door**, so
+its "leave `principles.md` alone" rule is scoped to a file that already exists;
+stated unqualified, it closed the door `setup` sends people to.
+
+## D12 - The routing eval ranks descriptions, and a small gap is a tie (2026-09-21)
+
+`tests/test-routing.sh` is the only thing here that reads the 27 `description:`
+lines as a set - the linter checks one at a time, so a skill whose description
+omits the words people actually type stays lintable and unreachable. That is
+what it found on `monitor`, which lost "the site is down and i need to know
+why" to `prepare` by 0.0332.
+
+**All 27 descriptions share one IDF table, so editing any one reweights every
+other skill.** Adding *down* to `monitor` diluted the only term separating
+`spec` from `progress`, and `spec` fell from first to second on a margin of
+**0.0003**.
+
+**Considered gating top-1 strictly** - every skill must win its own prompt,
+full stop. Rejected: on those numbers it gates on noise, and every future
+description edit would break an unrelated skill. **Chose a `tie_margin`, and
+measured it rather than picking it**: 0.0003 for the `spec` noise against
+0.0332 for the real `monitor` miss is a factor of 100, so the line sits at
+0.02. Checked by raising it to 0.05 and watching the unfixed `monitor` pass as
+a tie - the defect class really does go invisible above ~0.03.
+
+**It ranks with TF-IDF, which is not an agent.** A result there is evidence
+about a description's vocabulary, never about how an agent would route. A skill
+may be excused by name on `known_misses` with a reason; only `stack` is, because
+"build this with" is lexically owned by `build`. Prompts that paraphrase their
+own description prove only that a sentence matches itself, so the file rejects
+any prompt repeating five consecutive words of it.

@@ -11,11 +11,12 @@ Where this sits:
 
     `build` -> review -> repairs -> review again -> `ship`
 
-> **Multi-part project:** `blueprint/project-plan.md` and
+> **Multi-part project:** `blueprint/project-plan.md`,
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` writes it at the root, not per part) live at the **product
-> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
-> Everything else here is this part's own.
+> `architect` writes it at the root, not per part), and
+> `blueprint/context/principles.md` (the product's own, from `ideate`) live at
+> the **product root**, not this part. Resolve it from `AGENTS.md`'s
+> `Product root:` field. Everything else here is this part's own.
 
 `verify` proves the *behavior* matches the spec. This checks the *code*:
 whether it is safe, consistent, and worth building on.
@@ -64,6 +65,17 @@ and the performance and security lenses against a missing
 Report that as an unverified area in the summary rather than letting silence read
 as a pass.
 
+**A third file to check against, when it exists: `blueprint/context/principles.md`**
+- the project's own non-negotiable commitments, written by `ideate`. Different
+from the two standards above: those are code-level conventions, this is a
+project-level commitment the code as a whole either honors or breaks - an
+analytics call added to a project whose principles say "nothing leaves this
+machine" is a finding here regardless of how clean the code around it is. A
+missing file is not itself a gap the way a missing `coding-standards.md` is:
+"none recorded" is written explicitly when there is nothing to hold, so an
+absent file most often means `ideate` never ran, which is worth naming but is
+not a code finding.
+
 ## Input
 
 Scope and lens are separate controls, and either can be omitted.
@@ -91,6 +103,7 @@ Read the project's state before acting:
 
 - `blueprint/context/project-overview.md` - the source of truth for what this project is
 - `blueprint/context/coding-standards.md` - the conventions this project's code follows
+- `blueprint/context/principles.md` - the project's non-negotiable commitments, if `ideate` recorded any
 - `blueprint/context/current-work.md` - the one item in flight, if any
 - `blueprint/context/findings.md` - open review findings against the current work
 
@@ -153,7 +166,8 @@ The lenses:
 
 - **Quality** - duplicated logic, dead code, unreachable paths, oversized
   modules, abstractions that do not pay for themselves, a missing abstraction
-  that is causing real repetition, drift from blueprint/context/coding-standards.md.
+  that is causing real repetition, drift from blueprint/context/coding-standards.md,
+  and anything that breaks a commitment in `blueprint/context/principles.md`.
 - **Security** - judged against the posture in `blueprint/context/quality-bar.md`
   where it exists: what this handles, and what that obliges. Missing
   authentication or authorization, ownership taken from

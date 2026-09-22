@@ -282,7 +282,7 @@ requires_count() {
   local target="$1" n=0 f
   for f in skills/*.md; do
     [ "$f" = "skills/$target.md" ] && continue
-    tr '\n' ' ' < "$f" | tr -s ' ' | grep -qF "say to run \`$target\` first" && n=$((n+1))
+    grep -qF "say to run \`$target\` first" <<<"$(tr '\n' ' ' < "$f" | tr -s ' ')" && n=$((n+1))
   done
   echo "$n"
 }
@@ -924,7 +924,7 @@ assert_lacks "verify no longer calls itself read-only" skills/verify.md 'this sk
 assert_ok "and says what it does write" \
   bash -c "tr '\n' ' ' < skills/verify.md | tr -s ' ' | grep -qi 'never edits the product'"
 
-section "check.sh never pipes a file into grep -q"
+section "nothing here pipes a file into grep -q"
 # `grep -v ... "$f" | grep -q` under `set -o pipefail`: grep -q exits on its first
 # match, the writer still reading the file takes SIGPIPE, and the pipeline reports
 # failure although the match succeeded. Rule 12 printed "declares it writes
@@ -933,6 +933,19 @@ section "check.sh never pipes a file into grep -q"
 # run. tests/lib.sh already forbids this shape for the same reason.
 assert_eq "no file-reading pipeline in check.sh ends in grep -q" "" \
   "$(grep -nE '"\$(HERE|f)[^"]*" *\| *grep -q' check.sh || true)"
+# **The rule read only check.sh, and the suites are where it was still live.**
+# Two of them sat in this very file - the `requires_count` loop and the anatomy
+# reader-count loop - each joining a whole skill file and gating a counter on
+# `&& n=$((n+1))`, so a SIGPIPE silently UNDERCOUNTS and the assertion fails
+# with a plausible off-by-one rather than an error. Seven clean full runs and
+# one failure; forced with a 60k-line file, the shape gave 40 false failures
+# out of 40 and the herestring 0. A rule scoped to one file is not the rule its
+# own comment claims - `tests/lib.sh` says *every* assertion must be immune.
+# `bash -c` is exempt on purpose: pipefail is not inherited by a child shell,
+# which was checked rather than assumed.
+assert_eq "nor in any suite that runs under pipefail" "" \
+  "$(grep -nE '(< *"\$[A-Za-z_]|(grep|sed|awk|tr|cat)[^|]*"\$[A-Za-z_])[^|]*\| *([a-z]+[^|]*\| *)*grep -q' \
+       check.sh tests/*.sh | grep -v 'bash -c' | grep -vE ':[0-9]+: *#' || true)"
 
 section "one skill applies a migration to an environment"
 # Both migrate (Step 4, production last) and deploy ("Run migrations before the
@@ -973,7 +986,7 @@ while IFS= read -r row; do
   for sk in skills/*.md; do
     n=$(basename "$sk" .md)
     grep -qx "$n" <<< "$writers" && continue
-    grep -v '^>' "$sk" | grep -qF -- "$file" && real=$((real + 1))
+    grep -qF -- "$file" <<<"$(grep -v '^>' "$sk")" && real=$((real + 1))
   done
   [ "$claim" = "$real" ] || bad="$bad $file(says $claim, is $real)"
 done <<< "$(grep -E '^\| `blueprint/[^`]*` \|.*\| [0-9]+ skills \|' docs/anatomy.md)"
@@ -1737,7 +1750,11 @@ done
 
 # ==== END seams-C ====
 
-# ==== seams-D: found by running the whole loop on a new web app (2026-09-16) ====
+# ==== seams-D: found by running the whole loop on cms-rr (2026-09-16) ====
+# 21 findings, of which one is tested in test-scripts.sh rather than here. The
+# last three sections below were closed later, on 2026-09-21, and kept under
+# this banner because they came from the same run - a banner that names only
+# the day it was opened sends a reader to the wrong session for the tail.
 
 section "prototype writes the durable record after the user has seen the mockups"
 # design.md was Step 4 and looking at the mockups Step 5, which never said to
@@ -1952,7 +1969,12 @@ assert_ok "and reads that file whole instead of skipping it" \
 assert_ok "and records it, because the diff is all a PR reviewer sees" \
   _says skills/review.md 'the only thing a pull-request reviewer sees'
 
-# ==== seams-E: found by running `ship --abandon` end to end (2026-09-22) ====
+# ==== seams-E: found by running the five unverified paths (2026-09-22) ====
+# `ship --abandon` and `spec`'s resume first, then `layout` moving a seeded
+# part, `setup` filling plan sections 5 and 6, and the contract block
+# `architect` writes - seven defects, which emptied the unverified list. An
+# eighth was in the harness: `_says` was a pipeline ending in `grep -q` under
+# pipefail, reporting failure for a phrase that is present.
 # A real park-and-resume on a scratch project: two steps ticked, one half-built
 # in a new file, a four-entry ledger. Every one of these was seen happening.
 
@@ -2032,5 +2054,50 @@ assert_ok "and says a hand-written one is recorded, not left blank" \
   _says skills/architect.md 'say `hand-written` rather than leaving the line empty'
 assert_ok "ci reads Kind rather than inferring it" \
   _says skills/ci.md '`Kind:` in the product root'
+
+# ==== seams-F: found by reviewing the principles branch against the tree ====
+# Unlike D and E, these came from reading a handoff and checking its claims
+# against what the commands print - not from running a skill. That is the
+# weaker provenance this pack warns about, and it still found a broken route.
+
+section "an unrecorded principles file has a route that actually writes it"
+# The reader/writer class again, and it lints clean from either end. `setup`
+# refuses to write `blueprint/context/principles.md` - a commitment cannot be
+# read off code - and sends the user to `ideate --rescope` as its only writer.
+# The rescope path said "leave `principles.md` alone unless the user raises it",
+# which is right for a settled commitment and wrong for one that was never
+# recorded: every adopted project was routed to a skill instructed not to do the
+# thing it was routed there for. Rule 8 cannot see it, because the writer row
+# exists; the declining sentence is inside the writer.
+assert_ok "setup refuses to infer a principles file" \
+  _says skills/setup.md 'Do not write `blueprint/context/principles.md`, and say so'
+assert_ok "and names ideate --rescope as its only writer" \
+  _says skills/setup.md '`ideate --rescope`, which is the only skill that writes one'
+assert_ok "ideate --rescope writes one when there is none" \
+  _says skills/ideate.md 'When there is no `principles.md` at all, ask Step 1'
+assert_ok "and says why leaving it alone would strand setup's pointer" \
+  _says skills/ideate.md 'this skill is its only writer'
+# The leave-alone rule has to stay, but scoped to a file that exists - an
+# unqualified "leave `principles.md` alone" is exactly the sentence that broke
+# the route, and reads as correct.
+assert_ok "leaving it alone is scoped to an existing file" \
+  _says skills/ideate.md 'Leave an existing `principles.md` alone'
+assert_fails "and is not stated unqualified" \
+  _says skills/ideate.md '**Leave `principles.md` alone'
+
+section "build's packet names verify when a done-when was never run live"
+# The packet said "next action, usually `review` then `ship`". `verify` exists
+# to run a behavioral done-when against the running app, so a step whose proof
+# was a green unit check could go to `review` and `ship` with the spec's actual
+# promise never exercised - and nothing in the packet recorded which kind of
+# proof each done-when had, so the next skill could not tell either.
+assert_ok "the packet separates live proof from a green check" \
+  _says skills/build.md 'proven live against the running app in Step 3 versus only by a green check'
+assert_ok "verify is named first when any proof was only a check" \
+  _says skills/build.md '`verify` first, when any behavioral done-when was proven only by a green check'
+assert_ok "and review directly when every one was run live" \
+  _says skills/build.md 'already run live in Step 3, say so and name `review` directly'
+assert_fails "the old unconditional handoff is gone" \
+  _says skills/build.md 'next action, usually `review` then `ship`'
 
 finish

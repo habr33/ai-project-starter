@@ -28,6 +28,7 @@ These are already loaded, before you read anything else:
 |---|---|---|
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
+| `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
 | `blueprint/history/` | every completed item, archived | `ship` |
@@ -177,6 +178,7 @@ Or just ask in plain language - "spec the next item", "run the review".
        <product root>/blueprint/orchestration.md
        <product root>/blueprint/status/
        <product root>/blueprint/context/quality-bar.md
+       <product root>/blueprint/context/principles.md
 
      Never assume any of those paths - read the root from the fields above.
      The board - orchestration.md and status/ - resolves one step further: in

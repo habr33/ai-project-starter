@@ -266,10 +266,18 @@ review packet:
 - the branch name
 - what changed, grouped by file or area
 - checks run, with the exact command or proof used
-- how to try it by hand, or a pointer to `verify`
+- how to try it by hand, and **which done-whens, if any, were proven live
+  against the running app in Step 3 versus only by a green check** - that list
+  is what the next action reads
 - ledger state: any findings still `open` or `fixed`, by ID
 - known risks, skipped checks, or follow-ups
-- next action, usually `review` then `ship`
+- **next action:** `verify` first, when any behavioral done-when was proven
+  only by a green check rather than run against the real app - that is exactly
+  what `verify` exists for, and skipping it there leaves the spec's actual
+  promise unproven. Then `review`, then `ship`. **If every behavioral
+  done-when was already run live in Step 3, say so and name `review`
+  directly** - running `verify` again over work it already covers is not the
+  point of naming it in the chain.
 
 **In a multi-part project, post the packet** in `<product root>/blueprint/status/<this part>.md`:
 

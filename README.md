@@ -110,12 +110,14 @@ merge?" `preflight` asks "is this product ready to be live at all?" — the whol
 project, once, before launch. It can say no, and that is the point.
 
 **The project records its own bar, and later checks measure against it.**
-`architect` writes what performance, scale, security and availability this
-project holds itself to; `scaffold` writes the conventions the code actually
-follows; `prototype` writes the design decisions and the contrast values it
-measured. Without those, `review`'s lenses can only report generic smells —
-**a clean result then means "not checked", not "consistent"**, and the skills say
-so rather than letting silence read as a pass.
+`ideate` writes any non-negotiable commitment the project holds itself to —
+"none" is a real answer; `architect` writes what performance, scale, security
+and availability this project holds itself to; `scaffold` writes the
+conventions the code actually follows; `prototype` writes the design decisions
+and the contrast values it measured. Without those, `review`'s lenses can only
+report generic smells — **a clean result then means "not checked", not
+"consistent"**, and the skills say so rather than letting silence read as a
+pass.
 
 **Every skill checks its inputs before it acts.** Each opens by naming what must
 already be true and what to run when it is not. Some stop; some report and carry

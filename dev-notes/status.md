@@ -15,190 +15,140 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Handoff (2026-09-22)
+## Handoff (2026-09-23) - principles file, idea gate, build's verify handoff
 
-**Goal:** run one of the paths that had only ever been checked by wording tests.
-Picked `ship --abandon` - the biggest untested surface of the five, and the only
-one that needed no interview. Its paired half, `spec`'s resume, ran with it.
+**Goal:** close two gaps a comparison against public prior art (spec-kit,
+BMAD-METHOD, ai-blueprint) surfaced - no project-level "non-negotiable
+commitments" file, no explicit go/kill verdict in `ideate` - plus a `build`
+handoff fix. Then a review of that work against what the commands print.
 
-**Verified 2026-09-22:** `./check.sh` OK (16 rules); `./tests/run.sh` 783 passed,
-0 failed, run twice.
+**Branch:** `add-principles-file`, **nothing committed**. 12 files modified -
+that count includes `tests/test-seams.sh` **and this file**, which is the one a
+count like this always forgets. Nothing is half-built.
 
-**The run was real**: a scratch project, an item with two steps ticked and a
-third half-built in a *new* file, a four-entry ledger (a `fixed` P1, an `open`
-P2, a `deferred` P3, an `unverified` P3), and uncommitted work. Then the skill's
-steps followed literally. **Four defects, none of them findable by reading** -
-each was a command whose output disagreed with what the step claimed:
+**Done, with evidence:**
 
-1. **The `wip:` commit lost the work it exists to save.** `git commit -am`
-   reported `1 file changed` and left the half-built step - an untracked new
-   file - behind, for Step 2 to carry onto `main` as a stray. It fails loudly
-   only when *everything* pending is untracked; with one tracked edit alongside,
-   it succeeds and drops the rest. Now `git add -A`, never `git commit -a`, and
-   a `git status` check before moving off the branch.
-2. **Step 3 archived the findings from the wrong place.** The *spec*'s read is
-   branch-qualified (`git show <branch>:...`); the *findings* read, in the same
-   sentence, is not - and Step 2 has just moved you to `main`, where the ledger
-   is its stub. So the archive gets an empty `## Findings`, "remove them from the
-   ledger" is a no-op, and **both read as success** while a P1 sits on a parked
-   branch. The asymmetry inside one step is the tell.
-3. **Archived IDs were not prefixed.** The merge path turns item 12's `F-03`
-   into `12/F-03` precisely so it stays unique after leaving the ledger;
-   `--abandon` said nothing, so the next item's first finding is `F-01` again -
-   and the abandon reason itself cites `F-01`.
-4. **`spec`'s resume is written in an order git refuses.** "Restore it to
-   `current-work.md` ... check out the branch it names" - the checkout then
-   aborts on the local change, because the branch carries its own committed
-   `current-work.md`. It also carries the ledger, so on a kept branch there is
-   nothing to restore at all.
-
-Nine assertions under **`seams-E`** in `tests/test-seams.sh`, all seen failing
-against the unfixed files, with the absence re-checked through the same
-`tr | grep -F` the assertions use.
-
-**A fifth defect, in the harness itself.** A full run failed one assertion that
-passed when the file ran alone. `_says` was `tr ... | grep -qF` - a pipeline
-ending in `grep -q` under `set -o pipefail`, the exact hazard this file already
-warns about twice. grep exits on its first match, `tr` takes SIGPIPE, and the
-pipeline reports **failure for a phrase that is present**. Forced with a large
-input: **40 false failures out of 40**. Now a herestring; 0 of 40, and it still
-reports a genuinely absent phrase as absent, so the fix is not vacuous. **This
-one produces false red**, which trains people to re-run until green.
-
-**Then the other three ran too**, in the same session - so the unverified list
-is now empty. Three more defects:
-
-5. **`layout`'s move of a seeded part loses what the part was.** The refusal
-   fires as documented and `Product root:` comes back `../..`, correct for two
-   levels down - but step 2 deletes the listing line and step 3 re-seeds it from
-   the template, so a line reading "the reader-facing site: article pages,
-   search, and the home feed" came back as `<what this part is>`, in the file
-   every session reads to learn what the parts are, with nothing reporting it.
-6. **`setup`'s adoption leaves seeded text that `context` then stops on.**
-   Sections 5 and 6 each carry a *second* seeded paragraph below the obvious one
-   - the note that 5 is filled after 6, and the note that `layout` adds the
-   directory tree. "Replace the seeded instruction *sentence*" leaves both;
-   `context` reads seeded text as unfilled "whatever has been added around it"
-   and routes to `architect` and `stack`, **the two skills this route says never
-   run**, for sections that are in fact filled.
-7. **`Kind:` in the contract block had no writer and no reader.** It appears
-   exactly once in the whole pack - in `template/product/AGENTS.md` - inside a
-   block whose own text says "These are read, not decorative". It is also the
-   field `ci` branches on: *"if a contract is generated between them"*. Rule 9
-   covers the coordination board's fields; this is a different file and nothing
-   covered it. `architect` now sets it and `ci` reads it.
-
-Eight more assertions, all seen failing against the unfixed files.
-
-**Worth considering next:** 7 is rule 9's class in a file rule 9 does not read.
-The move this repo keeps making - declare the fields, let the rule follow -
-would make it a 17th rule over `template/product/AGENTS.md`'s contract block.
-That touches the rule counts in `AGENTS.md`, `docs/anatomy.md` and this file, so
-it was left as a decision rather than taken unilaterally.
-
-**Next:** the two `cms-rr` items below are unchanged and still need the path.
-
-## Handoff (2026-09-21)
-
-**Goal:** close the defects a full real run of this workflow found (project
-`cms-rr` in `coverage.md`), each with a test proven to fail against the unfixed
-file. All 21 are now fixed and committed.
-
-- **Branch:** `run-findings`, merged into `main` and pushed on 2026-09-21 with
-  the user's approval. Both are on the new repository.
-- **The repository moved** to `github.com/habr33/ai-project-starter`. Both
-  branches are on it; `main` was force-pushed over the new repo's LICENSE-only
-  initial commit (unrelated history), with the user's approval.
-- **Verified 2026-09-21:** `./check.sh` OK (16 rules); `./tests/run.sh` 0 failed
-  across all four files.
-
-**Done - all 21 findings fixed**, tests under `seams-D` in `tests/test-seams.sh`
-(one in `test-scripts.sh`); the commit messages list them. The last three:
-**19** - `spec` makes a done-when needing a new kind of test name the command
-that runs it and where, and check that place can run it; **20** - `build`'s
-findings gate writes a repair's test from the finding's own reproduction and
-proves it by reverting the repair; **21** - `review` Step 1 checks the changed
-set for a file git calls binary, reads it whole, and records it, because the
-diff is all a pull-request reviewer sees.
-
-**The routing eval is built** - `tests/test-routing.sh`, the fourth suite. It is
-the only thing here that reads the 27 `description:` lines as a set: the linter
-checks one at a time, so a skill whose description omits the words people type
-stays lintable and unreachable. It gates three things - every skill has a
-declared prompt, no two descriptions collide, and every skill wins its own
-prompt unless it is on `known_misses` with a reason.
-
-- **The monitor finding reproduced and is fixed.** Written blind - the earlier
-  prototype was gone and the prompts were rewritten from scratch - `monitor`
-  still lost "the site is down and i need to know why" to `prepare`, by 0.0332.
-  Its description now says *down, slow, alert, incident, errors*. Seen failing
-  first; reverting the wording makes it fail again.
-- **The rebuilt ranker is not the old one and its numbers do not carry over.**
-  The worst pair here is `review` <-> `ship` at 0.28, not `integrate` <->
-  `orchestrate` at 0.42. Any threshold has to be set against this ranker.
-- **24 of 27 skills won their own prompt on the first run**, against 6 of 14
-  before. That is mostly better prompts, not better descriptions: a prompt that
-  paraphrases the description proves only that a sentence matches itself, so the
-  file now rejects any prompt repeating five consecutive words of its own
-  description. It caught `prototype`'s prompt immediately, and `verify`'s was a
-  paraphrase too - rewritten, `verify` wins outright and its excuse was deleted.
-  Only `stack` is excused now ("build this with" is lexically owned by `build`).
-- **All 27 descriptions share one IDF table, so editing any one reweights every
-  other skill.** Adding *down* to `monitor` diluted the only term separating
-  `spec` from `progress`, and `spec` went from first to second on a margin of
-  **0.0003**. Gating top-1 on that is gating on noise and would make every
-  description edit break an unrelated skill, so a gap under `tie_margin` is a
-  tie, not a miss.
-- **The margin was measured, not picked**: 0.0003 for the `spec` noise, 0.0332
-  for the real `monitor` miss, a factor of 100 apart, line drawn at 0.02. That
-  claim was checked by raising it to 0.05 and watching the unfixed `monitor`
-  pass as a tie - the defect class really does go invisible above ~0.03.
-- Six mutations, each confirmed to land and to fail the assertion it names.
-- **Rule 8 caught the new file on the day it was written** - nothing referenced
-  it, because `run.sh` finds its files by glob. A seam test now requires every
-  suite to be named in status.md's listing and in `AGENTS.md`.
-- Still deferred: their Tier 3 (headless agent + graded trace) with **pressure
-  cases** - time pressure, sunk cost, authority - the one test our gates have
-  never had. It spends tokens per run.
-
-**Still open in `cms-rr`, untouched** (item 2b built and uncommitted, Repair
-F-47 awaiting the owner's approval): a second real case of 20 - F-47's tests
-never drive a save, so the reported 500 still happens while the finding reads
-`fixed` - and the binary regex behind 21 is still in its source.
+- **`blueprint/context/principles.md`** - what the project will never trade
+  away, distinct from `quality-bar.md` (numbers). Written once by `ideate`,
+  product-root in multi-part products, read by `architect`/`review`/
+  `preflight`. `setup` never infers one - a commitment cannot be read off code.
+  `D11`. Files: `template/AGENTS.md`, five skills, `docs/anatomy.md`, `README`.
+- **`ideate` Step 2** - advisory Go / Not yet / Doesn't clear the bar, before
+  scope-cutting. Old Steps 2-4 renumbered 3-5.
+- **`build`'s review packet** names `verify` first when any behavioral
+  done-when was proven only by a green check, and `review` directly only when
+  every one was run live in Step 3.
+- **Fixed: the rescope path stranded `setup`'s pointer.** `setup` sends an
+  adopted project to `ideate --rescope` as the only writer of `principles.md`;
+  that path said "leave it alone unless the user raises it", so every adopted
+  project was routed to a skill told not to do the thing. Rule 8 cannot see it -
+  the writer row exists and the declining sentence is *inside* the writer.
+- **Fixed: the `grep -q` SIGPIPE hazard was still live in `test-seams.sh`.**
+  One full run failed; seven were clean. Two parent-shell pipelines gated a
+  counter on `&& n=$((n+1))`, so a SIGPIPE **undercounts silently** and reads
+  as an off-by-one. Forced with a 60k-line file: 40 false failures out of 40,
+  0 as a herestring. The rule against this read only `check.sh`; now covers the
+  suites, `bash -c` exempt (pipefail is not inherited - checked, not assumed).
+- **Ten new checks under `seams-F`**, each seen failing against a mutated file,
+  each mutation confirmed to land through the same `tr | grep -F` they use.
+- **`./check.sh` -> OK** (16 rules, 27 skills); **`./tests/run.sh` -> 806
+  passed, 0 failed**, five consecutive clean runs.
 
 **Next:**
 
-1. Re-install the pack into `cms-rr` (`./install.sh --target <dir> --force`) so
-   its next repair runs on the fixed `build` and `review`. **The directory is
-   not on this machine** - nothing under `~` matches, and the local diary that
-   recorded where it lives does not exist here. Ask for the path.
-2. The routing eval is a regression guard, not a bug-finder, and it has found
-   its one bug. The thing that would find more is the deferred pressure-case
-   tier, which needs a token budget decided first.
+1. **Ask whether to commit the 12 files**, then whether to merge to `main` or
+   open a PR. Nothing else is pending on this branch.
+2. `ideate`'s Step 2 has **no test and cannot usefully have one here** -
+   advisory prose gates nothing, so no command can disagree with it. Do not
+   cite it as proven. Also unacted from the same comparison: no single binding
+   "constitution" (rejected - `D11`), no planning surface for a non-technical
+   stakeholder, no partial install of the 27 skills.
+
+**Gotchas:**
+
+- A product-root file needs **two** declarations in `template/AGENTS.md`: the
+  writer row *and* a line in the MULTI-PART MARKER block. Only the second makes
+  rule 13 require the "Product root:" mention.
+- Renumbering an `ideate` step touches prose cross-references, not just
+  headings - grep the old heading text repo-wide after any renumber.
+- **A file count in a handoff forgets the handoff**, and the opening
+  instruction treats a mismatch as a disturbed tree. It was wrong twice here.
+- `check.sh` still has small `printf ... | grep -q` pipelines. Same shape, but
+  single table rows fit the pipe buffer, so they were left alone.
+
+**Verify with:**
+
+    git status --short   # 12 modified files, nothing else
+    ./check.sh           # OK - 27 skills ... 16 rules
+    ./tests/run.sh       # total: 806 passed, 0 failed across 4 file(s)
+
+## Closed, and where the detail lives (2026-09-21 to 2026-09-22)
+
+Two sessions of findings, all fixed and tested; 2026-09-21's are merged and
+pushed. **The per-defect narrative is deliberately not repeated here** - it is
+written beside the assertions that hold each fix, which is the only place it
+cannot drift out of date:
+
+- **`seams-D`** in `tests/test-seams.sh` - the 21 findings from the full real
+  run of the loop on `cms-rr` (2026-09-16), the last three of them closed on
+  2026-09-21. One of the 21 is tested in `test-scripts.sh` instead - "a skill a
+  framework's generator installed survives a re-install whole".
+- **`seams-E`** - 7 more, from running `ship --abandon`, `spec`'s resume,
+  `layout` moving a seeded part, `setup` filling plan sections 5 and 6, and the
+  contract block `architect` writes. This emptied the unverified list.
+- **`seams-F`** - the principles route and `build`'s packet, from the session
+  above.
+
+Each section comment says what shipped broken and why the linter could not see
+it. The commit messages list the rest, `D12` records what the routing eval
+measured, and `coverage.md` says which skills have actually run.
+
+- **The repository is `github.com/habr33/ai-project-starter`.** Both branches
+  are on it; `main` was force-pushed on 2026-09-21 over the new repo's
+  LICENSE-only initial commit (unrelated history), with the user's approval.
+- **One defect was in the harness, not the pack.** `_says` was a pipeline
+  ending in `grep -q` under `pipefail`: grep exits on its first match, `tr`
+  takes SIGPIPE, and the pipeline reports **failure for a phrase that is
+  present** - 40 false failures out of 40 when forced with a large input. It is
+  a herestring now. **That one produces false red**, which trains people to
+  re-run until green, and the gotcha below is its general form.
+
+**Still open:**
+
+1. **`cms-rr` needs the pack re-installed** (`./install.sh --target <dir>
+   --force`) so its next repair runs on the fixed `build` and `review`. **The
+   directory is not on this machine** - nothing under `~` matches, and the local
+   diary that recorded where it lives does not exist here. Ask for the path.
+   Two findings there are untouched: a second real case of finding 20 (repair
+   F-47's tests never drive a save, so the reported 500 still happens while the
+   finding reads `fixed`), and the binary regex behind 21, still in its source.
+2. **A 17th rule, over `template/product/AGENTS.md`'s contract block.** The
+   `Kind:` defect in `seams-E` is rule 9's class in a file rule 9 does not read,
+   and the move this repo keeps making is to declare the fields and let the rule
+   follow. It touches the rule counts in `AGENTS.md`, `docs/anatomy.md` and this
+   file, so it was left as a decision rather than taken unilaterally.
+3. **The pressure-case tier** - a headless agent and a graded trace under time
+   pressure, sunk cost and authority - is the one test these gates have never
+   had, and the only thing likely to find more than the routing eval can. It
+   spends tokens per run, so it needs a budget decided first.
 
 **Gotchas:**
 
 - Wording tests join lines with `tr` before matching, so a mutation fails
   silently when the phrase wraps - **and so does the `grep` you check the
   mutation with**, which then reports the phrase gone when it is not. This bit
-  on 21: the mutation looked applied, the test passed, and both were wrong.
-  Mutate a word that sits on one line, and verify with the same `tr | grep -F`
-  the test uses.
-- `ship.md` quotes the findings template verbatim; changing one without the
-  other fails a seam test - which is how it was caught.
+  on finding 21: the mutation looked applied, the test passed, and both were
+  wrong. Mutate a word that sits on one line, and verify with the same
+  `tr | grep -F` the test uses.
 - Never pipe a file-reading command into `grep -q` in `check.sh` or the tests:
   SIGPIPE under pipefail gives a rare false failure. Use a herestring.
+- `ship.md` quotes the findings template verbatim; changing one without the
+  other fails a seam test - which is how it was caught.
 - A product installed before these fixes keeps its old skills until
   `./install.sh --target <dir> --force` is re-run; the ledger's header is not
   updated by that, only the skills.
 - `./tests/run.sh` takes minutes. Do not start a second one while one is
   running - two concurrent runs slow each other badly.
-
-**Verify with:**
-
-    ./check.sh
-    ./tests/run.sh
-
 
 ## Where this stands (2026-09-15)
 
@@ -313,11 +263,13 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**Nothing known is open.** The 2026-09-15 review and a run of the loop on a
-two-part CMS were closed in commit `5306f41` - see D9 and D10 in `decisions.md`,
-and the commit message for the full list. One note stays: the handoff seam test
-in `tests/test-seams.sh` matches wording, so rewriting a skill's last step can
-need its list updated.
+**One thing is: the 17th rule** over `template/product/AGENTS.md`'s contract
+block - item 2 under *Still open* above. It needs a decision about the rule
+counts, not a resource. Everything else known is closed: the 2026-09-15 review
+and a run of the loop on a two-part CMS went in commit `5306f41` - see D9 and
+D10 in `decisions.md`, and the commit message for the full list. One note
+stays: the handoff seam test in `tests/test-seams.sh` matches wording, so
+rewriting a skill's last step can need its list updated.
 
 **Unverified, and worth a real run:** none. **The list was emptied on
 2026-09-22** - `ship --abandon`, `spec`'s resume, `layout` moving a seeded part,

@@ -51,6 +51,7 @@ by mentioning it.
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
+| `blueprint/context/principles.md` | the project's non-negotiable commitments — what it will never trade away. **Product-level, like the plan.** Never inferred from code: `setup` reports it unrecorded rather than writing one | `ideate` | `architect` `review` `preflight` |
 | `blueprint/context/design.md` | visual decisions, measured values | `prototype` | `spec` `review` `ship` |
 | `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` `rollback` | 7 skills |
 | `blueprint/context/findings.md` | the findings ledger — code findings close through `review`, non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
@@ -72,8 +73,8 @@ rows.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
-| `architect` | project-plan, build-plan | project-plan Architecture, **quality-bar**, decisions, each part's build-plan and needs-you | plan absent, or problem/features still placeholder | `stack` |
+| `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan, **principles** | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
+| `architect` | project-plan, build-plan, **principles** | project-plan Architecture, **quality-bar**, decisions, each part's build-plan and needs-you | plan absent, or problem/features still placeholder | `stack` |
 | `stack` | project-plan Architecture + **quality-bar** | project-plan Tech, decisions | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
@@ -120,7 +121,7 @@ against *this project's* recorded values rather than a generic standard.
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify) — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
-| `review` | source, standards, quality-bar, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
+| `review` | source, standards, quality-bar, **principles**, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
 | `ship` | current-work, findings, build-plan | history, build-plan, decisions, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the
@@ -143,7 +144,7 @@ something is already live. It edits no product code; it isolates and hands back.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `preflight` | plan, overview, standards, findings, quality-bar, history, CHANGELOG | **findings only** — blockers as P0/P1, and `closed` on a non-code repair it re-checked | *(no gate — it audits any state)* | the skill fixing each blocker |
+| `preflight` | plan, overview, standards, findings, quality-bar, **principles**, history, CHANGELOG | **findings only** — blockers as P0/P1, and `closed` on a non-code repair it re-checked | *(no gate — it audits any state)* | the skill fixing each blocker |
 | `host` | project-plan Deployment + Architecture | infrastructure, secrets, status, decisions, findings→`fixed` | plan names no service, database or domain | `deploy` |
 | `deploy` | build output, env, migrations | the release, status (**the commit**), findings→`fixed` | *(advisory)* — names missing preflight/ci/host; **stops on a pending migration**, which is `migrate`'s | `monitor`, `docs` |
 | `monitor` | signals, quality-bar, build-plan | status, findings→`fixed`, proposed plan items | nothing is deployed | `debug`, or `spec` |

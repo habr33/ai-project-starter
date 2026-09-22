@@ -18,11 +18,12 @@ with what is actually true here.
 Run it once after installing. Run it again whenever the stack changes materially.
 
 
-> **Multi-part project:** `blueprint/project-plan.md` and
+> **Multi-part project:** `blueprint/project-plan.md`,
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
-> `architect` writes it at the root, not per part) live at the **product
-> root**, not this part. Resolve it from `AGENTS.md`'s `Product root:` field.
-> Everything else here is this part's own.
+> `architect` writes it at the root, not per part), and
+> `blueprint/context/principles.md` (never this skill's to write - see Step 3)
+> live at the **product root**, not this part. Resolve it from `AGENTS.md`'s
+> `Product root:` field. Everything else here is this part's own.
 
 ## What this owns, and what `scaffold` owns
 
@@ -103,6 +104,14 @@ new project. Here it is **discovered, not chosen**: what does this thing already
 do under load, what does it already handle, what already happens when it is down.
 Record what is true and mark anything unmeasured as unmeasured - inventing a
 target the project has never met makes every later check fail against fiction.
+
+**Do not write `blueprint/context/principles.md`, and say so.** Unlike the
+quality bar, a non-negotiable commitment cannot be discovered by reading the
+code - the fact that a codebase happens to have no ads today does not mean the
+project has committed to never having any. If the file does not exist, report
+it as unrecorded and point at `ideate --rescope`, which is the only skill that
+writes one; do not infer commitments from current behavior and do not leave the
+absence unmentioned.
 
 **The standards are two files, and only one is yours to write.**
 `blueprint/context/fundamentals.md` is the pack's - what holds regardless of
