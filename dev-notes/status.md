@@ -17,23 +17,41 @@ place that answers "has this skill actually run?".
 
 ## Where work stopped (2026-09-23)
 
-**Nothing is pending and the tree is clean.** The principles-file work was
-committed as `dac5d79` and fast-forwarded onto `main`, which is pushed;
-`add-principles-file` has been deleted. Verified before the merge and again
-after: `./check.sh` -> OK (17 rules, 27 skills), `./tests/run.sh` -> **every
-file passing, zero failures** - the total is deliberately not recorded here, for
-the reason the opening gives.
+**Goal of the last session:** land the principles-file branch, audit what this
+public repo actually publishes, then close the 17th rule - the last open item
+that needed a decision rather than a resource.
 
-What shipped in it, with the detail beside the assertions rather than here:
-`blueprint/context/principles.md` (`D11`), `ideate`'s advisory Step 2 gate,
-`build`'s conditional handoff to `verify`, the rescope path that stranded
-`setup`'s pointer, and the `grep -q` SIGPIPE hazard in `test-seams.sh`. The
-commit message lists each with its evidence; `seams-F` holds the ten checks.
+**The tree is clean and everything passes. Two commits are unpushed, on
+purpose.** `main` is at `4cb6514`, `origin/main` at `c7cd606`. The user is
+deleting the GitHub repository and re-creating it from this local clone, so
+**do not push, and do not offer to** until they say the new remote exists.
 
-**Pick up from *Still open* below.** Every item left there needs a person or a
-resource - a phone, a managed account, two live sessions, a second OS - not more
-work in this repo. The 17th rule, the last one that needed only a decision, is
-done (`D13`).
+**Done, with evidence:**
+
+- **`dac5d79`** - the principles-file work, merged to `main` and pushed. `D11`.
+- **`083b124`** - three corrections to this file, listed in its message.
+- **`4cb6514`** - **rule 17**, over `template/product/AGENTS.md`'s contract
+  block. `D13`. The fields are declared in a table beside the block; the binding
+  must be the literal `` `Field:` ``, because the paraphrase is what hid
+  `Kind:`. It found **nine missing bindings** on its first run, two of them
+  orphan fields: `Regenerate:`, read only as "the regeneration command", and
+  **`Generate clients:`, which no file in the pack mentioned at all**. `ci` now
+  regenerates the clients too. Nine negative tests in `test-lint.sh`, each
+  **seen failing with the rule body removed**; `seams-G` holds the rule count,
+  which turned out to live in five files, not three.
+- **The public surface was audited and is clean.** All 74 tracked files are pack
+  content; no secrets, keys, IPs or personal paths in any commit's content.
+- **`./check.sh` -> OK** (17 rules, 27 skills); **`./tests/run.sh` -> every file
+  passing, zero failures** - the total is not recorded here, for the reason the
+  opening gives.
+
+**Next:**
+
+1. **Wait for the user to re-create the remote**, then push `main` to it. They
+   said they would do this part themselves.
+2. Nothing else is pending. Every item under *Still open* below needs a person
+   or a resource - a phone, a managed account, two live sessions, a second OS -
+   not more work in this repo.
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
@@ -41,27 +59,39 @@ Also unacted from the same prior-art comparison: no single binding
 "constitution" (rejected - `D11`), no planning surface for a non-technical
 stakeholder, no partial install of the 27 skills.
 
-**Gotchas from that session:**
+**Gotchas from those sessions:**
 
+- **`git log --all` is not "what is public".** An audit here reported a personal
+  address in 17 of 36 commits and was **wrong on both numbers**: `--all` sweeps
+  `refs/original/*`, the local backup refs a previous `filter-branch` leaves
+  behind, so pre-scrub history was counted as live. `main` had 19 commits, all
+  already clean. **`git ls-remote origin` is the only answer to what is
+  published.** The unnecessary rewrite that followed was reverted and nothing
+  was force-pushed, but it overwrote the earlier session's backup refs.
+- **A mutation aimed at the wrong form changes nothing and still reads green.**
+  The contract block writes its fields plain (`- Kind: <...>`) and the table
+  backticks them; one rule-17 test mutated the backticked form and passed for
+  the wrong reason. It now asserts the mutation landed first.
+- Adding a rule means editing the count in **five** places, `check.sh`'s OK line
+  among them. `seams-G` checks this now - see *Adding a linter rule* in
+  `docs/anatomy.md`.
 - A product-root file needs **two** declarations in `template/AGENTS.md`: the
   writer row *and* a line in the MULTI-PART MARKER block. Only the second makes
   rule 13 require the "Product root:" mention.
-- Renumbering an `ideate` step touches prose cross-references, not just
-  headings - grep the old heading text repo-wide after any renumber.
 - **A file count in a handoff forgets the handoff**, and the opening
-  instruction treats a mismatch as a disturbed tree. It was wrong twice there.
+  instruction treats a mismatch as a disturbed tree. It was wrong twice here -
+  which is why this section counts nothing.
 - `check.sh` still has small `printf ... | grep -q` pipelines. Same shape as the
   SIGPIPE defect, but single table rows fit the pipe buffer, so they were left
   alone.
-- **`git log --all` is not "what is public".** An audit on 2026-09-23 reported a
-  personal address in 17 of 36 commits and was **wrong on both numbers**:
-  `--all` sweeps `refs/original/*`, the local backup refs a previous
-  `filter-branch` leaves behind, so the pre-scrub history was counted as live.
-  `main` had 19 commits and all were already clean. **`git ls-remote origin` is
-  the only answer to what is published** - it lists what the remote actually
-  holds, and here that was one ref. The unnecessary rewrite that followed was
-  reverted; nothing was force-pushed. Check the remote before rewriting history,
-  not the local ref graph.
+
+**Verify with:**
+
+    git status --short          # nothing modified
+    git log --oneline -1        # 4cb6514
+    git status -sb | head -1    # main...origin/main [ahead 2] - expected
+    ./check.sh                  # OK - 27 skills ... 17 rules
+    ./tests/run.sh              # all 4 test files passed, zero failures
 
 ## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
 
