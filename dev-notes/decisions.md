@@ -335,3 +335,32 @@ The heading is the same machine-readable line it always was.
 them at every `ship` needs none, and a P3 is by definition a follow-up.
 **Rejected: one detail file for all entries.** Archiving would mean cutting
 blocks out of a shared file; one file per ID is a delete.
+
+## D16 - One copy of the skills in a project, linked for Claude Code (2026-09-23)
+
+A project held two identical skill trees, `.claude/skills` and
+`.agents/skills` - 409 KB each in a real one. Nothing loads both, so it cost no
+context, but every repo-wide search hit each passage twice, and a hand edit to
+one copy made the tools quietly disagree.
+
+**Checked, not assumed:** Claude Code 2.1.280 in a project holding only
+`.agents/skills` listed none of its skills; with `.claude/skills` a directory
+symlink to `../.agents/skills`, it listed the skill and ran it by `/name`. So
+`install.sh` writes one copy to `.agents/skills` and links `.claude/skills` to
+it - one link, which git stores as a link.
+
+- **Where a symlink does not work** - Windows without symlink support, where
+  `ln -s` copies or git checks a link out as a plain file - it copies, and the
+  report says so. A plain file where the link should be is repaired.
+- **An old two-copy install is converted only when nothing is lost**: a skill
+  only `.claude/skills` has moves into `.agents/skills`; one that differs
+  between the two keeps the old shape, named in the report. A trial install on
+  a copy of the real project converted cleanly and kept its framework-installed
+  skill.
+- **`AGENTS.md` tells a tool with no skill support where each `SKILL.md` is.**
+  Instruction, not integration - no `/name`, no description matching - but it
+  costs one line.
+
+**Rejected: relying on `.agents/skills` alone** - Claude Code does not read it.
+**Rejected: gitignoring the second copy** - a fresh clone would have no skills
+until someone knew to run `install.sh`.

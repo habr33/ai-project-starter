@@ -60,10 +60,9 @@ user will **squash-merge it later**; do not merge it without them. `D14`, `D15`.
 
 1. **Wait for the user to re-create the remote**, then push `main` to it. They
    said they would do this part themselves.
-2. **The retrospective's P3s under *Can be done here*.** Two need the user
-   first: one copy of the skills changes what `install.sh` writes into every
-   project, and `disable-model-invocation` would stop `autopilot` invoking
-   `ship`. Everything under *Still open* needs a person or a resource.
+2. **The retrospective's P3s under *Can be done here*.** One needed the user
+   first: `disable-model-invocation` would stop `autopilot` invoking `ship`,
+   and was judged not worth it (small saving, gates already exist). Everything under *Still open* needs a person or a resource.
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
@@ -333,7 +332,7 @@ files came to ~680 KB. Ordered by payoff:
       widened N times forces a decision: do it, or accept the risk. Observed:
       the screen-reader line was widened by every item, then accepted as a
       risk all at once.
-- [ ] **P3 - One copy of the skills in a project.** `.claude/`, `.agents/`
+- [x] **P3 - One copy of the skills in a project.** Done - `D16`, a link, copy fallback. `.claude/`, `.agents/`
       and `.opencode/` each committed ~7.9K lines of identical text; generate
       or symlink at install.
 - [ ] **P3 - `disable-model-invocation: true`** on hand-run skills (`deploy`,

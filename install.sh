@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Install the workflow into a project that already exists.
 #
-# Copies every skill into both adapter directories, and the template files that
-# are not already there. Files you own - the plans, the specs, dev-notes - are
+# Installs every skill once, into .agents/skills, links .claude/skills to it,
+# and copies the template files that are not already there. Files you own - the plans, the specs, dev-notes - are
 # never overwritten, with or without --force.
 set -euo pipefail
 
@@ -71,12 +71,46 @@ DETECTED_ROOT="${DETECTED_ROOT:-0}"
 # was written gets it backwards: on a first install every pack-owned file is
 # "new", which looks exactly like nothing needing an update.
 HAD_WORKFLOW=0
-[ -d "$TARGET/.claude/skills" ] && HAD_WORKFLOW=1
+{ [ -d "$TARGET/.claude/skills" ] || [ -d "$TARGET/.agents/skills" ]; } && HAD_WORKFLOW=1
 
-# --- skills: always fanned out to both adapters from the one source ---
+# --- skills: one copy in .agents/skills, and .claude/skills linked to it ---
+#
+# .agents/skills is where opencode, Codex and the other tools look. Claude Code
+# looks only in .claude/skills - checked with 2.1.280, which listed no skill
+# from .agents/skills alone and ran one through a directory symlink. So the
+# project holds one copy, and .claude/skills is a link to it: two copies were
+# 800 KB of identical text in a real project, every repo-wide search hit each
+# passage twice, and a hand edit to one copy made the tools quietly disagree.
+#
+# Where a symlink cannot be made or does not resolve - Windows without symlink
+# support, where `ln -s` copies or git checks the link out as a plain file -
+# .claude/skills is a copy instead, and the report says so.
 skill_count=0
 replaced_names=""
-for adapter in .claude .agents; do
+skills_shape=""
+claude_skills="$TARGET/.claude/skills"
+
+# An existing real .claude/skills directory is converted to the link only when
+# nothing in it would be lost: every entry is the pack's, or the same in
+# .agents/skills, or absent there and moved across. Decided before anything is
+# written, so a directory we cannot convert is left exactly as it was.
+convert_claude=0
+if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+  convert_claude=1
+  for dir in "$claude_skills"/*/; do
+    [ -d "$dir" ] || continue
+    n="$(basename "$dir")"
+    [ -f "$HERE/skills/$n.md" ] && continue
+    if [ -e "$TARGET/.agents/skills/$n" ] && ! diff -rq "$dir" "$TARGET/.agents/skills/$n" >/dev/null 2>&1; then
+      convert_claude=0
+      skills_kept_reason="$n differs between .claude/skills and .agents/skills"
+      break
+    fi
+  done
+fi
+
+adapters=".agents"
+for adapter in $adapters; do
   for src in "$HERE"/skills/*.md; do
     name="$(basename "$src" .md)"
     dest="$TARGET/$adapter/skills/$name/SKILL.md"
@@ -104,6 +138,46 @@ for adapter in .claude .agents; do
     skill_count=$((skill_count + 1))
   done
 done
+
+# Copy the pack's skills into .claude/skills - the fallback shape, and the shape
+# an unconvertible existing directory keeps.
+copy_claude_skills() {
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    mkdir -p "$claude_skills/$name"
+    cp "$src" "$claude_skills/$name/SKILL.md"
+  done
+}
+
+mkdir -p "$TARGET/.claude"
+if [ -L "$claude_skills" ] && [ -f "$claude_skills/spec/SKILL.md" ]; then
+  skills_shape="linked"
+elif [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ] && [ "$convert_claude" -eq 0 ]; then
+  copy_claude_skills
+  skills_shape="copied (kept: $skills_kept_reason)"
+else
+  if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+    # Convertible: move across what .agents/skills lacks, then drop the copy.
+    for dir in "$claude_skills"/*/; do
+      [ -d "$dir" ] || continue
+      n="$(basename "$dir")"
+      [ -e "$TARGET/.agents/skills/$n" ] || mv "$dir" "$TARGET/.agents/skills/$n"
+    done
+    rm -rf "$claude_skills"
+    skills_converted=1
+  elif [ -e "$claude_skills" ] || [ -L "$claude_skills" ]; then
+    # A plain file (a symlink git could not check out) or a dangling link.
+    rm -f "$claude_skills"
+  fi
+  ln -s ../.agents/skills "$claude_skills" 2>/dev/null || true
+  if [ -L "$claude_skills" ] && [ -f "$claude_skills/spec/SKILL.md" ]; then
+    skills_shape="linked"
+  else
+    rm -rf "$claude_skills"
+    copy_claude_skills
+    skills_shape="copied (this filesystem did not make a working symlink)"
+  fi
+fi
 
 # --- opencode commands: a thin `/name` wrapper per skill ---
 #
@@ -278,6 +352,9 @@ if [ -f "$retired_file" ]; then
   retired_names="$(grep -v '^#' "$retired_file" | grep -v '^[[:space:]]*$' | tr '\n' ' ')"
   for adapter in "$TARGET/.claude/skills" "$TARGET/.agents/skills"; do
     [ -d "$adapter" ] || continue
+    # A linked .claude/skills is .agents/skills; walking it twice is harmless
+    # for removal but would report every unknown name from both.
+    [ -L "$adapter" ] && continue
     for dir in "$adapter"/*/; do
       [ -d "$dir" ] || continue
       name="$(basename "$dir")"
@@ -415,7 +492,8 @@ if [ -d "$TARGET/blueprint/.state" ]; then
 fi
 
 echo "Installed into $TARGET"
-echo "  $skill_count skill file(s) across 2 adapters"
+echo "  $skill_count skill(s) in .agents/skills; .claude/skills $skills_shape"
+[ -n "${skills_converted:-}" ] && echo "    converted from two copies to one - commit .claude/skills as the link it now is"
 [ -n "$replaced_names" ] && {
   echo "  updated from a different version:$replaced_names"
   echo "    If you had edited one of these, it is in git - recover with git diff."

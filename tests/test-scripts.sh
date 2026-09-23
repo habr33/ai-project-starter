@@ -185,9 +185,20 @@ assert_eq "the first commit is clean"   "0"    "$(git -C "$p" ls-files | grep -c
 # pack created committed 24 skills and the missing one was `build`. Invisible to
 # every check here, because they all looked at the filesystem and never at git.
 assert_eq "every skill is tracked by git" "$NSKILLS" \
-  "$(git -C "$p" ls-files | grep -c '\.claude/skills/[^/]*/SKILL\.md$')"
+  "$(git -C "$p" ls-files | grep -c '\.agents/skills/[^/]*/SKILL\.md$')"
 assert_eq "the build skill specifically is tracked" "1" \
-  "$(git -C "$p" ls-files | grep -c '\.claude/skills/build/SKILL\.md$')"
+  "$(git -C "$p" ls-files | grep -c '\.agents/skills/build/SKILL\.md$')"
+
+section "one copy of the skills, and Claude Code reaches it through a link"
+# Two copies were 800 KB of identical text in a real project: every repo-wide
+# search hit each passage twice, and a hand edit to one made the tools disagree.
+# Claude Code 2.1.280 reads only .claude/skills, and follows a directory symlink.
+assert_ok "the skills directory Claude Code reads is a symlink" test -L "$p/.claude/skills"
+assert_eq "pointing at the one copy" "../.agents/skills" "$(readlink "$p/.claude/skills")"
+assert_eq "git tracks it as a link, not 27 files" "120000" \
+  "$(git -C "$p" ls-files -s .claude/skills | awk '{print $1}')"
+assert_eq "and commits no second copy" "0" \
+  "$(git -C "$p" ls-files | grep -c '^\.claude/skills/.*SKILL\.md$')"
 
 section "new-project.sh - path forms"
 w=$(workdir)
@@ -947,7 +958,7 @@ assert_eq "no .NET/Rust build output is staged" "0" \
 # ...and the patterns must not eat the workflow, the way `build/` once ate the
 # `build` skill. That bug shipped in every project for weeks.
 assert_eq "every skill is still tracked" "$NSKILLS" \
-  "$(cd "$p" && git ls-files | grep -c 'claude/skills/.*\.md')"
+  "$(cd "$p" && git ls-files | grep -c 'agents/skills/.*\.md')"
 
 section "converting reports what it moved into one part"
 # Everything part-local moves into --existing and the other parts are seeded
@@ -1011,6 +1022,58 @@ mkdir -p "$p/api"
 assert_eq "no database file is staged" "0" \
   "$(cd "$p" && git diff --cached --name-only | grep -cE '\.(db|db-wal|db-shm|sqlite|sqlite3)$')"
 assert_eq "and the skills are still all tracked" "$NSKILLS" \
-  "$(cd "$p" && git ls-files | grep -c 'claude/skills/.*\.md')"
+  "$(cd "$p" && git ls-files | grep -c 'agents/skills/.*\.md')"
+
+section "an install with two copies converts to one, and loses nothing"
+# The old shape: .claude/skills and .agents/skills as two real directories.
+_old_shape() {
+  local d; d=$(workdir); (cd "$d" && "$NP" o >/dev/null 2>&1)
+  rm "$d/o/.claude/skills"; cp -r "$d/o/.agents/skills" "$d/o/.claude/skills"
+  echo "$d/o"
+}
+o=$(_old_shape)
+assert_ok "the fixture really is two real directories" \
+  bash -c "[ -d '$o/.claude/skills' ] && [ ! -L '$o/.claude/skills' ]"
+mkdir -p "$o/.claude/skills/my-claude-only"; echo mine > "$o/.claude/skills/my-claude-only/SKILL.md"
+out=$("$IN" --target "$o" 2>&1)
+assert_ok "it becomes the link" test -L "$o/.claude/skills"
+assert_ok "and says so" grep -q 'converted from two copies to one' <<< "$out"
+assert_eq "a skill only Claude Code had is moved into the one copy, intact" "mine" \
+  "$(cat "$o/.agents/skills/my-claude-only/SKILL.md")"
+assert_eq "and is still where Claude Code looks" "mine" \
+  "$(cat "$o/.claude/skills/my-claude-only/SKILL.md")"
+
+# A user skill that differs between the two cannot be merged by a script, so
+# the directory is left a directory - converting would drop one version.
+o=$(_old_shape)
+mkdir -p "$o/.claude/skills/theirs" "$o/.agents/skills/theirs"
+echo one > "$o/.claude/skills/theirs/SKILL.md"; echo two > "$o/.agents/skills/theirs/SKILL.md"
+out=$("$IN" --target "$o" 2>&1)
+assert_ok "a skill that differs keeps the two-copy shape" \
+  bash -c "[ -d '$o/.claude/skills' ] && [ ! -L '$o/.claude/skills' ]"
+assert_eq "with both versions untouched" "one two" \
+  "$(cat "$o/.claude/skills/theirs/SKILL.md") $(cat "$o/.agents/skills/theirs/SKILL.md")"
+assert_ok "and names why" grep -q 'theirs differs between .claude/skills and .agents/skills' <<< "$out"
+assert_ok "while the pack's own skills are still current in both" \
+  cmp -s "$REPO/skills/spec.md" "$o/.claude/skills/spec/SKILL.md"
+
+section "where a symlink does not work, the skills are copied and the report says so"
+# git on Windows without symlink support checks a link out as a plain file
+# holding its target - Claude Code then finds no skills and says nothing.
+w=$(workdir); (cd "$w" && "$NP" win >/dev/null 2>&1)
+rm "$w/win/.claude/skills"; printf '../.agents/skills' > "$w/win/.claude/skills"
+"$IN" --target "$w/win" >/dev/null 2>&1
+assert_exists "a link checked out as a plain file is repaired" "$w/win/.claude/skills/spec/SKILL.md"
+
+# And a filesystem where `ln -s` fails outright.
+w=$(workdir); (cd "$w" && "$NP" nolink >/dev/null 2>&1)
+rm "$w/nolink/.claude/skills"
+mkdir -p "$w/bin"; printf '#!/bin/sh\nexit 1\n' > "$w/bin/ln"; chmod +x "$w/bin/ln"
+out=$(PATH="$w/bin:$PATH" "$IN" --target "$w/nolink" 2>&1)
+assert_ok "with no working symlink it copies" \
+  bash -c "[ -d '$w/nolink/.claude/skills' ] && [ ! -L '$w/nolink/.claude/skills' ]"
+assert_exists "every skill, not a partial tree" "$w/nolink/.claude/skills/build/SKILL.md"
+assert_ok "and the report says it copied, and why" \
+  grep -q 'copied (this filesystem did not make a working symlink)' <<< "$out"
 
 finish

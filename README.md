@@ -59,8 +59,8 @@ my-app/
 ├── CLAUDE.md          imports AGENTS.md
 ├── dev-notes/         why it is shaped this way, and where it stands
 ├── blueprint/         plans, the current spec, findings, history
-├── .claude/skills/    27 skills for Claude Code
-├── .agents/skills/    the same 27 for everything else
+├── .agents/skills/    the 27 skills - the one copy every tool reads
+├── .claude/skills     a link to .agents/skills, where Claude Code looks
 └── .opencode/command/ a `/name` wrapper per skill, for opencode
 ```
 
@@ -173,9 +173,15 @@ right; see the guide for the two constraints that decide it.
 
 ## Which tools this works in
 
-Skills install to `.claude/skills/<name>/SKILL.md` and `.agents/skills/<name>/SKILL.md`
-— the same file, fanned out from one source. `AGENTS.md` is the entry point;
-`CLAUDE.md` imports it, so there is one source of truth.
+Skills install once, to `.agents/skills/<name>/SKILL.md`, where opencode, Codex
+and most other tools look. **Claude Code looks only in `.claude/skills/`**, so
+that is a directory symlink to `.agents/skills` - checked with Claude Code
+2.1.280, which found no skill in `.agents/skills` alone and ran one through the
+link. Where a symlink does not work - Windows without symlink support - `install.sh`
+copies instead and says so. A tool with no skill support at all is told by
+`AGENTS.md` where each `SKILL.md` is, and follows it when a skill is named.
+`AGENTS.md` is the entry point; `CLAUDE.md` imports it, so there is one source
+of truth.
 
 **[opencode](https://opencode.ai)** reads `AGENTS.md` (and prefers it over
 `CLAUDE.md` when both exist), and finds the skills in `.agents/skills/` without
@@ -271,9 +277,9 @@ written down. The path one was recorded here as unlintable for months, and
 became rule 13 the day the product-level files were declared — which promptly
 found five more skills reading a plan that does not exist inside a part.
 
-Skills live in `skills/`, one file each. `install.sh` fans them out to both
-adapter directories, so there is only ever one copy to edit and the two trees
-cannot drift.
+Skills live in `skills/`, one file each. `install.sh` writes them once, to
+`.agents/skills/`, and links `.claude/skills` to it, so there is one copy to
+edit here and one in a project.
 
 The scripts:
 

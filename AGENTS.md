@@ -104,9 +104,10 @@ of change that have broken this pack before, and the step each one hides. That s
 is always a **declaration**: these rules can only check what has been written
 down, which is why every one of them reads a list in `template/AGENTS.md`.
 
-Skills live in `skills/`, one file each. `install.sh` fans them out to both
-adapter directories and generates an `.opencode/command/` wrapper per skill, so
-there is only ever one copy to edit.
+Skills live in `skills/`, one file each. `install.sh` writes them once, to a
+project's `.agents/skills/`, links `.claude/skills` to it (copying only where a
+symlink will not work), and generates an `.opencode/command/` wrapper per skill,
+so there is only ever one copy to edit.
 
 ## The thing that keeps biting
 

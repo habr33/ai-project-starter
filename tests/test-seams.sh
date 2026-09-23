@@ -535,7 +535,7 @@ section "the counts in the docs match reality"
 # worse than no test.
 assert_eq "README's skill count is right" \
   "$(ls skills/*.md | wc -l | tr -d ' ')" \
-  "$(grep -oE '[0-9]+ skills for Claude Code' README.md | grep -oE '^[0-9]+')"
+  "$(grep -oE 'the [0-9]+ skills - the one copy' README.md | grep -oE '[0-9]+')"
 # docs/ is in this list because leaving it out is how the miss happened:
 # docs/anatomy.md - the file CLAUDE.md sends you to *before changing the
 # workflow's shape* - said "check.sh has twelve rules" while every other file

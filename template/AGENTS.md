@@ -135,8 +135,10 @@ never happened. Two kinds:
 `ideate`, `setup`, `progress`, `preflight`, `prepare`, `debug` and `docs` have none by design:
 they are the entry points and the reporters, and they work in any state.
 
-- **Claude Code** - `.claude/skills/<name>/SKILL.md`, invoked as `/<name>`
-- **Everything else** - `.agents/skills/<name>/SKILL.md`; Codex uses `$<name>`
+- **The skills** - `.agents/skills/<name>/SKILL.md`, the one copy.
+  `.claude/skills` links to it for Claude Code (`/<name>`); Codex uses `$<name>`.
+- **A tool with no skill support** - when a skill is named, read its `SKILL.md`
+  there and follow it.
 
 Or just ask in plain language - "spec the next item", "run the review".
 
