@@ -2238,6 +2238,14 @@ assert_ok "and records which skill closed it" \
 assert_ok "verify counts how often a manual check was widened" _says skills/verify.md '`Widened: N`'
 assert_ok "and forces the decision at three" _says skills/verify.md 'At 3, stop widening and ask'
 
+section "browser tests gate something"
+# The browser tests covering the worst defects of a real project gated nothing
+# for its whole life: ci treated them as an optional cost and ran the unit suite.
+assert_ok "ci runs browser tests by default" _says skills/ci.md 'Browser tests run by default, database and all.'
+assert_ok "with a database service container" _says skills/ci.md 'a database service container for the tests that need one'
+assert_ok "and leaving them out is asked for, not defaulted" \
+  _says skills/ci.md 'never the default because it is more work'
+
 section "the findings ledger is an index, and findings have an end state"
 # The real project's ledger reached 80 KB: every finding's full prose, loaded
 # every session, and nothing that ever removed an unresolved P3. 100 raised,

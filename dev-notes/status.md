@@ -322,7 +322,7 @@ files came to ~680 KB. Ordered by payoff:
       them to a pending-for-production list; `progress` reports "production
       is N items behind, needs X". Observed: 4 items merged before anyone
       noticed production lacked their env vars and 2 migrations.
-- [ ] **P2 - `ci` runs the browser tests by default when they need a
+- [x] **P2 - `ci` runs the browser tests by default when they need a
       database** (service container). Observed: the tests covering the worst
       defects gated nothing for the project's whole life.
 - [x] **P2 - Time-limit manual checks.** Done - `verify`, `Widened: N`. A `needs-you.md` manual-check line

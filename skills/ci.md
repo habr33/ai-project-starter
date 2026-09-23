@@ -127,6 +127,14 @@ hope - and it is the only version of that claim anyone can check afterwards.
 Add a second job only when there is a real reason - that artifact, or a database
 service the tests genuinely need.
 
+**Browser tests run by default, database and all.** If the project has a
+browser test tool, add a job that runs it: a database service container for the
+tests that need one, the browser the tool installs, and the migrations applied
+before the tests start. Leaving it out is the user's call, asked for by name
+with its cost - never the default because it is more work. On a real project
+the browser tests covered the worst defects it ever had, and gated nothing for
+its whole life, because CI ran only the unit suite.
+
 **Branch on the platform:**
 
 - **Web app, website, PWA** - the above, plus the production build if the verify
@@ -178,9 +186,8 @@ Then **stop**. Report:
 
 - what the config runs, and when
 - **every test command the project has that the pipeline does not run**, and
-  why. A browser test tool `stack` chose is the usual one - it often needs a
-  database service and a browser download, which is a real cost and the user's
-  call. Record the answer in the `ci` row of the Environments table, so "CI is
+  why. Browser tests are run by default, above; if the user chose to leave them
+  out, say so here with the reason they gave. Record the answer in the `ci` row of the Environments table, so "CI is
   green" is never read as "the browser tests passed"
 - that it passed locally
 - **that nothing has been pushed**, and that pushing is the user's call
