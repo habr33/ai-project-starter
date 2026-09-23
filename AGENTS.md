@@ -35,7 +35,8 @@ agent matches on, so a mode missing from it cannot be reached — and **that no
 script refuses after its first write**, including by calling a script that can,
 unless an `after-write:` comment says why nothing is left half-made, and **that
 every field of the product root's contract block has a writer and a reader that
-name it** — a paraphrase binds nothing — 17 rules.
+name it** — a paraphrase binds nothing — and **that a new project's always-loaded
+context fits in half the budget `template/AGENTS.md` declares** — 18 rules.
 
 **The cross-file rules exist because the file-level ones could not see the worst
 bugs found here**: a script nothing routed to, a board field with four readers

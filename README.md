@@ -256,7 +256,9 @@ product root is named as such** by each skill that reads it — and **no script
 refuses after it has started writing**, which is what leaves a half-made project
 that blocks the corrected retry — and **every field of the product root's
 contract block has a writer and a reader that name it**, because a paraphrase
-binds nothing. **17 rules.**
+binds nothing — and **a new project's always-loaded context fits in half the
+declared budget**, because every session pays for it before a word is typed.
+**18 rules.**
 
 A skill nothing routes to, a script nothing
 mentions, a field every reader sees as permanently empty, and a path that

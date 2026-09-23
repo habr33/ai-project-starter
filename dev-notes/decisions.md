@@ -275,3 +275,30 @@ same as the rules. So `test-seams.sh` declares one clause per rule number,
 including the four declared silent, and reports the numbers whose clause has
 gone missing. Same move as `decision_skills` and the contract table: the list
 is the rule, and a rule 18 absent from it fails by number.
+
+## D14 - The always-loaded context has a budget, and the pack states it (2026-09-23)
+
+A single-part web project ran the whole loop - 8 items, production live - over
+31 sessions, and spent 3.29 B cache-read tokens on ~13K lines of code. Its
+`CLAUDE.md` imported **160 KB** before the user's first message: an 80 KB
+findings ledger, a 29 KB overview restating other files, 13 KB of `needs-you.md`
+that was mostly Done lines, and the pack's own 11 KB `fundamentals.md`. Nothing
+in the pack had ever said how much was too much, so nothing could notice.
+
+**The budget is 48 KB, declared in `template/AGENTS.md`**, and it is held in two
+places: rule 18 keeps the template's own imports under half of it, and
+`progress` reports a project over it with the three largest files named. Half,
+because the other half is what the project's overview, standards and open
+items grow into; the seed sits just under it at about 24 KB, so the next thing
+added to the loaded set has to be argued for.
+
+- **`fundamentals.md` is no longer imported.** It is the same in every project
+  and only `spec`, `build` and `review` act on it, so they read it. `install.sh`
+  reports an older `CLAUDE.md` still importing it.
+- **Closed needs-you lines leave the loaded file.** `ship` - already the skill
+  that archives - moves Done lines to `blueprint/history/needs-you-done.md`.
+  Deleting them was rejected: when something was settled is worth keeping.
+
+**Rejected: a byte cap per file enforced by the project's own tooling.** The
+pack ships no runtime into projects; `progress` is the thing run constantly,
+so it is where the number is read.

@@ -15,17 +15,23 @@ These are already loaded, before you read anything else:
 | File | What it holds | Written by |
 |---|---|---|
 | `blueprint/context/project-overview.md` | what this project is | `context` |
-| `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | the pack - refreshed on every install, your edits are overwritten |
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
 | `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `rollback` |
 | `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
-| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect` |
+| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `ship` |
+
+**Context budget: 48 KB.** Everything above is paid for by every session before
+the user types a word, so the files `CLAUDE.md` imports share that budget, this
+file included. `progress` reports when they exceed it and names the largest.
+Keep loaded files to what a session must know now: a line per open item, not
+its history - closed items move out, detail lives in files read on demand.
 
 **These are not loaded. Read them when you need them:**
 
 | File | What it holds | Written by |
 |---|---|---|
+| `blueprint/context/fundamentals.md` | conventions that hold regardless of stack - `spec`, `build` and `review` read it | the pack - refreshed on every install, your edits are overwritten |
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |

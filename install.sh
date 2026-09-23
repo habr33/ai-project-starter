@@ -395,6 +395,19 @@ if [ -f "$TARGET/CLAUDE.md" ] && [ -f "$HERE/template/AGENTS.md" ]; then
     legacy="$legacy\n    CLAUDE.md is yours, so nothing here edits it - add a line per file:"
     for m in $unimported; do legacy="$legacy\n        @blueprint/context/$m"; done
   fi
+  # ...and the reverse: a file that has since moved out of the loaded set, still
+  # imported by an older CLAUDE.md, costs every session its size for nothing.
+  overloaded=""
+  while read -r ctx; do
+    [ -n "$ctx" ] || continue
+    grep -qxF "@$ctx" "$TARGET/CLAUDE.md" && overloaded="$overloaded ${ctx##*/}"
+  done < <(awk '/These are not loaded/{f=1} f' "$HERE/template/AGENTS.md" \
+             | grep -oE 'blueprint/context/[a-z-]+\.md' | sort -u)
+  if [ -n "$overloaded" ]; then
+    legacy="$legacy\n  - CLAUDE.md loads files AGENTS.md now says are read on demand:$overloaded"
+    legacy="$legacy\n    Every session pays for them before a word is typed. Remove the line for each:"
+    for m in $overloaded; do legacy="$legacy\n        @blueprint/context/$m"; done
+  fi
 fi
 
 if [ -d "$TARGET/blueprint/.state" ]; then

@@ -48,7 +48,7 @@ and do not offer to** until they say the new remote exists.
   cut out; **seen failing** with that same cut, reporting `got '12'`. `D13`.
 - **The public surface was audited and is clean.** All 74 tracked files are pack
   content; no secrets, keys, IPs or personal paths in any commit's content.
-- **`./check.sh` -> OK** (17 rules, 27 skills); **`./tests/run.sh` -> every file
+- **`./check.sh` -> OK** (18 rules, 27 skills); **`./tests/run.sh` -> every file
   passing, zero failures** - the total is not recorded here, for the reason the
   opening gives.
 
@@ -101,7 +101,7 @@ stakeholder, no partial install of the 27 skills.
     git status --short             # nothing modified
     git log --oneline c7cd606..    # the commits under "Done", plus this file's own
     git status -sb | head -1       # main...origin/main [ahead N] - N is not fixed
-    ./check.sh                     # OK - 27 skills ... 17 rules
+    ./check.sh                     # OK - 27 skills ... 18 rules
     ./tests/run.sh                 # all 4 test files passed, zero failures
 
 ## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
@@ -177,7 +177,7 @@ measured, and `coverage.md` says which skills have actually run.
 
 ## Where this stands (2026-09-15)
 
-27 skills, four scripts, three shared library scripts, a linter with **17 rules**,
+27 skills, four scripts, three shared library scripts, a linter with **18 rules**,
 four guides, and a template. No dependencies, nothing to build, no network calls.
 
 **This file is the public summary.** The chronological record of building the
@@ -295,7 +295,7 @@ median context before the user's first message was 107K tokens. The findings
 ledger only grew (100 raised, 26 P3 still open), and the planning and archive
 files came to ~680 KB. Ordered by payoff:
 
-- [ ] **P1 - Context budget, enforced by `check.sh`.** Add a rule that fails
+- [x] **P1 - Context budget, enforced by `check.sh`.** Done - rule 18, `D14`. Add a rule that fails
       when the files `template/CLAUDE.md` imports exceed a byte budget. Stop
       importing `fundamentals.md` every session (`review`/`build` read it).
       Load only the Open section of `needs-you.md`; Done moves to history.

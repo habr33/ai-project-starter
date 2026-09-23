@@ -38,6 +38,7 @@ Read the project's state before acting:
 
 - `blueprint/context/project-overview.md` - the source of truth for what this project is
 - `blueprint/context/coding-standards.md` - the conventions this project's code follows
+- `blueprint/context/fundamentals.md` - the pack's conventions; not loaded by default, so read it here
 - `blueprint/context/current-work.md` - the one item in flight, if any
 - `blueprint/context/findings.md` - open review findings against the current work
 

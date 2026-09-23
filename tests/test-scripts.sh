@@ -567,6 +567,16 @@ fresh_out=$("$IN" --target "$w2/fresh" 2>&1)
 assert_fails "a project created by this pack reports nothing" \
   grep -q 'does not load' <<< "$fresh_out"
 
+# The reverse: fundamentals.md left the loaded set, and a CLAUDE.md written
+# before that keeps importing 11 KB no session needs. Found on a real project
+# whose imports came to 160 KB before the user's first message.
+echo "@blueprint/context/fundamentals.md" >> "$w2/fresh/CLAUDE.md"
+over_out=$("$IN" --target "$w2/fresh" 2>&1)
+assert_ok "install names a file CLAUDE.md loads that is now read on demand" \
+  grep -q 'read on demand: fundamentals.md' <<< "$over_out"
+assert_fails "and a fresh project does not trip it" \
+  grep -q 'read on demand' <<< "$fresh_out"
+
 section "opencode wrappers carry the modes the skill declares"
 # Rule 15 makes sure a mode is named in the skill's own description, which is
 # what Claude Code matches on. The opencode wrapper keeps only the FIRST

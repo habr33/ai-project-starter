@@ -1096,6 +1096,7 @@ _ok_clause() {
     15) echo "every declared mode named in its description" ;;
     16) echo "no script refusing after it has written" ;;
     17) echo "every contract field written and read" ;;
+    18) echo "the loaded context within budget" ;;
     *)  echo "«rule $1 has no declared clause in test-seams.sh»" ;;
   esac
 }
@@ -2171,5 +2172,32 @@ assert_ok "and review directly when every one was run live" \
   _says skills/build.md 'already run live in Step 3, say so and name `review` directly'
 assert_fails "the old unconditional handoff is gone" \
   _says skills/build.md 'next action, usually `review` then `ship`'
+
+# ==== seams-H: the always-loaded context, from a full-loop retrospective (2026-09-23) ====
+# A single-part web project ran the whole loop over 31 sessions and loaded
+# 160 KB before every first message. Rule 18 holds the seed; these hold the
+# prose that keeps a project inside the budget once it grows.
+section "a file moved out of the loaded set is read by the skills that need it"
+# fundamentals.md was imported every session. Dropping the import without
+# sending its readers to it would remove it from every session instead.
+for n in spec build review; do
+  assert_ok "$n reads fundamentals.md itself" \
+    _says skills/$n.md '`blueprint/context/fundamentals.md` - the pack'"'"'s conventions; not loaded by default, so read it here'
+done
+assert_fails "and CLAUDE.md no longer imports it" \
+  grep -qF '@blueprint/context/fundamentals.md' template/CLAUDE.md
+
+section "closed needs-you lines leave the loaded file"
+# The real project's needs-you.md reached 13 KB, most of it Done lines kept
+# "rather than deleting them" in a file every session loads.
+assert_ok "ship moves Done lines to history" \
+  _says skills/ship.md 'Append every line under its `## Done` heading to `blueprint/history/needs-you-done.md`'
+assert_ok "and leaves open lines alone" _says skills/ship.md 'Open lines are never touched.'
+assert_ok "the file itself says where Done goes" \
+  _says template/blueprint/context/needs-you.md '`ship` moves Done to `blueprint/history/needs-you-done.md`'
+assert_ok "progress reports the loaded context against the budget" \
+  _says skills/progress.md 'Always-loaded context over its budget.'
+assert_ok "and progress takes the budget from where AGENTS.md states it" \
+  _says template/AGENTS.md '`progress` reports when they exceed it'
 
 finish

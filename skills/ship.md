@@ -5,7 +5,7 @@ description: "Close out finished work: run a final safety pass, archive the spec
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -128,6 +128,13 @@ learn how a finding no code fixes gets closed:
     > at every audit until that skill has run.
 
     _No findings recorded._
+
+**Move the Done lines out of `blueprint/context/needs-you.md`.** Append every
+line under its `## Done` heading to `blueprint/history/needs-you-done.md`
+(create it with a `# Needs you - done` heading), under a `## <archive name>`
+heading, then leave `## Done` empty. Open lines are never touched. The file is
+loaded every session, and closed lines left in it are what grew it to thirteen
+kilobytes on a real project.
 
 Then reset `blueprint/context/current-work.md` to its stub:
 

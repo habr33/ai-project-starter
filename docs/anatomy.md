@@ -48,14 +48,14 @@ by mentioning it.
 | `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` | 12 skills |
 | `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` | `context` `progress` `monitor` `preflight` |
 | `blueprint/context/project-overview.md` | the source of truth, generated | `context` | `spec` `build` `review` `progress` |
-| `blueprint/context/fundamentals.md` | conventions that hold regardless of stack | **the pack** — refreshed on every install | `spec` `build` `review` |
+| `blueprint/context/fundamentals.md` | conventions that hold regardless of stack — **not loaded every session**; the three skills that need it read it | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments — what it will never trade away. **Product-level, like the plan.** Never inferred from code: `setup` reports it unrecorded rather than writing one | `ideate` | `architect` `review` `preflight` |
 | `blueprint/context/design.md` | visual decisions, measured values | `prototype` | `spec` `review` `ship` |
 | `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` `rollback` | 7 skills |
 | `blueprint/context/findings.md` | the findings ledger — code findings close through `review`, non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
-| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` | `prepare` `progress` `preflight` |
+| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` `ship` | `prepare` `progress` `preflight` |
 | `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `ship` | `progress` `verify` `rollback` `docs` `preflight` |
 | `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees. The contract line is committed; `status/` is working state and gitignored | `orchestrate` + the scripts | `orchestrate` |
 | `CHANGELOG.md` | what changed, for users | `docs` | `preflight` |
@@ -215,8 +215,8 @@ none of them execute:
 
 ## What holds this together mechanically
 
-`check.sh` has 17 rules. Twelve were added *after* a specific bug got through,
-which is the only reason they are the right twelve:
+`check.sh` has 18 rules. Thirteen were added *after* a specific bug got through,
+which is the only reason they are the right thirteen:
 
 | Rule | Catches | Added because |
 |---|---|---|
@@ -232,6 +232,7 @@ which is the only reason they are the right twelve:
 | 15 | a mode missing from its skill's description | `docs --check` was reachable only by someone who already knew |
 | 16 | a script that refuses after it has written | `convert-to-parts.sh` moved every file into a part, then refused `-api` - the third time |
 | 17 | a contract field with no writer or no reader | `Kind:` appeared once in the pack, in the block that calls itself read |
+| 18 | a template loading more than half the context budget | a real project loaded 160 KB before the user's first message, and no limit had ever been stated |
 
 **One class was recorded here as unlintable for months and is now rule 13.** A
 path that resolves to the wrong directory — every file valid, only the runtime

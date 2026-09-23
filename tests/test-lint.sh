@@ -578,4 +578,38 @@ r=$(fresh_repo); rm -f "$r/$CB"
 assert_refuses "a missing product AGENTS.md is caught, not skipped" \
   "rule 17 is not checking anything" lint "$r"
 
+section "rule 18 - a new project's loaded context fits in half the budget"
+# A real project loaded 160 KB before the user's first message, and no file in
+# the pack had ever said how much was too much.
+r=$(fresh_repo)
+python3 -c "import sys; open(sys.argv[1],'a').write('x' * 30000)" \
+  "$r/template/blueprint/context/findings.md"
+assert_refuses "a loaded file that grows past the budget is caught" \
+  "loads" lint "$r"
+assert_refuses "and the message names the budget it broke" \
+  "over half the 48 KB context budget" lint "$r"
+
+# Moving a file into the loaded set is the other way to spend it - the way
+# fundamentals.md was loaded every session for the pack's whole life.
+r=$(fresh_repo)
+echo "@blueprint/context/design.md" >> "$r/template/CLAUDE.md"
+python3 -c "import sys; open(sys.argv[1],'w').write('x' * 30000)" \
+  "$r/template/blueprint/context/design.md"
+assert_refuses "an import that pushes the seed over is caught" \
+  "over half the 48 KB context budget" lint "$r"
+
+r=$(fresh_repo)
+echo "@blueprint/context/nowhere.md" >> "$r/template/CLAUDE.md"
+assert_refuses "an import of a file the template does not have is caught" \
+  "imports blueprint/context/nowhere.md, which the template does not have" lint "$r"
+
+# Without the declaration there is no limit, and a rule with nothing to hold the
+# imports to must say so rather than pass.
+r=$(fresh_repo)
+sed -i 's/^\*\*Context budget: 48 KB\.\*\*/**Context budget:** generous./' "$r/template/AGENTS.md"
+assert_eq "the budget line actually left the file" "0" \
+  "$(grep -c 'Context budget: 48 KB' "$r/template/AGENTS.md")"
+assert_refuses "a template with no declared budget is caught, not skipped" \
+  "rule 18 has nothing to hold" lint "$r"
+
 finish

@@ -712,6 +712,35 @@ else
   fi
 fi
 
+# 18 - the files a new project's CLAUDE.md loads fit in half the context budget
+#      template/AGENTS.md declares.
+#
+#    Every imported file is paid for by every session before the user types a
+#    word. A real single-part project reached 160 KB of imports - a median of
+#    107K tokens before the first message, 3.29 B cache-read tokens over its
+#    life - and nothing in the pack had ever stated a limit. The budget is the
+#    declaration; `progress` holds a project to it. This holds the seed to half,
+#    because the other half is what the project's own overview, standards and
+#    open items grow into.
+# `|| true`: no match must reach the check below, not end the run under set -e.
+budget_kb=$(grep -oE '^\*\*Context budget: [0-9]+ KB\.\*\*' "$HERE/template/AGENTS.md" | grep -oE '[0-9]+' || true)
+if [ -z "$budget_kb" ]; then
+  fail "template/AGENTS.md: no '**Context budget: N KB.**' line - rule 18 has nothing to hold CLAUDE.md's imports to"
+else
+  seed_bytes=$(wc -c < "$HERE/template/CLAUDE.md")
+  while IFS= read -r imp; do
+    [ -n "$imp" ] || continue
+    if [ -f "$HERE/template/$imp" ]; then
+      seed_bytes=$((seed_bytes + $(wc -c < "$HERE/template/$imp")))
+    else
+      fail "template/CLAUDE.md: imports $imp, which the template does not have"
+    fi
+  done <<< "$(sed -n 's/^@//p' "$HERE/template/CLAUDE.md")"
+  seed_max=$((budget_kb * 1024 / 2))
+  [ "$seed_bytes" -le "$seed_max" ] \
+    || fail "template/CLAUDE.md: loads $seed_bytes bytes every session, over half the $budget_kb KB context budget ($seed_max) - trim a loaded file or move it to the read-on-demand table"
+fi
+
 if [ "$errors" -gt 0 ]; then
   echo
   echo "$errors error(s) across $skills skill(s)."
@@ -724,4 +753,4 @@ echo "     its preconditions, frontmatter within host limits, every state file a
 echo "     every product-root file named as one, every decision skill says what"
 echo "     happens when its decision already exists, every declared mode named"
 echo "     in its description, no script refusing after it has written,"
-echo "     every contract field written and read"
+echo "     every contract field written and read, the loaded context within budget"
