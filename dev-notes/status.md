@@ -309,7 +309,7 @@ files came to ~680 KB. Ordered by payoff:
       `ship` archives resolved entries. P3s get a policy: a batched "tidy"
       item every N items, or expiry to a backlog file that is not loaded.
       Observed: an entry stayed `fixed` for a week, still loaded every session.
-- [ ] **P1 - Cap `project-overview.md`** (e.g. <=8 KB). It restated the
+- [x] **P1 - Cap `project-overview.md`** Done - `context` Step 3. (e.g. <=8 KB). It restated the
       findings ledger and `needs-you.md` in prose, so every regeneration was
       another docs commit (12 of 33 commits were docs). Link, don't restate.
 - [ ] **P2 - Split opening from closing.** Keep one named writer for

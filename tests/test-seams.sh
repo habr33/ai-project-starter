@@ -2200,6 +2200,19 @@ assert_ok "progress reports the loaded context against the budget" \
 assert_ok "and progress takes the budget from where AGENTS.md states it" \
   _says template/AGENTS.md '`progress` reports when they exceed it'
 
+section "the overview orients, it does not restate"
+# The real project's overview reached 29 KB, restating the findings ledger and
+# needs-you.md in prose, so every change to either staled it: 12 of 33 commits
+# were regenerations. "This file replaces reading everything else" was the
+# instruction that grew it.
+assert_ok "context caps the overview" _says skills/context.md 'at most 8 KB'
+assert_ok "and says to link rather than restate" _says skills/context.md 'Link, never restate.'
+assert_ok "and measures before reporting" _says skills/context.md 'Measure it before reporting'
+assert_fails "the instruction that grew it is gone" \
+  _says skills/context.md 'this file replaces reading everything else'
+assert_ok "AGENTS.md states the cap where the file is listed" \
+  _says template/AGENTS.md 'at most 8 KB; it links, never restates'
+
 section "the findings ledger is an index, and findings have an end state"
 # The real project's ledger reached 80 KB: every finding's full prose, loaded
 # every session, and nothing that ever removed an unresolved P3. 100 raised,
