@@ -342,7 +342,10 @@ feature from a front-end-only one is judgement.
    file, `dev-notes/status.md`, and `check.sh`'s own OK line, which is what a
    person actually reads after a run. `tests/test-seams.sh` now takes the count
    from `check.sh`'s rule comments and holds the rest to it, so this is checked
-   rather than remembered.
+   rather than remembered - and the OK line is held clause by clause, from a
+   list with one entry per rule. **Declare the new rule's clause there**, even
+   if the clause is "say nothing": that is the step that asks what the line
+   should tell a reader, and a rule missing from the list fails by number.
 4. **Negative-test it, then delete the rule and watch every one of those tests
    fail.** A rule that cannot fail reports everything clean; rule 12 shipped
    that way once, printing its error from a subshell and returning 0.

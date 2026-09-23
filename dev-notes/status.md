@@ -21,10 +21,13 @@ place that answers "has this skill actually run?".
 public repo actually publishes, then close the 17th rule - the last open item
 that needed a decision rather than a resource.
 
-**The tree is clean and everything passes. Two commits are unpushed, on
-purpose.** `main` is at `4cb6514`, `origin/main` at `c7cd606`. The user is
-deleting the GitHub repository and re-creating it from this local clone, so
-**do not push, and do not offer to** until they say the new remote exists.
+**The tree is clean and everything passes. `main` is ahead of `origin/main`, on
+purpose.** `origin/main` is at `c7cd606` - it is the only sha worth writing
+down here, because it is the only one that does not move. **How far ahead
+`main` is, is deliberately not written**, for the reason under *Gotchas*: the
+commit that writes such a count is the one it forgets. The user is deleting the
+GitHub repository and re-creating it from this local clone, so **do not push,
+and do not offer to** until they say the new remote exists.
 
 **Done, with evidence:**
 
@@ -39,6 +42,10 @@ deleting the GitHub repository and re-creating it from this local clone, so
   regenerates the clients too. Nine negative tests in `test-lint.sh`, each
   **seen failing with the rule body removed**; `seams-G` holds the rule count,
   which turned out to live in five files, not three.
+- **`check.sh`'s OK line is held clause by clause.** `test-seams.sh` declares
+  one clause per rule (2, 3, 5 and 7 declared silent) and fails by rule number.
+  The old grep for rule 17's phrase alone stayed green with rule 12's clause
+  cut out; **seen failing** with that same cut, reporting `got '12'`. `D13`.
 - **The public surface was audited and is clean.** All 74 tracked files are pack
   content; no secrets, keys, IPs or personal paths in any commit's content.
 - **`./check.sh` -> OK** (17 rules, 27 skills); **`./tests/run.sh` -> every file
@@ -49,9 +56,10 @@ deleting the GitHub repository and re-creating it from this local clone, so
 
 1. **Wait for the user to re-create the remote**, then push `main` to it. They
    said they would do this part themselves.
-2. Nothing else is pending. Every item under *Still open* below needs a person
-   or a resource - a phone, a managed account, two live sessions, a second OS -
-   not more work in this repo.
+2. **The retrospective todos under *Can be done here*** - the P1s first. The
+   findings-ledger split changes a documented invariant, so it needs the
+   user's decision before work starts. Everything under *Still open* needs a
+   person or a resource, not more work in this repo.
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
@@ -78,20 +86,23 @@ stakeholder, no partial install of the 27 skills.
 - A product-root file needs **two** declarations in `template/AGENTS.md`: the
   writer row *and* a line in the MULTI-PART MARKER block. Only the second makes
   rule 13 require the "Product root:" mention.
-- **A file count in a handoff forgets the handoff**, and the opening
-  instruction treats a mismatch as a disturbed tree. It was wrong twice here -
-  which is why this section counts nothing.
+- **A count in a handoff forgets the handoff**, and the opening instruction
+  treats a mismatch as a disturbed tree. It has been wrong three times here -
+  twice on a file count, and once on `[ahead 2]` and a HEAD sha that named the
+  commit *before* the one that wrote them. **A handoff cannot state a number
+  its own commit changes**: name a fixed point instead - `origin/main`, or a
+  range against it - which is why this section now counts nothing.
 - `check.sh` still has small `printf ... | grep -q` pipelines. Same shape as the
   SIGPIPE defect, but single table rows fit the pipe buffer, so they were left
   alone.
 
 **Verify with:**
 
-    git status --short          # nothing modified
-    git log --oneline -1        # 4cb6514
-    git status -sb | head -1    # main...origin/main [ahead 2] - expected
-    ./check.sh                  # OK - 27 skills ... 17 rules
-    ./tests/run.sh              # all 4 test files passed, zero failures
+    git status --short             # nothing modified
+    git log --oneline c7cd606..    # the commits under "Done", plus this file's own
+    git status -sb | head -1       # main...origin/main [ahead N] - N is not fixed
+    ./check.sh                     # OK - 27 skills ... 17 rules
+    ./tests/run.sh                 # all 4 test files passed, zero failures
 
 ## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
 
@@ -277,7 +288,60 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**Nothing known is open here.** The 17th rule, the last item that needed a
+**Todos from a full-loop retrospective, 2026-09-23.** A single-part web CMS
+ran the whole loop (8 items, 15 sub-items, production live) over 31 sessions.
+It shipped, but it cost 3.29 B cache-read tokens for ~13K lines of code; the
+median context before the user's first message was 107K tokens. The findings
+ledger only grew (100 raised, 26 P3 still open), and the planning and archive
+files came to ~680 KB. Ordered by payoff:
+
+- [ ] **P1 - Context budget, enforced by `check.sh`.** Add a rule that fails
+      when the files `template/CLAUDE.md` imports exceed a byte budget. Stop
+      importing `fundamentals.md` every session (`review`/`build` read it).
+      Load only the Open section of `needs-you.md`; Done moves to history.
+- [ ] **P1 - Split the findings ledger.** Always-loaded index, one line per
+      open finding (ID, severity, title, file); full entries under
+      `findings/`, read on demand. Keeps `AGENTS.md`'s "never miss an open
+      blocker" guarantee at a fraction of the size. Decide before starting -
+      it changes a documented invariant.
+- [ ] **P1 - Give findings an end state.** The repairing skill may close a
+      P2/P3 on evidence it has seen fail; only P0/P1 wait for `review`.
+      `ship` archives resolved entries. P3s get a policy: a batched "tidy"
+      item every N items, or expiry to a backlog file that is not loaded.
+      Observed: an entry stayed `fixed` for a week, still loaded every session.
+- [ ] **P1 - Cap `project-overview.md`** (e.g. <=8 KB). It restated the
+      findings ledger and `needs-you.md` in prose, so every regeneration was
+      another docs commit (12 of 33 commits were docs). Link, don't restate.
+- [ ] **P2 - Split opening from closing.** Keep one named writer for
+      *opening* a `needs-you.md` or findings line; let any skill *close* one
+      with evidence, recording which. Observed: a satisfied `.env` line
+      survived three overview regenerations because `context` saw it but did
+      not own the file; a done monitoring line stayed open too.
+- [ ] **P2 - Track what production will need, from spec to deploy.** `spec`
+      records new env vars, migrations and external accounts; `ship` appends
+      them to a pending-for-production list; `progress` reports "production
+      is N items behind, needs X". Observed: 4 items merged before anyone
+      noticed production lacked their env vars and 2 migrations.
+- [ ] **P2 - `ci` runs the browser tests by default when they need a
+      database** (service container). Observed: the tests covering the worst
+      defects gated nothing for the project's whole life.
+- [ ] **P2 - Time-limit manual checks.** A `needs-you.md` manual-check line
+      widened N times forces a decision: do it, or accept the risk. Observed:
+      the screen-reader line was widened by every item, then accepted as a
+      risk all at once.
+- [ ] **P3 - One copy of the skills in a project.** `.claude/`, `.agents/`
+      and `.opencode/` each committed ~7.9K lines of identical text; generate
+      or symlink at install.
+- [ ] **P3 - `disable-model-invocation: true`** on hand-run skills (`deploy`,
+      `ship`, `migrate`, `setup`, `autopilot`); trim the longest
+      descriptions (`verify`, `stack`, `spec`, `architect`).
+- [ ] **P3 - Cap archive size.** `ship` archives the spec, outcome and links
+      to evidence, not every narrative; item 1's archive was 60 KB.
+- [ ] **P3 - Length limits for written entries.** At most 3 lines for a
+      finding's "Why it matters", and a shorter house style in the skills
+      themselves (~400 KB of skill prose sets the tone agents copy).
+
+**Before this list, nothing known was open here.** The 17th rule, the last item that needed a
 decision rather than a resource, went in on 2026-09-23 - see `D13` and item 2
 above. Everything else known is closed: the 2026-09-15 review
 and a run of the loop on a two-part CMS went in commit `5306f41` - see D9 and

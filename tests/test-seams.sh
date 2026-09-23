@@ -1071,9 +1071,48 @@ for _doc in AGENTS.md README.md docs/anatomy.md dev-notes/status.md; do
     "$(grep -oE '[0-9]+ rules' <<< "$_flat" | grep -oE '[0-9]+' | sort -u | wc -l | tr -d ' ')"
 done
 # The OK line is what a person actually reads after a run, and it listed every
-# rule but the new one for as long as it took to notice.
-assert_ok "check.sh's OK line names as many clauses as it has rules" \
-  bash -c './check.sh | tr "\n" " " | tr -s " " | grep -qF "every contract field written and read"'
+# rule but the new one for as long as it took to notice. Grepping for the new
+# rule's own phrase could not see that happen again: with rule 12's clause cut
+# out of the OK line, this whole file still reported zero failures. So the
+# phrases are declared, one per rule, and the list is held to check.sh's own
+# numbering - a rule 18 with nothing said about it here fails, which is the
+# moment the question "what does the OK line say about this rule?" gets asked.
+# Rules 2, 3, 5 and 7 are declared silent rather than left out: an omission
+# reads exactly like a forgotten rule. They report per skill when they fail,
+# and naming each in a line people skim would cost more than it tells them.
+_ok_clause() {
+  case "$1" in
+    1)  echo "frontmatter valid" ;;
+    2|3|5|7) echo "" ;;
+    4)  echo "no tool-specific references" ;;
+    6)  echo "steps in order" ;;
+    8)  echo "every script referenced" ;;
+    9)  echo "every board field written" ;;
+    10) echo "every skill states its preconditions" ;;
+    11) echo "frontmatter within host limits" ;;
+    12) echo "every state file a writer" ;;
+    13) echo "every product-root file named as one" ;;
+    14) echo "every decision skill says what happens when its decision already exists" ;;
+    15) echo "every declared mode named in its description" ;;
+    16) echo "no script refusing after it has written" ;;
+    17) echo "every contract field written and read" ;;
+    *)  echo "«rule $1 has no declared clause in test-seams.sh»" ;;
+  esac
+}
+# The clauses wrap across lines in the source, so the run's output is flattened
+# to one line first - matched line by line, four of them are absent.
+_ok_line=$(./check.sh | tr '\n' ' ' | tr -s ' ')
+_ok_missing=""
+for _n in $(seq 1 "$_rules"); do
+  _phrase=$(_ok_clause "$_n")
+  [ -z "$_phrase" ] && continue
+  case "$_ok_line" in
+    *"$_phrase"*) ;;
+    *) _ok_missing="$_ok_missing $_n" ;;
+  esac
+done
+assert_eq "check.sh's OK line carries the declared clause for every rule" "" \
+  "$(echo $_ok_missing)"
 
 # anatomy names them as well as counting them. A correct count naming the wrong
 # skills is the version of this that reads as right.

@@ -266,3 +266,12 @@ list rather than a heuristic.
 now takes the count from `check.sh`'s rule comments - asserting they run 1..n
 with no gaps, so a deleted rule cannot leave the maximum unchanged - and holds
 the four prose files to it.
+
+**The OK line needed a list, not a count.** It first held only by a grep for
+this rule's own phrase, which could not see a recurrence: cutting rule 12's
+clause out of the OK line left the whole suite green. A count would not work
+either - four rules say nothing there, so the clauses have never numbered the
+same as the rules. So `test-seams.sh` declares one clause per rule number,
+including the four declared silent, and reports the numbers whose clause has
+gone missing. Same move as `decision_skills` and the contract table: the list
+is the rule, and a rule 18 absent from it fails by number.
