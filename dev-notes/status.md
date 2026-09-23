@@ -52,14 +52,18 @@ and do not offer to** until they say the new remote exists.
   passing, zero failures** - the total is not recorded here, for the reason the
   opening gives.
 
+**Branch `retro-improvements`** (2026-09-23) holds the retrospective's P1 and
+P2 todos, one commit each - `git log --oneline main..retro-improvements`. The
+user will **squash-merge it later**; do not merge it without them. `D14`, `D15`.
+
 **Next:**
 
 1. **Wait for the user to re-create the remote**, then push `main` to it. They
    said they would do this part themselves.
-2. **The retrospective todos under *Can be done here*** - the P1s first. The
-   findings-ledger split changes a documented invariant, so it needs the
-   user's decision before work starts. Everything under *Still open* needs a
-   person or a resource, not more work in this repo.
+2. **The retrospective's P3s under *Can be done here*.** Two need the user
+   first: one copy of the skills changes what `install.sh` writes into every
+   project, and `disable-model-invocation` would stop `autopilot` invoking
+   `ship`. Everything under *Still open* needs a person or a resource.
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
