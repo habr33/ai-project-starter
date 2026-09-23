@@ -362,3 +362,47 @@ it - one link, which git stores as a link.
 **Rejected: relying on `.agents/skills` alone** - Claude Code does not read it.
 **Rejected: gitignoring the second copy** - a fresh clone would have no skills
 until someone knew to run `install.sh`.
+
+## D17 - prototype starts from a design kit, not a blank page (2026-09-23)
+
+`prototype` wrote a theme from nothing, asked about "feel" without recommending
+anything, and called anything beyond two or three mockups a design system it
+should not build. So each project's agent invented its own tokens and
+components, partially, and the parts nobody thought of - navigation on a
+phone, an empty state, a focus ring, the password-reset journey - were the parts
+that shipped missing or were invented per feature.
+
+**The pack now ships `blueprint/design-kit/`**, pack-owned and refreshed on
+install:
+
+- **`tokens.json`** (W3C Design Tokens format) and **`tokens.css`**, one set:
+  a neutral slate scale and one brand hue, colour roles for light and dark,
+  type, spacing, radii, shadows, motion, sizes, breakpoints and layers.
+  Components use only the `--color-*` roles, so a re-theme is one file.
+- **`components.css`** and **`components.html`** - every core component in
+  every state: navigation (top bar, sidebar, mobile menu, breadcrumbs, tabs,
+  pagination, menus), buttons, links, forms, alerts, toasts, badges, loading,
+  empty and error states, dialogs, tables, lists and cards.
+- **`ux-checklist.md`** - navigation by product type, the screens every product
+  needs, the journeys to walk end to end, the WCAG 2.2 AA floor, breakpoints.
+
+**`prototype` now classifies the product, recommends two or three directions as
+token changes with reasons, maps the navigation and the screens, copies the kit
+and changes values - never names - and records the navigation map, screens and
+journeys in `design.md`.** `spec` turns each journey an item passes through into
+a done-when; `review` reports a literal where a token belongs.
+
+**Held by tests, not by the prose:** the two token files agree in every mode,
+every `var()` is defined, the components hold no colour literal, and every
+colour pair a component draws meets WCAG AA in both modes. Writing those found
+three defects before anything shipped: a dark block missing a role, so every
+hover fell back to its light value; line-height tokens used under the wrong
+name; and a light input border at 2.56:1.
+
+**Default look: neutral and brand-swappable**, chosen over a Material-like
+baseline (heavier on the web) and over names without values (today's blank
+page by another route).
+
+**Rejected: a generator from `tokens.json` to CSS.** It would be a script in
+every project; the test holds the two files in step in the pack, and a project
+changes `theme.css`, not the JSON.

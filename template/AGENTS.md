@@ -33,6 +33,7 @@ its history - closed items move out, detail lives in files read on demand.
 |---|---|---|
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack - `spec`, `build` and `review` read it | the pack - refreshed on every install, your edits are overwritten |
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
+| `blueprint/design-kit/` | tokens, components and the UX checklist `prototype` starts from | the pack - refreshed on every install |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
@@ -46,10 +47,8 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
 | `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `ship`, `autopilot` |
 
-**Every one of those has a named writer, and that is deliberate.** A file with
-readers and nothing that writes it is the single most repeated defect in this
-workflow's own history: it reads as configured, passes every check, and quietly
-means nothing.
+**Every one of those has a named writer, and that is deliberate:** a file
+nothing writes reads as configured and quietly means nothing.
 
 **Resuming interrupted work:** `current-work.md` records which build steps are
 done with `- [x]`. Continue from the **first unchecked step**. Never start over,

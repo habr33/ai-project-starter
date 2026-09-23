@@ -256,8 +256,9 @@ lib/seed-part.sh      seed one part; also adds a part to an existing product
 lib/seed-product-root.sh   seed a product root
 lib/part-name.sh      part-name checks, run before anything is created or moved
 skills/               27 files, one per skill - the only source
-template/             21 files: AGENTS.md, CLAUDE.md, blueprint/, dev-notes/,
-                      README, and product/ for a multi-part root
+template/             27 files: AGENTS.md, CLAUDE.md, blueprint/ (with the
+                      design kit), dev-notes/, README, and product/ for a
+                      multi-part root
 docs/                 4 guides: walkthrough, anatomy, mobile, multi-part
 tests/                run.sh, lib.sh, and the suites - lint, scripts, seams,
                       routing
@@ -320,7 +321,11 @@ payoff:
       asks at 3.
 - [x] **P3 - One copy of the skills in a project.** `D16`: `.claude/skills`
       links to `.agents/skills`, copying where a symlink will not work.
-- [ ] **P2 - Navigation across a login-state change.** No skill asks for a
+- [x] **Design kit** - `D17`: tokens, every core component in every state,
+      a UX checklist, and a `prototype` that recommends and maps navigation.
+- [ ] **P2 - Navigation across a login-state change.** *Partly addressed by
+      `D17`: the checklist names the journeys and `spec` makes each a
+      done-when; the `verify` sweep and the `review` check are still open.* No skill asks for a
       done-when that follows the whole redirect chain when an action changes
       the session - a password change, a role change, logging in to return to
       a page - for the user affected *and* for yourself, through a full-page

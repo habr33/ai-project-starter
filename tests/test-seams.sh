@@ -2270,4 +2270,132 @@ assert_ok "and a P0 or P1 repair still never closes itself" \
 assert_fails "the unconditional rule is gone, since it no longer holds" \
   _says skills/build.md '`closed`. A repair never closes itself.'
 
+# ==== seams-I: the design kit holds to its own promises (2026-09-23) ====
+# The kit is two files saying the same thing - tokens.json for tools and
+# non-web platforms, tokens.css for the web - plus components that promise to
+# use nothing but the tokens. Written by hand, the two token files drifted on
+# the first edit: the dark `data-theme` block lost a role and every hover fell
+# back to its light value. Nothing but a comparison would have seen it.
+section "the design kit: tokens.json and tokens.css are the same set"
+DK=template/blueprint/design-kit
+_kit_check() {
+python3 - "$DK" "$1" <<'KIT'
+import json, re, sys, pathlib
+dk = pathlib.Path(sys.argv[1]); what = sys.argv[2]
+t = json.loads((dk / "tokens.json").read_text())
+css = (dk / "tokens.css").read_text()
+def leaves(node, path):
+    for k, v in node.items():
+        if k.startswith("$"): continue
+        if "$value" in v: yield path + [k], v
+        else: yield from leaves(v, path + [k])
+def cssval(v, typ):
+    if isinstance(v, str):
+        m = re.fullmatch(r"\{primitive\.([a-z]+)\.(\d+)\}", v)
+        return f"var(--{m.group(1)}-{m.group(2)})" if m else v
+    if typ == "fontFamily": return ", ".join(f'"{x}"' if " " in x else x for x in v)
+    if typ == "cubicBezier": return "cubic-bezier(%s)" % ", ".join(str(x) for x in v)
+    return str(v)
+def block(start):
+    i = css.index(start); j = css.index("{", i) + 1; depth = 1; k = j
+    while depth:
+        depth += {"{": 1, "}": -1}.get(css[k], 0); k += 1
+    body = css[j:k - 1]
+    if "@media" in start:                       # the rules inside the query
+        body = body[body.index("{") + 1:body.rindex("}")]
+    return dict(re.findall(r"(--[a-z0-9-]+):\s*([^;]+);", body))
+root = block(":root {")
+exp_root = {}
+for p, v in leaves(t["primitive"], []): exp_root[f"--{p[0]}-{p[1]}"] = cssval(v["$value"], v["$type"])
+for g in ["font", "space", "radius", "shadow", "motion", "size", "breakpoint", "z"]:
+    for p, v in leaves(t[g], [g]): exp_root["--" + "-".join(p)] = cssval(v["$value"], v["$type"])
+for p, v in leaves(t["color"]["light"], []): exp_root[f"--color-{p[0]}"] = cssval(v["$value"], v["$type"])
+exp_dark = {f"--color-{p[0]}": cssval(v["$value"], v["$type"]) for p, v in leaves(t["color"]["dark"], [])}
+problems = []
+def compare(name, got, exp):
+    for k in sorted(set(exp) | set(got)):
+        if k not in got: problems.append(f"{name}: {k} missing from tokens.css")
+        elif k not in exp: problems.append(f"{name}: {k} in tokens.css but not tokens.json")
+        elif got[k].strip() != exp[k]: problems.append(f"{name}: {k} is {got[k].strip()}, tokens.json says {exp[k]}")
+if what == "parity":
+    compare(":root", root, exp_root)
+    compare("prefers-color-scheme dark", block("@media (prefers-color-scheme: dark)"), exp_dark)
+    compare('data-theme="dark"', block(':root[data-theme="dark"]'), exp_dark)
+    if set(t["color"]["light"]) != set(t["color"]["dark"]):
+        problems.append("color roles differ between light and dark: " + " ".join(sorted(set(t["color"]["light"]) ^ set(t["color"]["dark"]))))
+elif what == "defined":
+    defined = set(re.findall(r"(--[a-z0-9-]+)\s*:", css))
+    for f in ["components.css", "components.html"]:
+        for v in sorted(set(re.findall(r"var\((--[a-z0-9-]+)", (dk / f).read_text()))):
+            if v not in defined: problems.append(f"{f} uses {v}, which tokens.css does not define")
+elif what == "literals":
+    lit = re.compile(r"#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|:\s*(?:white|black)\b")
+    comp = re.sub(r"/\*.*?\*/", "", (dk / "components.css").read_text(), flags=re.S)
+    for n, line in enumerate(comp.splitlines(), 1):
+        if lit.search(line): problems.append(f"components.css:{n}: colour literal: {line.strip()[:60]}")
+    html = (dk / "components.html").read_text()
+    styles = re.findall(r"<style>(.*?)</style>", html, re.S) + re.findall(r'style="([^"]*)"', html)
+    for st in styles:
+        if lit.search(st): problems.append(f"components.html: colour literal in a style: {st.strip()[:60]}")
+elif what == "contrast":
+    def res(v):
+        m = re.fullmatch(r"\{primitive\.([a-z]+)\.(\d+)\}", v)
+        return t["primitive"][m.group(1)][m.group(2)]["$value"] if m else v
+    def lum(h):
+        h = h.lstrip("#")[:6]; rgb = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+        f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = map(f, rgb); return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    def cr(a, b):
+        x, y = sorted([lum(a), lum(b)], reverse=True); return (x + 0.05) / (y + 0.05)
+    # Every pair a component actually draws, text at 4.5:1 and control
+    # boundaries and focus at 3:1 (WCAG 1.4.3, 1.4.11).
+    text = [("text","bg"),("text","surface"),("text","surface-hover"),("text-muted","bg"),("text-muted","surface"),
+            ("text-muted","surface-sunken"),("primary","surface"),("primary","bg"),("primary","primary-subtle"),
+            ("on-primary","primary"),("on-primary","danger"),("danger","surface"),("success","success-subtle"),
+            ("warning","warning-subtle"),("danger","danger-subtle"),("text","info-subtle"),("text","success-subtle"),
+            ("text","warning-subtle"),("text","danger-subtle")]
+    ui = [("focus-ring","bg"),("focus-ring","surface"),("border-strong","surface")]
+    for mode in ("light", "dark"):
+        c = {k: res(v["$value"]) for k, v in t["color"][mode].items()}
+        for pairs, need in ((text, 4.5), (ui, 3.0)):
+            for a, b in pairs:
+                r = cr(c[a], c[b])
+                if r < need: problems.append(f"{mode}: {a} on {b} is {r:.2f}:1, needs {need}:1")
+print("\n".join(problems))
+KIT
+}
+assert_ok "tokens.json is valid JSON" python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$DK/tokens.json"
+assert_eq "every token is in both files, with the same value, in every mode" "" "$(_kit_check parity)"
+assert_eq "every var() the components use is defined" "" "$(_kit_check defined)"
+assert_eq "the components hold no colour literal - a re-theme is tokens.css alone" "" "$(_kit_check literals)"
+assert_eq "every colour pair a component draws meets WCAG contrast, light and dark" "" "$(_kit_check contrast)"
+
+
+section "prototype starts from the kit, recommends, and maps how people get around"
+# prototype used to start from a blank theme file, ask about "feel" without
+# recommending anything, and treat anything beyond two or three mockups as a
+# design system it should not build - so navigation, most components and the
+# screens every app needs were invented per feature, or never.
+assert_ok "prototype copies the kit's tokens rather than inventing them" \
+  _says skills/prototype.md 'Copy `blueprint/design-kit/tokens.css` to `prototypes/theme.css`'
+assert_ok "and changes values, never names" _says skills/prototype.md 'Never rename or remove a token.'
+assert_ok "it classifies the product before recommending" _says skills/prototype.md 'Name the product type'
+assert_ok "it recommends directions as token changes, with a reason" \
+  _says skills/prototype.md 'each stated as the **token changes** it makes to the kit'
+assert_ok "it maps the navigation before any pixel" _says skills/prototype.md 'The navigation map'
+assert_ok "it adds the screens every product of that type needs" \
+  _says skills/prototype.md 'plus** the required ones from checklist section 2'
+assert_ok "it mocks the whole component sheet in the project's look" \
+  _says skills/prototype.md 'Copy `blueprint/design-kit/components.html` to'
+assert_ok "and design.md records the navigation and the journeys" \
+  _says skills/prototype.md '**The navigation map** from Step 2.'
+assert_ok "a project without the kit is told how to get it, not given a freehand one" \
+  _says skills/prototype.md 'Do not recreate it from memory'
+assert_ok "spec turns each journey into a done-when" \
+  _says skills/spec.md 'Every journey in `design.md` this item passes through is a done-when'
+assert_ok "the checklist names the journey a screen-by-screen check misses" \
+  _says template/blueprint/design-kit/ux-checklist.md 'Change or reset **your own** password'
+assert_ok "review reports a literal where a token belongs" \
+  _says skills/review.md 'written as a literal instead of a token is drift'
+
 finish

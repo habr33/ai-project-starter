@@ -1082,4 +1082,17 @@ assert_exists "every skill, not a partial tree" "$w/nolink/.claude/skills/build/
 assert_ok "and the report says it copied, and why" \
   grep -q 'copied (this filesystem did not make a working symlink)' <<< "$out"
 
+section "the design kit reaches a project, and stays the pack's"
+# prototype starts from blueprint/design-kit/. A project without it would send
+# prototype back to inventing tokens from nothing - the thing the kit replaces.
+w=$(workdir); (cd "$w" && "$NP" dk >/dev/null 2>&1)
+for f in tokens.json tokens.css components.css components.html ux-checklist.md README.md; do
+  assert_exists "a new project gets design-kit/$f" "$w/dk/blueprint/design-kit/$f"
+done
+echo "local edit" >> "$w/dk/blueprint/design-kit/tokens.css"
+out=$("$IN" --target "$w/dk" 2>&1)
+assert_ok "an edited kit file is restored on install - it is pack-owned" \
+  cmp -s "$REPO/template/blueprint/design-kit/tokens.css" "$w/dk/blueprint/design-kit/tokens.css"
+assert_ok "and the install says it refreshed something" grep -q 'pack-owned file(s) refreshed' <<< "$out"
+
 finish

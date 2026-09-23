@@ -213,6 +213,10 @@ The lenses:
   generic standard: it records the contrast values this project actually measured
   and the states it settled. A feature that invents a fourth kind of error
   message is drift worth reporting even when each version is individually fine.
+  **A colour, size or shadow written as a literal instead of a token is drift
+  too** - it survives the next re-theme unchanged. And check the screens
+  `design.md` marks as applying still exist: a not-found page, an empty state,
+  the whole account family.
 - **Dependencies** - versions far enough behind that it matters, packages with
   known advisories, a lockfile that disagrees with the manifest, licences
   incompatible with how the project is distributed, and anything unused still

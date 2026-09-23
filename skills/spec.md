@@ -330,6 +330,14 @@ project already settled. If the item needs something the record does not cover, 
 new state or a new component, **say so in the spec**: that is a design decision,
 and it belongs in the record afterwards rather than only in the code.
 
+**Every journey in `design.md` this item passes through is a done-when**, walked
+end to end: from the first click to the final screen, checking the final URL
+and what it shows, as a full page load and through the app's own navigation.
+A screen that works on its own says nothing about the path through it - signing
+in from a protected page, or resetting your own password, can end on a 404
+while every screen involved passes. The journeys come from
+`blueprint/design-kit/ux-checklist.md`; `prototype` records which apply.
+
 **A feature that changes stored data needs a migration step.** If this item adds
 a field, a table, or an index - or changes the shape of something already stored -
 say so in Data and contracts, and make the migration its **own build step, before

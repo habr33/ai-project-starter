@@ -58,7 +58,7 @@ my-app/
 ├── AGENTS.md          entry point every AI tool reads
 ├── CLAUDE.md          imports AGENTS.md
 ├── dev-notes/         why it is shaped this way, and where it stands
-├── blueprint/         plans, the current spec, findings, history
+├── blueprint/         plans, the current spec, findings, history, and the design kit
 ├── .agents/skills/    the 27 skills - the one copy every tool reads
 ├── .claude/skills     a link to .agents/skills, where Claude Code looks
 └── .opencode/command/ a `/name` wrapper per skill, for opencode
@@ -73,7 +73,7 @@ own conventions rather than one imposed here.
 
 ```
 ideate → architect → stack → layout → scaffold → ci → context  plan it
-     → prototype                                    settle the look (optional)
+     → prototype                                    settle the look and navigation (optional)
      → spec → build → verify → review → ship        build it
      → preflight → host → deploy → monitor          run it
 ```
@@ -114,7 +114,9 @@ project, once, before launch. It can say no, and that is the point.
 "none" is a real answer; `architect` writes what performance, scale, security
 and availability this project holds itself to; `scaffold` writes the
 conventions the code actually follows; `prototype` writes the design decisions
-and the contrast values it measured. Without those, `review`'s lenses can only
+and the contrast values it measured, starting from the pack's **design kit** -
+neutral tokens, every core component in every state, and a UX checklist of the
+screens and journeys every app or website needs. Without those, `review`'s lenses can only
 report generic smells — **a clean result then means "not checked", not
 "consistent"**, and the skills say so rather than letting silence read as a
 pass.

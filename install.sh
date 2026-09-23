@@ -311,6 +311,7 @@ if [ "$SKILLS_ONLY" -eq 0 ]; then
     # template moves on.
     case "$rel" in
       blueprint/context/fundamentals.md|\
+      blueprint/design-kit/*|\
       blueprint/history/*/README.md)
         if [ -e "$dest" ]; then
           cmp -s "$src" "$dest" && continue
