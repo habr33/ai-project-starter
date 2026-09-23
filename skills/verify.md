@@ -5,7 +5,7 @@ description: "Prove the current work actually does what its spec says, by runnin
 
 # verify - prove it against the running app
 
-**Writes:** `blueprint/context/findings.md` · `blueprint/context/needs-you.md`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md`
 
 Where this sits:
 
@@ -222,7 +222,8 @@ for `review` or `ship` - no item is in flight. Report instead:
 
 **A regression does not go back to `build` the way a current-spec failure does.**
 There is no spec for it. Raise it in `blueprint/context/findings.md` with a
-severity, the same as `review` does, and let `spec` pick it up as a fix - that is
+severity, the same as `review` does - the heading there, the entry in
+`blueprint/findings/<ID>.md` - and let `spec` pick it up as a fix - that is
 the route a defect in shipped code already has, and this is one.
 
 **Say what this run cost.** Re-proving every shipped feature by observation is

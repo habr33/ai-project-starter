@@ -147,6 +147,9 @@ and neither is read by anything else:
 - **Open findings in `blueprint/context/findings.md`.** P2s and P3s carried
   across merges are specs half-written: three views accepting any HTTP method is
   one item, not three.
+- **The backlog, `blueprint/findings/backlog.md`** - the P3s `ship` moved out of
+  the index. Give the count; at five or more, name `spec`'s tidy item as an
+  option.
 
 Name a couple of the most useful, with their recorded reasons. **A deferred item
 nobody re-reads is a decision that quietly became a deletion**, and this is the

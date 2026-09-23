@@ -5,7 +5,7 @@ description: "Close out finished work: run a final safety pass, archive the spec
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -98,34 +98,50 @@ is: on a real run eight decisions a later item depended on lived only there,
 and `docs` was merely suggested.
 
 **Archive the resolved findings with it.** Append a `## Findings` section to the
-archive file holding every `closed`, `accepted`, or `invalid` entry at its final
-status, with `accepted` entries keeping their recorded reason. **A `deferred`
-entry is not resolved and stays in the ledger**, with its `Deferred to:` target:
-one archived as `accepted` was repaired an hour later by the very skill it named,
-and the repair had to be written into an archive nobody reads. Prefix each ID
-with the archive name so it stays unique forever: item 12's `F-03` becomes
-`12/F-03`. Then remove those entries from the ledger.
+archive file holding every `closed`, `accepted`, or `invalid` finding at its
+final status - its index heading followed by the body of its entry file,
+`blueprint/findings/<ID>.md`, with `accepted` entries keeping their recorded
+reason. **A `deferred` entry is not resolved and stays in the ledger**, with its
+`Deferred to:` target: one archived as `accepted` was repaired an hour later by
+the very skill it named, and the repair had to be written into an archive
+nobody reads. Prefix each ID with the archive name so it stays unique forever:
+item 12's `F-03` becomes `12/F-03`. Then remove those headings from the index
+and delete their entry files.
 
-Unresolved entries - `open` or `fixed` at P2 or P3, and `unverified` leads - stay
-in the ledger with their IDs. They are never silently dropped. When nothing is
-left, reset `blueprint/context/findings.md` to its stub - the template's file,
-header included, because the header is where `docs`, `ci`, `deploy` and `monitor`
+**Move unresolved P3s to the backlog.** Every P3 still `open`, `fixed` or
+`unverified` moves its index heading and `File:` line to
+`blueprint/findings/backlog.md` (create it with a `# Findings backlog` heading);
+its entry file stays where it is and keeps its ID. The backlog is not loaded:
+`spec` offers a tidy item from it, and `review` still closes what it
+re-examines there. **Name each one moved in the report.** On a real project the
+index only grew - 100 findings raised, 26 P3s still open - and every session
+paid for all of them.
+
+Unresolved P0 to P2 entries and `unverified` leads above P3 stay in the index
+with their IDs. They are never silently dropped. When nothing is left, reset
+`blueprint/context/findings.md` to its stub - the template's file, header
+included, because the header is where `docs`, `ci`, `deploy` and `monitor`
 learn how a finding no code fixes gets closed:
 
     # Findings
 
-    > **Generated file.** The findings ledger: review findings raised by the `review`
-    > skill against the work in progress, each with a durable ID, a severity (P0-P3),
-    > and a status. `build` marks a repaired finding `fixed`; only a later `review`
-    > pass moves it to `closed`. **A finding no code fixes** - raised by `preflight`
-    > or `host`, such as missing backups or a leaked secret - is marked `fixed` with
-    > evidence by whichever skill repairs it, and `preflight` re-checks and closes it.
-    > `ship` refuses to merge while any P0 or P1 finding
-    > is `open` or `fixed`, then archives resolved findings with the work item and
-    > resets this file. A finding the user puts off rather than abandons is
-    > `deferred`, with a `Deferred to:` line naming the skill that will do it: it
-    > gates nothing, stays in the ledger through `ship`, and `preflight` reports it
-    > at every audit until that skill has run.
+    > **Generated file.** The findings index, loaded every session: one heading per
+    > live finding - `### F-03 [P0] open - <title>` and a `File:` line under it -
+    > and nothing else. The full entry is `blueprint/findings/F-03.md`, read when
+    > acting on that finding; **status lives only here**, evidence in the entry's
+    > **Resolution**. `review` raises code findings; `build` marks a repair `fixed`;
+    > only a later `review` pass moves it to `closed` - except a P2 or P3 whose
+    > repair `build` saw a test fail without, which `build` closes itself. **A
+    > finding no code fixes** - raised by `preflight` or `host`, such as missing
+    > backups or a leaked secret - is marked `fixed` with evidence by whichever
+    > skill repairs it, and `preflight` re-checks and closes it. `ship` refuses to
+    > merge while any P0 or P1 finding is `open` or `fixed`, then archives resolved
+    > findings with the work item, moves unresolved P3s to
+    > `blueprint/findings/backlog.md`, and resets this file. A finding the user puts
+    > off rather than abandons is `deferred`, with a
+    > `Deferred to:` line naming the skill that will do it: it gates nothing, stays
+    > in the ledger through `ship`, and `preflight` reports it at every audit until
+    > that skill has run.
 
     _No findings recorded._
 
@@ -317,7 +333,8 @@ aside because a skill found it inconvenient.
    from the branch (`git show <branch>:<path to current-work.md>`) exactly as it
    stands, ticks included, followed by `**Abandoned:** <date> - <reason>` and
    `**Branch:** <name> at <commit>`. **Read this item's findings from the branch
-   as well** (`git show <branch>:<path to findings.md>`): Step 2 has just moved
+   as well** (`git show <branch>:<path to findings.md>`, and each entry file the
+   same way, `git show <branch>:blueprint/findings/<ID>.md`): Step 2 has just moved
    you to `main`, where the ledger is its stub, while the entries live on the
    branch beside the code they describe. Reading the ledger from where you are
    standing archives an empty section and reports it as done. Append them under

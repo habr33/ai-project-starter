@@ -302,3 +302,36 @@ added to the loaded set has to be argued for.
 **Rejected: a byte cap per file enforced by the project's own tooling.** The
 pack ships no runtime into projects; `progress` is the thing run constantly,
 so it is where the number is read.
+
+## D15 - The findings ledger is an index, and findings have an end state (2026-09-23)
+
+The same project's ledger was **80 KB, loaded every session**: every finding's
+full prose, 100 raised over the project's life and 26 P3s still open at the
+end. Nothing ever removed an unresolved P3, and a repaired one waited in the
+ledger as `fixed` - for a week, once - for a `review` pass that had nothing
+left to learn from it.
+
+**Split, not trimmed.** `blueprint/context/findings.md` is now the index: one
+`### F-03 [P0] open - <title>` heading and a `File:` line per live finding.
+The entry - found, why it matters, suggested fix, resolution - is
+`blueprint/findings/F-03.md`, read by whoever acts on it. **Status lives only in
+the index**, so the two cannot disagree; the invariant "a session never misses
+an open blocker" holds, because every open P0 and P1 heading is still loaded.
+The heading is the same machine-readable line it always was.
+
+**An end state, in three parts:**
+
+- **`build` may close a P2 or P3 it repaired** - only when the repair's test
+  was written from the finding's reproduction and seen failing with the repair
+  reverted. `build` already required that run; it was evidence nobody could
+  act on. P0 and P1 still wait for `review`: the relaxation is fenced by
+  severity, where a wrong close costs least.
+- **`ship` moves every unresolved P3 to `blueprint/findings/backlog.md`**, which
+  is not loaded, and names each one. `review` still closes them there.
+- **`spec` offers a tidy item at five or more**, and `progress` and `preflight`
+  count them - a backlog nothing brings back would be deletion by another name.
+
+**Rejected: expiring P3s by age.** It needs a counter nothing maintains; moving
+them at every `ship` needs none, and a P3 is by definition a follow-up.
+**Rejected: one detail file for all entries.** Archiving would mean cutting
+blocks out of a shared file; one file per ID is a delete.

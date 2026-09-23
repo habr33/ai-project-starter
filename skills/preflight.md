@@ -5,7 +5,7 @@ description: "The whole-project go-live audit: everything, once, before the firs
 
 # preflight - is this ready to be live at all?
 
-**Writes:** `blueprint/context/findings.md`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/`
 
 Where this sits:
 
@@ -266,7 +266,8 @@ case this is rather than treating silence as either a pass or a gap.
 Sort everything into four buckets, and lead with the verdict:
 
 - **Blockers** - must be fixed before going live. Each one goes into the findings
-  ledger as P0 or P1, so the existing machinery carries it.
+  ledger as P0 or P1, so the existing machinery carries it: a heading in the
+  index, the entry in `blueprint/findings/<ID>.md`, in `review`'s format.
 
   **On a re-run, close what was repaired.** A blocker no code fixes - backups, a
   host, a README, a rotated secret - is marked `fixed` with evidence by the skill
@@ -281,6 +282,9 @@ Sort everything into four buckets, and lead with the verdict:
   release goes out with them live, and the only difference from an accepted one
   is that something is meant to come back. Report them at every audit, never as
   resolved, until that skill has run.
+- **Backlog** - the count in `blueprint/findings/backlog.md`, naming any whose
+  file this release changed. P3s gate nothing, but a backlog nobody counts is a
+  deletion by another name.
 - **Not applicable** - with the reason. "No personal data collected, so no
   privacy policy needed" is a real result.
 - **Could not verify** - and what would be needed to verify it. **Never counted

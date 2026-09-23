@@ -5,7 +5,7 @@ description: "Build the spec in `blueprint/context/current-work.md` one small re
 
 # build - turn the spec into code, one reviewed step at a time
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/context/needs-you.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -178,9 +178,10 @@ Work the spec's build steps in order, one at a time. For each step:
    on - add it under the spec's `## Decisions` now, while the reason is on screen;
    `ship` carries that section into `dev-notes/decisions.md`. If the
    step repaired a finding in `blueprint/context/findings.md`, set that finding to `fixed` and
-   note the repair in its **Resolution** line - never to `closed`, because a repair
+   note the repair in the **Resolution** line of its entry,
+   `blueprint/findings/<ID>.md` - never to `closed` at P0 or P1, because a repair
    is re-reviewed by `review` before it clears. A fix can introduce a worse
-   defect than the one it removed.
+   defect than the one it removed. A P2 or P3 is the exception in Step 4.
 
    Then offer a short choice:
 
@@ -256,7 +257,14 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
   was marked fixed with a passing test while the defect stood, because the test
   never went down the failing path.
 - **Then run `review`** so those repairs are re-reviewed and can move to
-  `closed`. A repair never closes itself.
+  `closed`. A P0 or P1 repair never closes itself.
+- **A P2 or P3 you repaired, you may close** - only when its test was written
+  from the finding's reproduction and you **saw it fail with the repair
+  reverted** and pass with it back, as above. Set it to `closed`, and record in
+  **Resolution** the test, both runs, and `closed by build`. Anything short of
+  that stays `fixed` for `review`. On a real project a repaired P3 stayed
+  `fixed` for a week, loaded by every session, waiting for a pass that had
+  nothing left to learn from it.
 - **Never set `accepted`, `deferred` or `invalid`.** `accepted` is the user's explicit
   decision with a recorded reason; `invalid` is a `review` verdict backed
   by evidence. Neither is this skill's call.

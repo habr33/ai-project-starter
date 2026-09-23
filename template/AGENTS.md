@@ -18,7 +18,7 @@ These are already loaded, before you read anything else:
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
 | `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `rollback` |
-| `blueprint/context/findings.md` | open review findings | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
+| `blueprint/context/findings.md` | the findings index - one heading per live finding, status only | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `ship` |
 
 **Context budget: 48 KB.** Everything above is paid for by every session before
@@ -37,6 +37,7 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
+| `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/history/` | every completed item, archived | `ship` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
 | `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate` |

@@ -299,12 +299,12 @@ files came to ~680 KB. Ordered by payoff:
       when the files `template/CLAUDE.md` imports exceed a byte budget. Stop
       importing `fundamentals.md` every session (`review`/`build` read it).
       Load only the Open section of `needs-you.md`; Done moves to history.
-- [ ] **P1 - Split the findings ledger.** Always-loaded index, one line per
+- [x] **P1 - Split the findings ledger.** Done - `D15`. Always-loaded index, one line per
       open finding (ID, severity, title, file); full entries under
       `findings/`, read on demand. Keeps `AGENTS.md`'s "never miss an open
       blocker" guarantee at a fraction of the size. Decide before starting -
       it changes a documented invariant.
-- [ ] **P1 - Give findings an end state.** The repairing skill may close a
+- [x] **P1 - Give findings an end state.** Done - `D15`. The repairing skill may close a
       P2/P3 on evidence it has seen fail; only P0/P1 wait for `review`.
       `ship` archives resolved entries. P3s get a policy: a batched "tidy"
       item every N items, or expiry to a backlog file that is not loaded.

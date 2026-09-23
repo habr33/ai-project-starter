@@ -5,7 +5,7 @@ description: "Read-only code audit that records what it finds in the ledger at b
 
 # review - audit the code, and record what you find
 
-**Writes:** `blueprint/context/findings.md`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/`
 
 Where this sits:
 
@@ -21,7 +21,8 @@ Where this sits:
 `verify` proves the *behavior* matches the spec. This checks the *code*:
 whether it is safe, consistent, and worth building on.
 
-It changes nothing except blueprint/context/findings.md. It never edits source, installs a
+It changes nothing except blueprint/context/findings.md and the entries in
+`blueprint/findings/`. It never edits source, installs a
 dependency, commits, merges, or starts product work.
 
 ## What this is not
@@ -232,7 +233,8 @@ and remediation, with the value redacted. Redact command output too.
 ## Step 4 - update the ledger
 
 `blueprint/context/findings.md` is the durable record. A chat report does not survive a context
-clear; the ledger does. It is the only file this skill writes. Create it with a
+clear; the ledger does. The ledger - that index and the entries under
+`blueprint/findings/` - is all this skill writes. Create the index with a
 `# Findings` heading if it is missing.
 
 **The ledger never scopes the review.** Review the code fresh in Step 3, then
@@ -240,16 +242,26 @@ record what you found. Working from the open findings as a checklist and
 verifying only those is the exact failure this file exists to prevent - a repair
 can introduce a defect no existing entry points at.
 
-One block per finding. The header line is a machine-readable contract and keeps
-this exact shape; the prose below it is for people:
+Each finding is two pieces. **The index heading** goes in
+`blueprint/context/findings.md`, which every session loads - so it is the
+heading and one `File:` line, nothing more. The heading is a machine-readable
+contract and keeps this exact shape, and **status lives only here**:
 
     ### F-03 [P0] open - Session cookie is readable from JavaScript
+    File: src/auth/session.ts:41
 
-    **File:** src/auth/session.ts:41
+**The entry** goes in `blueprint/findings/F-03.md`, read by whoever acts on it:
+
+    # F-03 - Session cookie is readable from JavaScript
+
     **Found:** 2026-08-31 by review (scope: current; lens: security)
     **Why it matters:** ...
     **Suggested fix:** ...
     **Resolution:**
+
+**"Why it matters" is at most three lines.** It is read by the skill that
+repairs the finding, not by every session, but a house style of paragraphs is
+what grew one project's ledger to 80 KB.
 
 IDs are sequential within the ledger, never reused and never renumbered while
 their entries live there - not even after one closes. A bare ID is scoped to the
@@ -274,7 +286,7 @@ into a confirmed high severity.
 | `unverified` | Suspected, no confirming evidence yet | No |
 | `open` | Confirmed, not repaired | **Yes** |
 | `fixed` | Repaired, not yet re-reviewed | **Yes** |
-| `closed` | Repaired, and re-checked by something other than what repaired it | No |
+| `closed` | Repaired, and re-checked by something other than what repaired it - or, at P2 or P3, repaired with a test seen failing first | No |
 | `deferred` | Not now, by the user's explicit decision, **naming the skill or milestone that will do it** | No |
 | `accepted` | Not fixing, by the user's explicit decision, reason recorded | No |
 | `invalid` | Re-examination proved it wrong, evidence recorded | No |
@@ -283,7 +295,10 @@ into a confirmed high severity.
 done when something other than what made it has looked at the result.
 
 - **A code finding:** `build` marks the repair `fixed`; only a pass of this skill
-  moves it to `closed`.
+  moves it to `closed`. **The exception is P2 and P3:** `build` closes those
+  itself when the repair's test was seen failing with the repair reverted, and
+  says so in **Resolution**. Re-examine one of those if its file is in scope -
+  a close is not immune to review - but it no longer waits for you.
 - **A finding no code fixes** - no backups, a leaked secret, a missing README,
   raised by `preflight` or `host`: the skill that does the repair (`host`,
   `deploy`, `docs`, `ci`, ...) marks it `fixed` with its evidence in
@@ -297,6 +312,9 @@ Then:
 - Record a risk worth tracking but unproven as `unverified`. It is a lead, and
   never gates a merge.
 - Update entries this pass re-examined, noting the evidence in **Resolution**.
+- **Findings in `blueprint/findings/backlog.md` are still live.** A P3 `ship`
+  moved there keeps its ID and status; close one the same way when this pass's
+  reviewed set covers its file, updating its heading in the backlog.
 - Move `fixed` to `closed` only when all three hold: this pass's reviewed set
   included the file, re-examining the repaired code confirmed the defect is gone
   *and* introduced nothing new, and the report names it as closed. An unrelated
@@ -341,7 +359,7 @@ list with no verdict reads as approval.
 
 ## Rules
 
-- **The ledger is the only file this skill writes.** Never edit, format, install,
+- **The ledger - the index and its entry files - is all this skill writes.** Never edit, format, install,
   commit, or delete anything else.
 - **A focused lens is not a broad audit.** State what was not reviewed.
 - **The ledger reports status; it never defines what to look at.**

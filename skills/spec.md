@@ -111,7 +111,11 @@ Then resolve what is being spec'd:
 - **No argument** - read `blueprint/build-plan.md` top to bottom and take the first
   unchecked leaf (a plain item, or the first unchecked sub-item under one that has
   been split). Completed items are checked off, so the first unchecked item is
-  always what is next.
+  always what is next. **If `blueprint/findings/backlog.md` holds five or more
+  findings, offer a tidy item first** - one fix spec repairing them in a batch,
+  grouped by file - and take the plan item if the user declines. The backlog is
+  not loaded, so nothing else brings it back; a P3 left there forever is a
+  finding that was deleted without anyone deciding to.
 - **A bug or small change** - this is a fix. It gets a spec marked `Type: Fix`
   with no build-plan number, and nothing is added to the plan. A fix repairs or
   adjusts what exists; it does not add a product capability.

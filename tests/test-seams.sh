@@ -2200,4 +2200,31 @@ assert_ok "progress reports the loaded context against the budget" \
 assert_ok "and progress takes the budget from where AGENTS.md states it" \
   _says template/AGENTS.md '`progress` reports when they exceed it'
 
+section "the findings ledger is an index, and findings have an end state"
+# The real project's ledger reached 80 KB: every finding's full prose, loaded
+# every session, and nothing that ever removed an unresolved P3. 100 raised,
+# 26 P3s still open at the end.
+assert_ok "review writes a heading and a File: line to the index" \
+  _says skills/review.md 'it is the heading and one `File:` line, nothing more'
+assert_ok "and the full entry to its own file" \
+  _says skills/review.md '**The entry** goes in `blueprint/findings/F-03.md`'
+assert_ok "status lives in one place, so the two cannot disagree" \
+  _says template/blueprint/context/findings.md '**status lives only here**'
+assert_ok "ship archives an entry file's body, not only the heading" \
+  _says skills/ship.md 'followed by the body of its entry file'
+assert_ok "ship moves unresolved P3s out of the index" \
+  _says skills/ship.md 'Every P3 still `open`, `fixed` or `unverified` moves its index heading'
+assert_ok "and names each one it moved" _says skills/ship.md 'Name each one moved in the report.'
+assert_ok "spec brings the backlog back as a tidy item" \
+  _says skills/spec.md 'offer a tidy item first'
+assert_ok "review can still close what is in the backlog" \
+  _says skills/review.md 'Findings in `blueprint/findings/backlog.md` are still live.'
+# The one relaxation of "a repair never closes itself", and its fence.
+assert_ok "build may close a P2 or P3 only on a test seen failing first" \
+  _says skills/build.md 'saw it fail with the repair reverted'
+assert_ok "and a P0 or P1 repair still never closes itself" \
+  _says skills/build.md 'A P0 or P1 repair never closes itself.'
+assert_fails "the unconditional rule is gone, since it no longer holds" \
+  _says skills/build.md '`closed`. A repair never closes itself.'
+
 finish

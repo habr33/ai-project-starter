@@ -5,7 +5,7 @@ description: "Deploy the project to one named environment, and roll a bad releas
 
 # deploy - put it out there, and take it back if it goes wrong
 
-**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md`
+**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md` · `blueprint/findings/`
 
 Where this sits:
 
@@ -266,7 +266,7 @@ success from every check you would naturally run.
   people**: they do not reload. A contract change needs the old shape served
   until they have moved, which `integrate`'s version check is what tests.
 
-**When this skill repairs a finding** - a `preflight` blocker such as a rollback that has never been tried - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in its **Resolution** line: the rollback ran against the target and the previous release came back. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
+**When this skill repairs a finding** - a `preflight` blocker such as a rollback that has never been tried - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the rollback ran against the target and the previous release came back. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules
 
