@@ -39,6 +39,7 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
 | `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/history/` | every completed item, archived | `ship` |
+| `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
 | `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
@@ -77,9 +78,7 @@ fails `preflight`.
 ## What this is
 
 <!-- `context` fills this in from the plans, in two or three sentences, and
-     leaves it alone once there is prose here. Write it yourself if you would
-     rather - it is your file. Every other placeholder in this file names the
-     skill that fills it; this one did not, and for a long time nothing did. -->
+     leaves it alone once there is prose here. Or write it yourself. -->
 
 ## The loop
 

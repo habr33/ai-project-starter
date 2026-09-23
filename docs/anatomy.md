@@ -58,6 +58,7 @@ by mentioning it.
 | `blueprint/findings/` | each finding's full entry, `<ID>.md`, read on demand; and `backlog.md`, the unresolved P3s `ship` moves out of the index | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `review` `progress` `preflight` |
 | `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` `ship` | `prepare` `progress` `preflight` |
 | `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `ship` | `progress` `verify` `rollback` `docs` `preflight` |
+| `blueprint/production-pending.md` | what production still needs for merged items — variables, migrations, accounts. `spec` names them, `ship` carries them, a production `deploy` ticks them off | `ship` `deploy` | `deploy` `progress` |
 | `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees. The contract line is committed; `status/` is working state and gitignored | `orchestrate` + the scripts | `orchestrate` |
 | `CHANGELOG.md` | what changed, for users | `docs` | `preflight` |
 | `project-plan.md` · §8 Deployment | target host, build and start commands, env vars by name, storage, health check | `stack` `architect` `scaffold` | `host` `deploy` `preflight` |

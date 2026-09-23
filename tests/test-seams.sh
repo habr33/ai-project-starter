@@ -2213,6 +2213,20 @@ assert_fails "the instruction that grew it is gone" \
 assert_ok "AGENTS.md states the cap where the file is listed" \
   _says template/AGENTS.md 'at most 8 KB; it links, never restates'
 
+section "what production needs travels from spec to deploy"
+# Four items merged before anyone noticed production lacked their environment
+# variables and two migrations. Each spec knew; nothing carried it forward.
+assert_ok "spec has a Production needs section" _says skills/spec.md '## Production needs'
+assert_ok "ship carries it to production-pending.md" \
+  _says skills/ship.md 'Carry the spec'"'"'s `## Production needs` to `blueprint/production-pending.md`'
+assert_ok "deploy blocks on an unmet line" \
+  _says skills/deploy.md 'every open line in `blueprint/production-pending.md`'
+assert_ok "and only a production release ticks them" \
+  _says skills/deploy.md 'After a production release, tick every line'
+assert_ok "staging checks them and clears nothing" _says skills/deploy.md 'Staging checks them too, and clears nothing.'
+assert_ok "progress reports how far production is behind" \
+  _says skills/progress.md 'What production is behind by'
+
 section "the findings ledger is an index, and findings have an end state"
 # The real project's ledger reached 80 KB: every finding's full prose, loaded
 # every session, and nothing that ever removed an unresolved P3. 100 raised,

@@ -5,7 +5,7 @@ description: "Close out finished work: run a final safety pass, archive the spec
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -96,6 +96,12 @@ of this step's changes**, since they land in the same commit. The archive keeps
 the spec, but nobody reads an archive to learn why the project is shaped as it
 is: on a real run eight decisions a later item depended on lived only there,
 and `docs` was merely suggested.
+
+**Carry the spec's `## Production needs` to `blueprint/production-pending.md`**,
+unless it says none. Append it under a `## <archive name>` heading (create the
+file with a `# Production pending` heading), one `- [ ]` line per need. The item
+is merged, but it is not live until `deploy` has met every line - and this file
+is the only place that says so.
 
 **Archive the resolved findings with it.** Append a `## Findings` section to the
 archive file holding every `closed`, `accepted`, or `invalid` finding at its

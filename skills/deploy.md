@@ -5,7 +5,7 @@ description: "Deploy the project to one named environment, and roll a bad releas
 
 # deploy - put it out there, and take it back if it goes wrong
 
-**Writes:** `dev-notes/status.md` · `blueprint/context/findings.md` · `blueprint/findings/`
+**Writes:** `dev-notes/status.md` · `blueprint/production-pending.md` · `blueprint/context/findings.md` · `blueprint/findings/`
 
 Where this sits:
 
@@ -76,6 +76,10 @@ Check, and report only what blocks:
   development default reaching it
 - **migrations** that need to run are known, reversible, and understood. A
   destructive one gets called out by name, before anything ships.
+- **every open line in `blueprint/production-pending.md`** for an item this
+  release contains is met in the target - the variable set, the migration
+  applied by `migrate`, the account live. An unmet one blocks, named with the
+  item that needs it. Staging checks them too, and clears nothing.
 - **the build and start commands, and the environment variables by name, come
   from the Deployment section of `blueprint/project-plan.md`** - not from
   recollection and not from what worked locally. That section is written across
@@ -167,6 +171,10 @@ so an intentional release can make the check fail forever, silently, on
 something nobody did wrong (worse still with no alert delivery channel). **A
 check that cries wolf is one nobody reads.** Whatever it compares against
 belongs in configuration the deploy updates, not as a literal inside the script.
+
+**After a production release, tick every line in
+`blueprint/production-pending.md` it met**, and remove each item's section once
+all its lines are ticked. What is left is what production still lacks.
 
 Update `dev-notes/status.md`. **Record the commit** - it is what makes both the
 rollback and the next release's notes possible, since `docs` derives those from

@@ -268,6 +268,11 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
     Choices this item makes that the plan does not already answer and later
     items will build on - an id type, a limit, a session rule - each with what
     it beat. `ship` records them in dev-notes/decisions.md. "None" is an answer.
+    ## Production needs
+    What production must have before this item can run there: new environment
+    variables by name, migrations, external accounts or services, a changed
+    host setting. `ship` carries it to blueprint/production-pending.md. "None"
+    is an answer.
     ## Notes
     Conventions and constraints to respect.
 
@@ -276,6 +281,12 @@ file, and the archive under `blueprint/history/` is not where anyone looks for w
 the project is shaped the way it is. On a real run a spec settled UUID ids, a
 password rule, logout on every device and a folder the layout never named - and
 none of it reached `dev-notes/decisions.md`, because nothing carried it there.
+
+**Production needs are how a release stops being a surprise.** On a real
+project four items merged before anyone noticed production lacked their
+environment variables and two migrations: each spec knew, and nothing carried
+it to the deploy. Name every variable the item's code reads that did not exist
+before, and every migration it adds.
 
 The build steps are a live checklist. `build` ticks each one off as it
 lands, so a session that resumes after a context clear reads which boxes are

@@ -317,7 +317,7 @@ files came to ~680 KB. Ordered by payoff:
       with evidence, recording which. Observed: a satisfied `.env` line
       survived three overview regenerations because `context` saw it but did
       not own the file; a done monitoring line stayed open too.
-- [ ] **P2 - Track what production will need, from spec to deploy.** `spec`
+- [x] **P2 - Track what production will need, from spec to deploy.** Done - `blueprint/production-pending.md`. `spec`
       records new env vars, migrations and external accounts; `ship` appends
       them to a pending-for-production list; `progress` reports "production
       is N items behind, needs X". Observed: 4 items merged before anyone

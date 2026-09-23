@@ -147,6 +147,9 @@ and neither is read by anything else:
 - **Open findings in `blueprint/context/findings.md`.** P2s and P3s carried
   across merges are specs half-written: three views accepting any HTTP method is
   one item, not three.
+- **What production is behind by** - the item sections still in
+  `blueprint/production-pending.md`: "production is N items behind, and needs"
+  the open lines. Merged is not live, and this is the only report that says so.
 - **The backlog, `blueprint/findings/backlog.md`** - the P3s `ship` moved out of
   the index. Give the count; at five or more, name `spec`'s tidy item as an
   option.
