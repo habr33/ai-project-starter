@@ -2227,6 +2227,17 @@ assert_ok "staging checks them and clears nothing" _says skills/deploy.md 'Stagi
 assert_ok "progress reports how far production is behind" \
   _says skills/progress.md 'What production is behind by'
 
+section "a needs-you line can be closed by whoever sees it met, and a check cannot widen forever"
+# A satisfied .env line survived three regenerations of the overview because
+# the skill that saw it met did not own it; a screen-reader line was widened by
+# every item and then accepted as a risk all at once.
+assert_ok "any writer may close any line, with evidence" \
+  _says template/blueprint/context/needs-you.md 'any of them may close any line'
+assert_ok "and records which skill closed it" \
+  _says template/blueprint/context/needs-you.md 'recording which skill closed it and the evidence'
+assert_ok "verify counts how often a manual check was widened" _says skills/verify.md '`Widened: N`'
+assert_ok "and forces the decision at three" _says skills/verify.md 'At 3, stop widening and ask'
+
 section "the findings ledger is an index, and findings have an end state"
 # The real project's ledger reached 80 KB: every finding's full prose, loaded
 # every session, and nothing that ever removed an unresolved P3. 100 raised,

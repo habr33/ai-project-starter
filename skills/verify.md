@@ -254,6 +254,14 @@ pass - it is work waiting on a human, and unrecorded it reads as neither.
 This is what stops "I have not seen this" from quietly becoming "this
 works" by the time anyone reads the report.
 
+**Widen an open manual check rather than adding a second one**, and count it:
+the line carries `Widened: N`, raised by one each time an item adds to it.
+**At 3, stop widening and ask** - do the check now, or accept the risk. An
+accepted risk is `dropped` with the user's reason, and the next item starts a
+fresh line. On a real project the screen-reader line was widened by every item
+and then accepted all at once, at the end, as a single decision over a dozen
+screens nobody had heard.
+
 ## Rules
 
 **Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what

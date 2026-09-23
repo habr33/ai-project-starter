@@ -1,10 +1,9 @@
 # Needs you
 
-> **Work only a person can do.** An agent adds a line the moment it finds
-> something it cannot do itself, so the next skill that needs the same account
-> finds one line, not a second conversation. `prepare` reads this file;
-> `progress` names the next item from it; `preflight` treats anything open and
-> required as a blocker. **Loaded every session**, so it holds open lines only.
+> **Work only a person can do**, added the moment an agent finds it - so the
+> next skill needing the same account finds one line, not a new conversation.
+> `preflight` treats an open required line as a blocker. **Loaded every
+> session**, so it holds open lines only.
 
 ## How to write a line
 
@@ -18,15 +17,15 @@ reason.
 
 ## Closing a line
 
-**The skill that would have needed it closes it, on its next run**, after
-checking - "installed" is proven by running it, not by the plan saying so.
+**Opening a line is for the skills named as its writers; any of them may close
+any line**, once it has checked - "installed" is proven by running it, not by
+the plan saying so - recording which skill closed it and the evidence. The
+skill that would have needed it closes it on its next run at the latest.
 `prepare` never closes anything: it reports a line that looks satisfied and
 names the skill that owns it.
 
 **Closed lines move to Done, and `ship` moves Done to
-`blueprint/history/needs-you-done.md`**, so this file stays the open list. A
-file that only grows stops being read - and `preflight` would block a release
-on a requirement met months ago.
+`blueprint/history/needs-you-done.md`**, so this file stays the open list.
 
 ## Open
 

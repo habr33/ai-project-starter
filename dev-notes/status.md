@@ -312,7 +312,7 @@ files came to ~680 KB. Ordered by payoff:
 - [x] **P1 - Cap `project-overview.md`** Done - `context` Step 3. (e.g. <=8 KB). It restated the
       findings ledger and `needs-you.md` in prose, so every regeneration was
       another docs commit (12 of 33 commits were docs). Link, don't restate.
-- [ ] **P2 - Split opening from closing.** Keep one named writer for
+- [x] **P2 - Split opening from closing.** Done for `needs-you.md`; findings close by severity - `D15`. Keep one named writer for
       *opening* a `needs-you.md` or findings line; let any skill *close* one
       with evidence, recording which. Observed: a satisfied `.env` line
       survived three overview regenerations because `context` saw it but did
@@ -325,7 +325,7 @@ files came to ~680 KB. Ordered by payoff:
 - [ ] **P2 - `ci` runs the browser tests by default when they need a
       database** (service container). Observed: the tests covering the worst
       defects gated nothing for the project's whole life.
-- [ ] **P2 - Time-limit manual checks.** A `needs-you.md` manual-check line
+- [x] **P2 - Time-limit manual checks.** Done - `verify`, `Widened: N`. A `needs-you.md` manual-check line
       widened N times forces a decision: do it, or accept the risk. Observed:
       the screen-reader line was widened by every item, then accepted as a
       risk all at once.
