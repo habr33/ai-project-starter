@@ -234,7 +234,7 @@ which is the only reason they are the right thirteen:
 | 15 | a mode missing from its skill's description | `docs --check` was reachable only by someone who already knew |
 | 16 | a script that refuses after it has written | `convert-to-parts.sh` moved every file into a part, then refused `-api` - the third time |
 | 17 | a contract field with no writer or no reader | `Kind:` appeared once in the pack, in the block that calls itself read |
-| 18 | a template loading more than half the context budget | a real project loaded 160 KB before the user's first message, and no limit had ever been stated |
+| 18 | a template loading more than half the context budget | every session pays for the loaded files, and no limit had ever been stated |
 
 **One class was recorded here as unlintable for months and is now rule 13.** A
 path that resolves to the wrong directory — every file valid, only the runtime

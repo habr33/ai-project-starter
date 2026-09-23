@@ -78,9 +78,9 @@ HAD_WORKFLOW=0
 # .agents/skills is where opencode, Codex and the other tools look. Claude Code
 # looks only in .claude/skills - checked with 2.1.280, which listed no skill
 # from .agents/skills alone and ran one through a directory symlink. So the
-# project holds one copy, and .claude/skills is a link to it: two copies were
-# 800 KB of identical text in a real project, every repo-wide search hit each
-# passage twice, and a hand edit to one copy made the tools quietly disagree.
+# project holds one copy, and .claude/skills is a link to it: with two copies,
+# every repo-wide search hits each passage twice, and a hand edit to one copy
+# makes the tools quietly disagree.
 #
 # Where a symlink cannot be made or does not resolve - Windows without symlink
 # support, where `ln -s` copies or git checks the link out as a plain file -

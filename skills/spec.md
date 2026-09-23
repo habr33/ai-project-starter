@@ -282,10 +282,10 @@ the project is shaped the way it is. On a real run a spec settled UUID ids, a
 password rule, logout on every device and a folder the layout never named - and
 none of it reached `dev-notes/decisions.md`, because nothing carried it there.
 
-**Production needs are how a release stops being a surprise.** On a real
-project four items merged before anyone noticed production lacked their
-environment variables and two migrations: each spec knew, and nothing carried
-it to the deploy. Name every variable the item's code reads that did not exist
+**Production needs are how a release stops being a surprise.** The spec is the
+one place that knows an item needs a new variable or a migration; unless it
+says so, nothing carries that to the deploy, and several items can merge
+before anyone notices production lacks them. Name every variable the item's code reads that did not exist
 before, and every migration it adds.
 
 The build steps are a live checklist. `build` ticks each one off as it

@@ -579,8 +579,8 @@ assert_refuses "a missing product AGENTS.md is caught, not skipped" \
   "rule 17 is not checking anything" lint "$r"
 
 section "rule 18 - a new project's loaded context fits in half the budget"
-# A real project loaded 160 KB before the user's first message, and no file in
-# the pack had ever said how much was too much.
+# Every session pays for the loaded files, and no file in the pack had ever
+# said how much was too much.
 r=$(fresh_repo)
 python3 -c "import sys; open(sys.argv[1],'a').write('x' * 30000)" \
   "$r/template/blueprint/context/findings.md"

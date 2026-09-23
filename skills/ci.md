@@ -131,9 +131,8 @@ service the tests genuinely need.
 browser test tool, add a job that runs it: a database service container for the
 tests that need one, the browser the tool installs, and the migrations applied
 before the tests start. Leaving it out is the user's call, asked for by name
-with its cost - never the default because it is more work. On a real project
-the browser tests covered the worst defects it ever had, and gated nothing for
-its whole life, because CI ran only the unit suite.
+with its cost - never the default because it is more work. Browser tests tend
+to cover the defects that matter most, and a suite CI never runs gates nothing.
 
 **Branch on the platform:**
 

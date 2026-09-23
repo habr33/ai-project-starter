@@ -253,8 +253,8 @@ Instead:
    report success on an empty result. Confirm the expected files exist before
    going further.
 3. Move the result into the project.
-4. **Never overwrite a workflow file.** `AGENTS.md`, `CLAUDE.md`, the two adapter
-   directories, everything under `blueprint/` and `dev-notes/` are off limits.
+4. **Never overwrite a workflow file.** `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`
+   and the `.claude/skills` link to it, everything under `blueprint/` and `dev-notes/` are off limits.
 5. **Never copy the scaffolder's `.git/` directory.** Several - `create-expo-app`
    among them - initialise their own repository. Copying it over the existing one
    destroys the project's history. Exclude it from the move entirely.

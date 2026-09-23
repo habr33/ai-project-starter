@@ -91,8 +91,8 @@ Report only what is actually wrong:
   `CLAUDE.md` imports with `@`; `AGENTS.md` states the budget. Over it, name the
   three largest and what in each could move out - closed entries, history,
   detail a line and a link would carry. Every session pays for these files
-  before the user types a word: a real project reached 160 KB this way, most of
-  it closed findings and prose restating other files.
+  before the user types a word, and they grow by accretion - closed entries
+  and prose restating other files - unless something measures them.
 - No verification command, or no test runner, when the project has real code.
 - **Drift from the loop.** The signals worth naming:
   - work committed directly to `main`

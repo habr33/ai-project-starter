@@ -260,8 +260,8 @@ contract and keeps this exact shape, and **status lives only here**:
     **Resolution:**
 
 **"Why it matters" is at most three lines.** It is read by the skill that
-repairs the finding, not by every session, but a house style of paragraphs is
-what grew one project's ledger to 80 KB.
+repairs the finding, not by every session, but a house style of paragraphs
+makes every entry cost more than it tells.
 
 IDs are sequential within the ledger, never reused and never renumbered while
 their entries live there - not even after one closes. A bare ID is scoped to the

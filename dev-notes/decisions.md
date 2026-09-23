@@ -278,38 +278,37 @@ is the rule, and a rule 18 absent from it fails by number.
 
 ## D14 - The always-loaded context has a budget, and the pack states it (2026-09-23)
 
-A single-part web project ran the whole loop - 8 items, production live - over
-31 sessions, and spent 3.29 B cache-read tokens on ~13K lines of code. Its
-`CLAUDE.md` imported **160 KB** before the user's first message: an 80 KB
-findings ledger, a 29 KB overview restating other files, 13 KB of `needs-you.md`
-that was mostly Done lines, and the pack's own 11 KB `fundamentals.md`. Nothing
-in the pack had ever said how much was too much, so nothing could notice.
+Every file `CLAUDE.md` imports is paid for by every session before the user
+types a word, and those files grow by accretion: closed findings, Done lines,
+an overview restating other files, and the pack's own `fundamentals.md`, which
+is the same in every project. Nothing in the pack had ever said how much was
+too much, so nothing could notice.
 
 **The budget is 48 KB, declared in `template/AGENTS.md`**, and it is held in two
 places: rule 18 keeps the template's own imports under half of it, and
 `progress` reports a project over it with the three largest files named. Half,
 because the other half is what the project's overview, standards and open
-items grow into; the seed sits just under it at about 24 KB, so the next thing
-added to the loaded set has to be argued for.
+items grow into; the seed sits just under it, so the next thing added to the
+loaded set has to be argued for.
 
-- **`fundamentals.md` is no longer imported.** It is the same in every project
-  and only `spec`, `build` and `review` act on it, so they read it. `install.sh`
-  reports an older `CLAUDE.md` still importing it.
+- **`fundamentals.md` is no longer imported.** Only `spec`, `build` and
+  `review` act on it, so they read it. `install.sh` reports an older
+  `CLAUDE.md` still importing it.
 - **Closed needs-you lines leave the loaded file.** `ship` - already the skill
   that archives - moves Done lines to `blueprint/history/needs-you-done.md`.
   Deleting them was rejected: when something was settled is worth keeping.
+- **The overview is capped at 8 KB**, and `context` links to each record
+  instead of restating it.
 
-**Rejected: a byte cap per file enforced by the project's own tooling.** The
-pack ships no runtime into projects; `progress` is the thing run constantly,
-so it is where the number is read.
+**Rejected: a byte cap enforced by the project's own tooling.** The pack ships
+no runtime into projects; `progress` is the thing run constantly, so it is
+where the number is read.
 
 ## D15 - The findings ledger is an index, and findings have an end state (2026-09-23)
 
-The same project's ledger was **80 KB, loaded every session**: every finding's
-full prose, 100 raised over the project's life and 26 P3s still open at the
-end. Nothing ever removed an unresolved P3, and a repaired one waited in the
-ledger as `fixed` - for a week, once - for a `review` pass that had nothing
-left to learn from it.
+The ledger loaded every finding's full prose every session. Nothing ever
+removed an unresolved P3, and a repaired one waited as `fixed` for a `review`
+pass that had nothing left to learn from it - so the ledger only grew.
 
 **Split, not trimmed.** `blueprint/context/findings.md` is now the index: one
 `### F-03 [P0] open - <title>` heading and a `File:` line per live finding.
@@ -339,9 +338,9 @@ blocks out of a shared file; one file per ID is a delete.
 ## D16 - One copy of the skills in a project, linked for Claude Code (2026-09-23)
 
 A project held two identical skill trees, `.claude/skills` and
-`.agents/skills` - 409 KB each in a real one. Nothing loads both, so it cost no
-context, but every repo-wide search hit each passage twice, and a hand edit to
-one copy made the tools quietly disagree.
+`.agents/skills`. Nothing loads both, so it cost no context, but every
+repo-wide search hit each passage twice, and a hand edit to one copy made the
+tools quietly disagree.
 
 **Checked, not assumed:** Claude Code 2.1.280 in a project holding only
 `.agents/skills` listed none of its skills; with `.claude/skills` a directory
@@ -354,9 +353,8 @@ it - one link, which git stores as a link.
   report says so. A plain file where the link should be is repaired.
 - **An old two-copy install is converted only when nothing is lost**: a skill
   only `.claude/skills` has moves into `.agents/skills`; one that differs
-  between the two keeps the old shape, named in the report. A trial install on
-  a copy of the real project converted cleanly and kept its framework-installed
-  skill.
+  between the two keeps the old shape, named in the report. A framework's
+  generated skill, with its `references/`, survives the conversion.
 - **`AGENTS.md` tells a tool with no skill support where each `SKILL.md` is.**
   Instruction, not integration - no `/name`, no description matching - but it
   costs one line.

@@ -143,10 +143,10 @@ points at.
 
 **Link, never restate.** Open findings, needs-you lines, shipped items,
 decisions and the environments each have a file that is their record - name the
-file, do not copy it here. On a real project the overview restated the findings
-ledger and `needs-you.md` in prose and reached 29 KB; every change to either
-made the overview stale, and 12 of 33 commits were regenerating it. **If a
-section will not fit, it is restating something** - find what, and point at it.
+file, do not copy it here. An overview that restates them grows with every
+item and goes stale whenever any of them changes, so each change costs another
+regeneration. **If a section will not fit, it is restating something** - find
+what, and point at it.
 
 **Measure it before reporting** (`wc -c`). Over 8 KB, cut and measure again.
 

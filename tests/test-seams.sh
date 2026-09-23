@@ -2173,10 +2173,9 @@ assert_ok "and review directly when every one was run live" \
 assert_fails "the old unconditional handoff is gone" \
   _says skills/build.md 'next action, usually `review` then `ship`'
 
-# ==== seams-H: the always-loaded context, from a full-loop retrospective (2026-09-23) ====
-# A single-part web project ran the whole loop over 31 sessions and loaded
-# 160 KB before every first message. Rule 18 holds the seed; these hold the
-# prose that keeps a project inside the budget once it grows.
+# ==== seams-H: the always-loaded context and the state files that feed it (2026-09-23) ====
+# Rule 18 holds the seed to the budget; these hold the prose that keeps a
+# project inside it once it grows, and the routes that keep state from piling up.
 section "a file moved out of the loaded set is read by the skills that need it"
 # fundamentals.md was imported every session. Dropping the import without
 # sending its readers to it would remove it from every session instead.
@@ -2188,8 +2187,8 @@ assert_fails "and CLAUDE.md no longer imports it" \
   grep -qF '@blueprint/context/fundamentals.md' template/CLAUDE.md
 
 section "closed needs-you lines leave the loaded file"
-# The real project's needs-you.md reached 13 KB, most of it Done lines kept
-# "rather than deleting them" in a file every session loads.
+# Done lines used to be kept "rather than deleting them" in a file every
+# session loads, so it only grew.
 assert_ok "ship moves Done lines to history" \
   _says skills/ship.md 'Append every line under its `## Done` heading to `blueprint/history/needs-you-done.md`'
 assert_ok "and leaves open lines alone" _says skills/ship.md 'Open lines are never touched.'
@@ -2201,10 +2200,9 @@ assert_ok "and progress takes the budget from where AGENTS.md states it" \
   _says template/AGENTS.md '`progress` reports when they exceed it'
 
 section "the overview orients, it does not restate"
-# The real project's overview reached 29 KB, restating the findings ledger and
-# needs-you.md in prose, so every change to either staled it: 12 of 33 commits
-# were regenerations. "This file replaces reading everything else" was the
-# instruction that grew it.
+# An overview that restates the ledger and needs-you.md goes stale whenever
+# either changes. "This file replaces reading everything else" was the
+# instruction that made it restate them.
 assert_ok "context caps the overview" _says skills/context.md 'at most 8 KB'
 assert_ok "and says to link rather than restate" _says skills/context.md 'Link, never restate.'
 assert_ok "and measures before reporting" _says skills/context.md 'Measure it before reporting'
@@ -2214,8 +2212,8 @@ assert_ok "AGENTS.md states the cap where the file is listed" \
   _says template/AGENTS.md 'at most 8 KB; it links, never restates'
 
 section "what production needs travels from spec to deploy"
-# Four items merged before anyone noticed production lacked their environment
-# variables and two migrations. Each spec knew; nothing carried it forward.
+# The spec knows an item needs a new variable or a migration; nothing carried
+# that to the deploy, so merged items could reach production without them.
 assert_ok "spec has a Production needs section" _says skills/spec.md '## Production needs'
 assert_ok "ship carries it to production-pending.md" \
   _says skills/ship.md 'Carry the spec'"'"'s `## Production needs` to `blueprint/production-pending.md`'
@@ -2228,9 +2226,9 @@ assert_ok "progress reports how far production is behind" \
   _says skills/progress.md 'What production is behind by'
 
 section "a needs-you line can be closed by whoever sees it met, and a check cannot widen forever"
-# A satisfied .env line survived three regenerations of the overview because
-# the skill that saw it met did not own it; a screen-reader line was widened by
-# every item and then accepted as a risk all at once.
+# A satisfied line could stay open because the skill that saw it met did not
+# own it; and a manual check could be widened by every item, then accepted as
+# a risk all at once.
 assert_ok "any writer may close any line, with evidence" \
   _says template/blueprint/context/needs-you.md 'any of them may close any line'
 assert_ok "and records which skill closed it" \
@@ -2239,17 +2237,16 @@ assert_ok "verify counts how often a manual check was widened" _says skills/veri
 assert_ok "and forces the decision at three" _says skills/verify.md 'At 3, stop widening and ask'
 
 section "browser tests gate something"
-# The browser tests covering the worst defects of a real project gated nothing
-# for its whole life: ci treated them as an optional cost and ran the unit suite.
+# ci treated browser tests as an optional cost and ran the unit suite, so the
+# tests most likely to catch what matters gated nothing.
 assert_ok "ci runs browser tests by default" _says skills/ci.md 'Browser tests run by default, database and all.'
 assert_ok "with a database service container" _says skills/ci.md 'a database service container for the tests that need one'
 assert_ok "and leaving them out is asked for, not defaulted" \
   _says skills/ci.md 'never the default because it is more work'
 
 section "the findings ledger is an index, and findings have an end state"
-# The real project's ledger reached 80 KB: every finding's full prose, loaded
-# every session, and nothing that ever removed an unresolved P3. 100 raised,
-# 26 P3s still open at the end.
+# The ledger loaded every finding's full prose every session, and nothing ever
+# removed an unresolved P3, so it only grew.
 assert_ok "review writes a heading and a File: line to the index" \
   _says skills/review.md 'it is the heading and one `File:` line, nothing more'
 assert_ok "and the full entry to its own file" \

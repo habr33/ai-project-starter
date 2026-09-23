@@ -258,9 +258,8 @@ works" by the time anyone reads the report.
 the line carries `Widened: N`, raised by one each time an item adds to it.
 **At 3, stop widening and ask** - do the check now, or accept the risk. An
 accepted risk is `dropped` with the user's reason, and the next item starts a
-fresh line. On a real project the screen-reader line was widened by every item
-and then accepted all at once, at the end, as a single decision over a dozen
-screens nobody had heard.
+fresh line. A check widened by every item and never done ends up accepted all
+at once, at the end, as a single decision over screens nobody has looked at.
 
 ## Rules
 

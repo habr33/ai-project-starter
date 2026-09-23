@@ -25,7 +25,11 @@ assert_exists   "writes dev-notes/"                 "$p/dev-notes"
 assert_exists   "writes AGENTS.md"                  "$p/AGENTS.md"
 assert_eq       "installs every source skill"      "$NSKILLS" "$(ls "$p/.claude/skills" 2>/dev/null | wc -l | tr -d ' ')"
 assert_eq       "an opencode command per skill"    "$NSKILLS" "$(ls "$p/.opencode/command" 2>/dev/null | wc -l | tr -d ' ')"
-assert_ok       "both adapter trees are identical"  diff -rq "$p/.claude/skills" "$p/.agents/skills"
+# With .claude/skills a link, comparing the two trees compares one with itself -
+# so check what the link must do: resolve to the one copy, which is current.
+assert_eq       "Claude Code's skills resolve to the one copy" \
+  "$(cd "$p/.agents/skills" && pwd -P)" "$(cd "$p/.claude/skills" && pwd -P)"
+assert_ok       "and that copy is the pack's current skill"  cmp -s "$REPO/skills/spec.md" "$p/.agents/skills/spec/SKILL.md"
 
 section "a part may be nested, and Product root points at the real root"
 # Found by trying to adopt a real repository that was already an npm workspace
@@ -190,8 +194,8 @@ assert_eq "the build skill specifically is tracked" "1" \
   "$(git -C "$p" ls-files | grep -c '\.agents/skills/build/SKILL\.md$')"
 
 section "one copy of the skills, and Claude Code reaches it through a link"
-# Two copies were 800 KB of identical text in a real project: every repo-wide
-# search hit each passage twice, and a hand edit to one made the tools disagree.
+# With two copies, every repo-wide search hits each passage twice, and a hand
+# edit to one makes the tools disagree.
 # Claude Code 2.1.280 reads only .claude/skills, and follows a directory symlink.
 assert_ok "the skills directory Claude Code reads is a symlink" test -L "$p/.claude/skills"
 assert_eq "pointing at the one copy" "../.agents/skills" "$(readlink "$p/.claude/skills")"
@@ -579,8 +583,7 @@ assert_fails "a project created by this pack reports nothing" \
   grep -q 'does not load' <<< "$fresh_out"
 
 # The reverse: fundamentals.md left the loaded set, and a CLAUDE.md written
-# before that keeps importing 11 KB no session needs. Found on a real project
-# whose imports came to 160 KB before the user's first message.
+# before that keeps importing 11 KB no session needs.
 echo "@blueprint/context/fundamentals.md" >> "$w2/fresh/CLAUDE.md"
 over_out=$("$IN" --target "$w2/fresh" 2>&1)
 assert_ok "install names a file CLAUDE.md loads that is now read on demand" \
@@ -806,14 +809,17 @@ section "a skill a framework's generator installed survives a re-install whole"
 # unrecognised "your own, or from an unknown version" - neither describes it.
 w=$(workdir); (cd "$w" && "$NP" gen >/dev/null 2>&1)
 p="$w/gen"
-for a in .claude/skills .agents/skills; do
-  mkdir -p "$p/$a/react-router/references"
-  printf -- '---\nname: react-router\n---\n' > "$p/$a/react-router/SKILL.md"
-  printf 'framework docs\n' > "$p/$a/react-router/references/routing.md"
-done
+# The generator writes into .claude/skills, which in a current project is the
+# link - so the one copy is what must keep it. Counting through both paths would
+# find the same file twice and prove nothing.
+mkdir -p "$p/.claude/skills/react-router/references"
+printf -- '---\nname: react-router\n---\n' > "$p/.claude/skills/react-router/SKILL.md"
+printf 'framework docs\n' > "$p/.claude/skills/react-router/references/routing.md"
 out=$("$IN" --target "$p" --force 2>&1)
-assert_eq "its nested reference files are kept in both adapters" "2" \
-  "$(find "$p/.claude/skills/react-router/references" "$p/.agents/skills/react-router/references" -name routing.md | wc -l | tr -d ' ')"
+assert_eq "its nested reference files are kept in the one copy" "framework docs" \
+  "$(cat "$p/.agents/skills/react-router/references/routing.md" 2>/dev/null)"
+assert_ok "and Claude Code still reaches them through the link" \
+  test -f "$p/.claude/skills/react-router/references/routing.md"
 assert_ok "and the report says a generator can be where it came from" \
   grep -q "framework's generator installed" <<< "$out"
 

@@ -37,7 +37,7 @@ Usage:
   --no-git    Skip git init
   --help      This
 
-Creates the directory, installs every skill for both adapters, seeds the
+Creates the directory, installs every skill once (.claude/skills links to it), seeds the
 planning and dev-notes files, writes a .gitignore, and initialises git.
 No source directory is created - `scaffold` does that once a stack is chosen.
 USAGE

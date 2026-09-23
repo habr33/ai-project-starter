@@ -52,17 +52,22 @@ and do not offer to** until they say the new remote exists.
   passing, zero failures** - the total is not recorded here, for the reason the
   opening gives.
 
-**Branch `retro-improvements`** (2026-09-23) holds the retrospective's P1 and
-P2 todos, one commit each - `git log --oneline main..retro-improvements`. The
-user will **squash-merge it later**; do not merge it without them. `D14`, `D15`.
+**Branch `retro-improvements`** (2026-09-23) holds the context-budget and
+state-file work below, one commit each - `git log --oneline main..retro-improvements`.
+The user will **squash-merge it later**; do not merge it without them. `D14`,
+`D15`, `D16`.
+
+**A project installed before this branch keeps its old ledger format.**
+`install.sh` updates the skills, never a project's findings, so an existing
+ledger must be split into index and entry files by hand once - there is no
+migration script, and writing one is open below.
 
 **Next:**
 
 1. **Wait for the user to re-create the remote**, then push `main` to it. They
    said they would do this part themselves.
-2. **The retrospective's P3s under *Can be done here*.** One needed the user
-   first: `disable-model-invocation` would stop `autopilot` invoking `ship`,
-   and was judged not worth it (small saving, gates already exist). Everything under *Still open* needs a person or a resource.
+2. **The open P3s under *Can be done here*.** Everything under *Still open*
+   needs a person or a resource.
 
 **Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
 have one here: advisory prose gates nothing, so no command can disagree with it.
@@ -291,58 +296,53 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**Todos from a full-loop retrospective, 2026-09-23.** A single-part web CMS
-ran the whole loop (8 items, 15 sub-items, production live) over 31 sessions.
-It shipped, but it cost 3.29 B cache-read tokens for ~13K lines of code; the
-median context before the user's first message was 107K tokens. The findings
-ledger only grew (100 raised, 26 P3 still open), and the planning and archive
-files came to ~680 KB. Ordered by payoff:
+**Todos, 2026-09-23** - context cost and state files that only grow. Ordered by
+payoff:
 
-- [x] **P1 - Context budget, enforced by `check.sh`.** Done - rule 18, `D14`. Add a rule that fails
-      when the files `template/CLAUDE.md` imports exceed a byte budget. Stop
-      importing `fundamentals.md` every session (`review`/`build` read it).
-      Load only the Open section of `needs-you.md`; Done moves to history.
-- [x] **P1 - Split the findings ledger.** Done - `D15`. Always-loaded index, one line per
-      open finding (ID, severity, title, file); full entries under
-      `findings/`, read on demand. Keeps `AGENTS.md`'s "never miss an open
-      blocker" guarantee at a fraction of the size. Decide before starting -
-      it changes a documented invariant.
-- [x] **P1 - Give findings an end state.** Done - `D15`. The repairing skill may close a
-      P2/P3 on evidence it has seen fail; only P0/P1 wait for `review`.
-      `ship` archives resolved entries. P3s get a policy: a batched "tidy"
-      item every N items, or expiry to a backlog file that is not loaded.
-      Observed: an entry stayed `fixed` for a week, still loaded every session.
-- [x] **P1 - Cap `project-overview.md`** Done - `context` Step 3. (e.g. <=8 KB). It restated the
-      findings ledger and `needs-you.md` in prose, so every regeneration was
-      another docs commit (12 of 33 commits were docs). Link, don't restate.
-- [x] **P2 - Split opening from closing.** Done for `needs-you.md`; findings close by severity - `D15`. Keep one named writer for
-      *opening* a `needs-you.md` or findings line; let any skill *close* one
-      with evidence, recording which. Observed: a satisfied `.env` line
-      survived three overview regenerations because `context` saw it but did
-      not own the file; a done monitoring line stayed open too.
-- [x] **P2 - Track what production will need, from spec to deploy.** Done - `blueprint/production-pending.md`. `spec`
-      records new env vars, migrations and external accounts; `ship` appends
-      them to a pending-for-production list; `progress` reports "production
-      is N items behind, needs X". Observed: 4 items merged before anyone
-      noticed production lacked their env vars and 2 migrations.
-- [x] **P2 - `ci` runs the browser tests by default when they need a
-      database** (service container). Observed: the tests covering the worst
-      defects gated nothing for the project's whole life.
-- [x] **P2 - Time-limit manual checks.** Done - `verify`, `Widened: N`. A `needs-you.md` manual-check line
-      widened N times forces a decision: do it, or accept the risk. Observed:
-      the screen-reader line was widened by every item, then accepted as a
-      risk all at once.
-- [x] **P3 - One copy of the skills in a project.** Done - `D16`, a link, copy fallback. `.claude/`, `.agents/`
-      and `.opencode/` each committed ~7.9K lines of identical text; generate
-      or symlink at install.
-- [ ] **P3 - `disable-model-invocation: true`** on hand-run skills (`deploy`,
-      `ship`, `migrate`, `setup`, `autopilot`); trim the longest
-      descriptions (`verify`, `stack`, `spec`, `architect`).
-- [ ] **P3 - Cap archive size.** `ship` archives the spec, outcome and links
-      to evidence, not every narrative; item 1's archive was 60 KB.
-- [ ] **P3 - Length limits for written entries.** At most 3 lines for a
-      finding's "Why it matters", and a shorter house style in the skills
-      themselves (~400 KB of skill prose sets the tone agents copy).
+- [x] **P1 - Context budget, enforced by `check.sh`.** Rule 18, `D14`:
+      the loaded files have a declared budget; `fundamentals.md` is read on
+      demand; closed needs-you lines leave the loaded file.
+- [x] **P1 - Split the findings ledger.** `D15`: a loaded index, one heading
+      per live finding, and full entries under `blueprint/findings/`.
+- [x] **P1 - Give findings an end state.** `D15`: `build` closes a P2 or P3 on
+      a test seen failing; `ship` moves unresolved P3s to a backlog that is
+      not loaded; `spec` offers a tidy item.
+- [x] **P1 - Cap `project-overview.md`** at 8 KB - `context` links, never
+      restates.
+- [x] **P2 - Split opening from closing.** Any `needs-you.md` writer may close
+      a line with evidence, recording which; findings close by severity.
+- [x] **P2 - Track what production will need, from spec to deploy.**
+      `blueprint/production-pending.md`, written by `ship`, met by `deploy`,
+      reported by `progress`.
+- [x] **P2 - `ci` runs the browser tests by default**, with a database
+      service container; leaving them out is the user's explicit call.
+- [x] **P2 - Time-limit manual checks.** `verify` counts `Widened: N` and
+      asks at 3.
+- [x] **P3 - One copy of the skills in a project.** `D16`: `.claude/skills`
+      links to `.agents/skills`, copying where a symlink will not work.
+- [ ] **P2 - Navigation across a login-state change.** No skill asks for a
+      done-when that follows the whole redirect chain when an action changes
+      the session - a password change, a role change, logging in to return to
+      a page - for the user affected *and* for yourself, through a full-page
+      load and a client-side submit. `spec`, `verify` and `review` never mention
+      redirects. Proposed: that done-when in `spec`; a logged-out-then-login
+      sweep over protected routes in `verify`; and a `review` check that a
+      redirect target built from the request URL cannot carry the framework's
+      internal URL forms. **Not started - reproduce a real case with `debug`
+      first.**
+- [ ] **P3 - A ledger migration for projects installed before `D15`.** Done
+      by hand once; a script would need the same checks - every entry intact,
+      every ID exactly once across index and backlog.
+- [ ] **P3 - Trim the longest descriptions** (`verify`, `stack`, `spec`,
+      `architect`). `disable-model-invocation` on hand-run skills was
+      **declined**: a small saving, the approval gates already exist, it stops
+      "merge it" and `autopilot` reaching `ship`, and only Claude Code honours
+      it.
+- [ ] **P3 - Cap archive size.** `ship` archives the spec, the outcome and
+      links to evidence, not every narrative.
+- [ ] **P3 - A shorter house style in the skills themselves** - about 400 KB
+      of skill prose sets the tone agents copy. (A finding's "Why it matters"
+      is already capped at three lines, `D15`.)
 
 **Before this list, nothing known was open here.** The 17th rule, the last item that needed a
 decision rather than a resource, went in on 2026-09-23 - see `D13` and item 2
@@ -352,7 +352,21 @@ D10 in `decisions.md`, and the commit message for the full list. One note
 stays: the handoff seam test in `tests/test-seams.sh` matches wording, so
 rewriting a skill's last step can need its list updated.
 
-**Unverified, and worth a real run:** none. **The list was emptied on
+**Unverified, and worth a real run** - everything the `retro-improvements`
+branch changed in skill prose. Its tests prove the wording and the scripts, not
+that an agent follows it:
+
+- `review` writing a finding as an index heading plus an entry file, and
+  `build` closing a P2 or P3 on a test it saw fail
+- `ship` moving P3s to the backlog, Done lines out of `needs-you.md`, and
+  production needs into `production-pending.md`
+- `deploy` blocking on and ticking off `production-pending.md`
+- `context` holding the overview under 8 KB on a project whose overview is over
+- `verify`'s `Widened: N` counter, and `ci` adding the browser tests by default
+- the skills symlink on macOS, and the copy fallback on real Windows - Linux
+  and a failing `ln` are tested
+
+**It was emptied once before, on
 2026-09-22** - `ship --abandon`, `spec`'s resume, `layout` moving a seeded part,
 `setup` filling plan sections 5 and 6, and the contract block `architect` writes
 were all run, between them finding seven defects in the skills and one in the

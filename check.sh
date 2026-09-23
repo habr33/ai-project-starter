@@ -716,9 +716,8 @@ fi
 #      template/AGENTS.md declares.
 #
 #    Every imported file is paid for by every session before the user types a
-#    word. A real single-part project reached 160 KB of imports - a median of
-#    107K tokens before the first message, 3.29 B cache-read tokens over its
-#    life - and nothing in the pack had ever stated a limit. The budget is the
+#    word, and these files grow by accretion - nothing in the pack had ever
+#    stated a limit, so nothing could notice. The budget is the
 #    declaration; `progress` holds a project to it. This holds the seed to half,
 #    because the other half is what the project's own overview, standards and
 #    open items grow into.

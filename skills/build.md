@@ -262,8 +262,8 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
   from the finding's reproduction and you **saw it fail with the repair
   reverted** and pass with it back, as above. Set it to `closed`, and record in
   **Resolution** the test, both runs, and `closed by build`. Anything short of
-  that stays `fixed` for `review`. On a real project a repaired P3 stayed
-  `fixed` for a week, loaded by every session, waiting for a pass that had
+  that stays `fixed` for `review`. Otherwise a repaired P3 sits in the loaded
+  index as `fixed`, paid for by every session, waiting for a pass that has
   nothing left to learn from it.
 - **Never set `accepted`, `deferred` or `invalid`.** `accepted` is the user's explicit
   decision with a recorded reason; `invalid` is a `review` verdict backed

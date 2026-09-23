@@ -119,9 +119,9 @@ and delete their entry files.
 `blueprint/findings/backlog.md` (create it with a `# Findings backlog` heading);
 its entry file stays where it is and keeps its ID. The backlog is not loaded:
 `spec` offers a tidy item from it, and `review` still closes what it
-re-examines there. **Name each one moved in the report.** On a real project the
-index only grew - 100 findings raised, 26 P3s still open - and every session
-paid for all of them.
+re-examines there. **Name each one moved in the report.** Without this the
+index only grows, and every session pays for every small follow-up ever
+raised.
 
 Unresolved P0 to P2 entries and `unverified` leads above P3 stay in the index
 with their IDs. They are never silently dropped. When nothing is left, reset
@@ -155,8 +155,8 @@ learn how a finding no code fixes gets closed:
 line under its `## Done` heading to `blueprint/history/needs-you-done.md`
 (create it with a `# Needs you - done` heading), under a `## <archive name>`
 heading, then leave `## Done` empty. Open lines are never touched. The file is
-loaded every session, and closed lines left in it are what grew it to thirteen
-kilobytes on a real project.
+loaded every session, so closed lines left in it cost every session something
+and tell it nothing.
 
 Then reset `blueprint/context/current-work.md` to its stub:
 
