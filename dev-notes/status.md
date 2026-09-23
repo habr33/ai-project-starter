@@ -17,100 +17,71 @@ place that answers "has this skill actually run?".
 
 ## Where work stopped (2026-09-23)
 
-**Goal of the last session:** land the principles-file branch, audit what this
-public repo actually publishes, then close the 17th rule - the last open item
-that needed a decision rather than a resource.
+**Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
+BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**The tree is clean and everything passes. `main` is ahead of `origin/main`, on
-purpose.** `origin/main` is at `c7cd606` - it is the only sha worth writing
-down here, because it is the only one that does not move. **How far ahead
-`main` is, is deliberately not written**, for the reason under *Gotchas*: the
-commit that writes such a count is the one it forgets. The user is deleting the
-GitHub repository and re-creating it from this local clone, so **do not push,
-and do not offer to** until they say the new remote exists.
+**Branches - not merged, not pushed. The user squash-merges them; never merge
+or push without them.** `origin/main` is `c7cd606`, and the user is re-creating
+the GitHub remote themselves - do not push until they say it exists.
 
-**Done, with evidence:**
+- `retro-improvements` (off `main`): context budget and rule 18, findings index
+  and end state, overview cap, production-pending, needs-you closing, CI browser
+  tests, one skills copy linked for Claude Code. `D14`-`D16`.
+- `design-kit` (off `retro-improvements`, **checked out**):
+  `blueprint/design-kit/` and the rewritten `prototype`. `D17`.
 
-- **`dac5d79`** - the principles-file work, merged to `main` and pushed. `D11`.
-- **`083b124`** - three corrections to this file, listed in its message.
-- **`4cb6514`** - **rule 17**, over `template/product/AGENTS.md`'s contract
-  block. `D13`. The fields are declared in a table beside the block; the binding
-  must be the literal `` `Field:` ``, because the paraphrase is what hid
-  `Kind:`. It found **nine missing bindings** on its first run, two of them
-  orphan fields: `Regenerate:`, read only as "the regeneration command", and
-  **`Generate clients:`, which no file in the pack mentioned at all**. `ci` now
-  regenerates the clients too. Nine negative tests in `test-lint.sh`, each
-  **seen failing with the rule body removed**; `seams-G` holds the rule count,
-  which turned out to live in five files, not three.
-- **`check.sh`'s OK line is held clause by clause.** `test-seams.sh` declares
-  one clause per rule (2, 3, 5 and 7 declared silent) and fails by rule number.
-  The old grep for rule 17's phrase alone stayed green with rule 12's clause
-  cut out; **seen failing** with that same cut, reporting `got '12'`. `D13`.
-- **The public surface was audited and is clean.** All 74 tracked files are pack
-  content; no secrets, keys, IPs or personal paths in any commit's content.
-- **`./check.sh` -> OK** (18 rules, 27 skills); **`./tests/run.sh` -> every file
-  passing, zero failures** - the total is not recorded here, for the reason the
-  opening gives.
+**Done, with evidence:** `./check.sh` OK and `./tests/run.sh` all four files
+passing, zero failures, on `design-kit`'s HEAD. Each new check was seen failing
+under a mutation first; the kit's four checks were run against four broken
+copies. The kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
-**Branch `retro-improvements`** (2026-09-23) holds the context-budget and
-state-file work below, one commit each - `git log --oneline main..retro-improvements`.
-The user will **squash-merge it later**; do not merge it without them. `D14`,
-`D15`, `D16`.
+**Next - the agreed order, one commit each on a new branch off `design-kit`:**
 
-**A project installed before this branch keeps its old ledger format.**
-`install.sh` updates the skills, never a project's findings, so an existing
-ledger must be split into index and entry files by hand once - there is no
-migration script, and writing one is open below.
+1. **Fresh context per build step.** `build` runs every step in the main
+   session; only `orchestrate` uses subagents. Start by reading `skills/build.md`
+   Step 3 and `skills/autopilot.md`, then have `build` hand each step to a
+   subagent with a packet (spec step, done-when, files, standards) where the
+   host supports it, and fall back to inline where it does not.
+2. **Test-first in `build`** - extend "seen failing" from repairs to every step
+   with a behavioural done-when.
+3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
+   budget agreed with the user before any run.
+4. **A quick-fix path** - a lighter spec/build/ship for small fixes.
+5. **Optional hooks** (`.claude/settings.json`) for rules that must not depend
+   on the model remembering them - e.g. no commit on `main`, the budget check.
+6. **Living capability specs** that `ship` updates (OpenSpec-style); a Claude
+   Code plugin package alongside the scripts.
 
-**Next:**
+Also open: the `verify` redirect sweep and `review` redirect-target check
+(see *Can be done here*), and a ledger migration script.
 
-1. **Wait for the user to re-create the remote**, then push `main` to it. They
-   said they would do this part themselves.
-2. **The open P3s under *Can be done here*.** Everything under *Still open*
-   needs a person or a resource.
+**Gotchas:**
 
-**Do not cite `ideate`'s Step 2 as proven.** It has no test and cannot usefully
-have one here: advisory prose gates nothing, so no command can disagree with it.
-Also unacted from the same prior-art comparison: no single binding
-"constitution" (rejected - `D11`), no planning surface for a non-technical
-stakeholder, no partial install of the 27 skills.
-
-**Gotchas from those sessions:**
-
-- **`git log --all` is not "what is public".** An audit here reported a personal
-  address in 17 of 36 commits and was **wrong on both numbers**: `--all` sweeps
-  `refs/original/*`, the local backup refs a previous `filter-branch` leaves
-  behind, so pre-scrub history was counted as live. `main` had 19 commits, all
-  already clean. **`git ls-remote origin` is the only answer to what is
-  published.** The unnecessary rewrite that followed was reverted and nothing
-  was force-pushed, but it overwrote the earlier session's backup refs.
-- **A mutation aimed at the wrong form changes nothing and still reads green.**
-  The contract block writes its fields plain (`- Kind: <...>`) and the table
-  backticks them; one rule-17 test mutated the backticked form and passed for
-  the wrong reason. It now asserts the mutation landed first.
-- Adding a rule means editing the count in **five** places, `check.sh`'s OK line
-  among them. `seams-G` checks this now - see *Adding a linter rule* in
-  `docs/anatomy.md`.
-- A product-root file needs **two** declarations in `template/AGENTS.md`: the
-  writer row *and* a line in the MULTI-PART MARKER block. Only the second makes
-  rule 13 require the "Product root:" mention.
-- **A count in a handoff forgets the handoff**, and the opening instruction
-  treats a mismatch as a disturbed tree. It has been wrong three times here -
-  twice on a file count, and once on `[ahead 2]` and a HEAD sha that named the
-  commit *before* the one that wrote them. **A handoff cannot state a number
-  its own commit changes**: name a fixed point instead - `origin/main`, or a
-  range against it - which is why this section now counts nothing.
-- `check.sh` still has small `printf ... | grep -q` pipelines. Same shape as the
-  SIGPIPE defect, but single table rows fit the pipe buffer, so they were left
-  alone.
+- **This repo is a public starter.** Rules state their general reason - never
+  one project's names, sizes or story. The user rejected exactly that once.
+- **Rule 18 is at its edge.** The template's loaded set is a few dozen bytes
+  under half the budget; any row added to `template/AGENTS.md` must be paid for
+  by cutting prose there. Measure with the loop in rule 18.
+- **A routing prompt may not be quoted** in its skill's description (five words
+  in a row fail `test-routing.sh`) - fix a lost route with the user's
+  vocabulary, reworded.
+- **Two-line edits by string match can hit the wrong block** - the kit's dark
+  block lost a role that way. Assert the count of every match, then run the
+  check that compares the whole thing.
+- A count in a handoff forgets the handoff: name fixed points (`origin/main`,
+  branch ranges), never a total its own commit changes.
+- `git log --all` is not "what is public" - `git ls-remote origin` is.
+- Adding a linter rule: the count lives in five files plus an OK-line clause
+  declared in `test-seams.sh` - see *Adding a linter rule* in `docs/anatomy.md`.
+- `./tests/run.sh` takes minutes; never run two at once.
 
 **Verify with:**
 
-    git status --short             # nothing modified
-    git log --oneline c7cd606..    # the commits under "Done", plus this file's own
-    git status -sb | head -1       # main...origin/main [ahead N] - N is not fixed
-    ./check.sh                     # OK - 27 skills ... 18 rules
-    ./tests/run.sh                 # all 4 test files passed, zero failures
+    git status --short                       # nothing modified
+    git branch --show-current                # design-kit
+    git log --oneline main..design-kit       # both branches' commits
+    ./check.sh                               # OK - 27 skills ... 18 rules
+    ./tests/run.sh                           # all 4 test files passed, zero failures
 
 ## Closed, and where the detail lives (2026-09-21 to 2026-09-23)
 
