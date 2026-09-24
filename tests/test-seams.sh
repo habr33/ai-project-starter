@@ -2025,6 +2025,12 @@ assert_ok "build writes a repair's test from the finding's own reproduction" \
   _says skills/build.md "written from that finding's own reproduction"
 assert_ok "and proves it by reverting the repair, not by some other break" \
   _says skills/build.md 'revert the repair and watch that test fail'
+# The generalization: test-first is not only for repairs. Every step whose
+# done-when is behavioural is seen failing before it is claimed - the same
+# failure mode, one step up the chain, where a step's own test was never run
+# against the broken thing.
+assert_ok "build proves every behavioural done-when test-first, not just repairs" \
+  _says skills/build.md 'proven test-first'
 
 section "a changed file git shows as binary is reported, not silently skipped"
 # On a real run a regex held raw NUL/DEL bytes instead of escapes, so git called

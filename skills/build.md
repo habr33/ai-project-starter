@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Build the spec in `blueprint/context/current-work.md` one small reviewed step at a time. Creates the matching branch, implements a single step, shows the diff and explains it in plain English, runs the project's checks, and iterates until it works - then ticks the step off so progress survives a context clear. Offers an optional commit checkpoint after each approved step; the work-level commit and the merge belong to `ship`. Resumes from the first unchecked step when a session was interrupted. Use when the user runs `build`, or asks to build, implement, code, or start the current spec."
+description: "Build the spec in `blueprint/context/current-work.md` one small reviewed step at a time. Hands each step to a subagent with a packet where the host supports it, falling back to inline where it does not; the main session reads the diff, explains it, and proves the done-when. Creates the matching branch, runs the project's checks, and iterates until it works - then ticks the step off so progress survives a context clear. Offers an optional commit checkpoint after each approved step; the work-level commit and the merge belong to `ship`. Resumes from the first unchecked step when a session was interrupted. Use when the user runs `build`, or asks to build, implement, code, or start the current spec."
 ---
 
 # build - turn the spec into code, one reviewed step at a time
@@ -100,103 +100,113 @@ Never build on `main` or `master`.
 
 Work the spec's build steps in order, one at a time. For each step:
 
-1. **Implement just that step** - the smallest change that satisfies its
-   *done when*. Nothing from a later step, however tempting.
+1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow (`coding-standards.md`, `quality-bar`). If the host supports subagents, hand the step to one with this packet:
 
-2. **Show the diff**, not whole files.
+    - The spec step text
+    - Its done-when
+    - The files it claims to create or modify
+    - The standards it must follow
+    - The instruction not to commit or push
 
-3. **Confirm the step actually did something, before claiming it passed.**
-   **An empty diff means the step did nothing**, whatever the verification
-   command says. Check it explicitly:
+    The subagent implements the step, shows the diff, and reports whether the done-when passed. If the host does not support subagents, or the subagent cannot proceed, implement the step inline and continue to the next checkpoint. The main session still reads the diff and proves the done-when - that is the comprehension gate.
 
-   - the diff is **non-empty**
-   - every file the step said it would create **exists and is not empty**
-   - the change landed where it was meant to, not in a path created by a typo
+2. **Confirm the step actually did something, before claiming it passed.**
+    **An empty diff means the step did nothing**, whatever the verification
+    command says. Check it explicitly:
 
-   This is not paranoia. A step once wrote two files into a directory that did
-   not exist, both writes failed, and **the verification command still returned
-   exit 0** - the test runner was set to pass with no tests, and the untouched
-   template still built. Nothing about that green check was false; it simply had
-   nothing to do with the step. Unattended, it would have carried the run forward
-   on nothing.
+    - the diff is **non-empty**
+    - every file the step said it would create **exists and is not empty**
+    - the change landed where it was meant to, not in a path created by a typo
 
-   **A passing verification does not mean the step happened.** It means the
-   project is in a good state, which is equally true of a step that changed
-   nothing at all.
+    This is not paranoia. A step once wrote two files into a directory that did
+    not exist, both writes failed, and **the verification command still returned
+    exit 0** - the test runner was set to pass with no tests, and the untouched
+    template still built. Nothing about that green check was false; it simply had
+    nothing to do with the step. Unattended, it would have carried the run forward
+    on nothing.
 
-4. **Explain it in plain English.** What the step delivered, one line per changed
-   file on what it does and why. This is the comprehension gate: the user should
-   finish reading it able to explain the change to someone else. Keep it concrete,
-   not ceremonial.
+    **A passing verification does not mean the step happened.** It means the
+    project is in a good state, which is equally true of a step that changed
+    nothing at all.
 
-5. **Prove the done-when.** Name the evidence: build output, a passing assertion,
-   a screenshot. If the project declares a verification command, run that exact
-   command - it is an umbrella over checks the project actually has, so never
-   invent a test runner or a check just to have something to run. A step that adds
-   real logic ships its test in the same diff when a test runner is configured.
-   UI and integration steps ride on a screenshot plus a green build. When a
-   done-when is behavioral - a click, a download, a flow across screens - run
-   `verify` against the running app rather than eyeballing it.
+3. **Explain it in plain English.** What the step delivered, one line per changed
+    file on what it does and why. This is the comprehension gate: the user should
+    finish reading it able to explain the change to someone else. Keep it concrete,
+    not ceremonial.
 
-   **Check the done-when on its own terms, not just that the suite is green.** If
-   it says "tests cover the mapping", the test count must have gone up and those
-   tests must exist - a runner configured to pass with no tests reports success
-   for a step that added none. If it says a string appears in the output, look for
-   the string. **Match the evidence to the claim the step actually made.**
+4. **Prove the done-when.** Name the evidence: build output, a passing assertion,
+    a screenshot. If the project declares a verification command, run that exact
+    command - it is an umbrella over checks the project actually has, so never
+    invent a test runner or a check just to have something to run. A step that adds
+    real logic ships its test in the same diff when a test runner is configured.
+    UI and integration steps ride on a screenshot plus a green build. When a
+    done-when is behavioral - a click, a download, a flow across screens - run
+    `verify` against the running app rather than eyeballing it.
 
-   **A new test is not trusted until it has failed once.** Break the thing it
-   covers, watch it go red, put it back. **And check the break was real** - a
-   mutation that changes no behaviour leaves the test passing against code that
-   was meant to be broken, and that looks identical to a proven test. Reversing a
-   list whose elements carry their own order is the shape to watch for: the rows
-   come back the same and nothing is learned. **If a test still passes after you
-   broke it, suspect the mutation before the test.**
+     **Check the done-when on its own terms, not just that the suite is green.** If
+     it says "tests cover the mapping", the test count must have gone up and those
+     tests must exist - a runner configured to pass with no tests reports success
+     for a step that added none. If it says a string appears in the output, look for
+     the string. **Match the evidence to the claim the step actually made.**
 
-6. **Iterate until it works - but stop guessing after the second try.** If it
-   fails, or the user wants it different, revise the step, show the updated diff,
-   and re-check. Nothing is committed until the user is happy with the step.
+     **Every step with a behavioural done-when is proven test-first.** The test
+     must be seen failing before the step is considered done — break the thing it
+     covers, watch it go red, put it back. A test that stays green with the
+     thing broken asserts the fix, not the failure.
 
-   **While a built step waits for the user, mark it in the file:** add
-   `_(built, awaiting approval)_` right after its bold title in
-   `blueprint/context/current-work.md`. Otherwise the only record that the step's
-   code exists is this conversation - and a session that picks the item up cold,
-   or an `autopilot` run started from here, finds an unchecked step whose files
-   are already written, and either rebuilds over them or refuses the tree.
+     **A new test is not trusted until it has failed once.** Break the thing it
+     covers, watch it go red, put it back. **And check the break was real** - a
+     mutation that changes no behaviour leaves the test passing against code that
+     was meant to be broken, and that looks identical to a proven test. Reversing a
+     list whose elements carry their own order is the shape to watch for: the rows
+     come back the same and nothing is learned. **If a test still passes after you
+     broke it, suspect the mutation before the test.**
 
-   **If the same step fails twice and you cannot say why, stop and run `debug`.**
-   A third attempt made without understanding the cause is a guess, and a guess
-   that happens to go green is worse than the failure - it retires the question
-   while leaving the cause in place. `debug` reproduces and isolates without
-   touching product code, then hands the evidence back here. Say plainly that you
-   do not know the cause; "I am changing this because I think it might be it" is
-   the sentence that should trigger it.
+5. **Iterate until it works - but stop guessing after the second try.** If it
+    fails, or the user wants it different, revise the step, show the updated diff,
+    and re-check. Nothing is committed until the user is happy with the step.
 
-7. **Tick it off, then offer the checkpoint.** Once approved, check the step off
-   (`- [x]`) in `blueprint/context/current-work.md` so progress survives a context clear,
-   and remove its `_(built, awaiting approval)_` marker. **If the step settled a
-   choice the spec did not** - a limit, a library, a rule a later item will build
-   on - add it under the spec's `## Decisions` now, while the reason is on screen;
-   `ship` carries that section into `dev-notes/decisions.md`. If the
-   step repaired a finding in `blueprint/context/findings.md`, set that finding to `fixed` and
-   note the repair in the **Resolution** line of its entry,
-   `blueprint/findings/<ID>.md` - never to `closed` at P0 or P1, because a repair
-   is re-reviewed by `review` before it clears. A fix can introduce a worse
-   defect than the one it removed. A P2 or P3 is the exception in Step 4.
+    **While a built step waits for the user, mark it in the file:** add
+    `_(built, awaiting approval)_` right after its bold title in
+    `blueprint/context/current-work.md`. Otherwise the only record that the step's
+    code exists is this conversation - and a session that picks the item up cold,
+    or an `autopilot` run started from here, finds an unchecked step whose files
+    are already written, and either rebuilds over them or refuses the tree.
 
-   Then offer a short choice:
+    **If the same step fails twice and you cannot say why, stop and run `debug`.**
+    A third attempt made without understanding the cause is a guess, and a guess
+    that happens to go green is worse than the failure - it retires the question
+    while leaving the cause in place. `debug` reproduces and isolates without
+    touching product code, then hands the evidence back here. Say plainly that you
+    do not know the cause; "I am changing this because I think it might be it" is
+    the sentence that should trigger it.
 
-   - **Continue** *(default)* - straight into the next step, no commit.
-   - **Commit checkpoint** - commit just this step on the branch with a
-     conventional message. A cheap rollback point, entirely optional.
-   - **Walk me through it** - a deeper, line-level explanation of the new code:
-     why this approach, what each part does, what to watch out for. Then re-ask
-     this choice. It is a loop-back, not a terminal answer.
-   - **Run the rest unattended** - hand the remaining steps to
-     `autopilot build..review`, which resumes from the first unchecked step and
-     ends with a review packet rather than stopping after each one.
-   - **Stop here** - pause. Say where things stand: the branch is intact, the
-     ticked steps record the progress, `build` resumes from the first
-     unchecked step.
+6. **Tick it off, then offer the checkpoint.** Once approved, check the step off
+    (`- [x]`) in `blueprint/context/current-work.md` so progress survives a context clear,
+    and remove its `_(built, awaiting approval)_` marker. **If the step settled a
+    choice the spec did not** - a limit, a library, a rule a later item will build
+    on - add it under the spec's `## Decisions` now, while the reason is on screen;
+    `ship` carries that section into `dev-notes/decisions.md`. If the
+    step repaired a finding in `blueprint/context/findings.md`, set that finding to `fixed` and
+    note the repair in the **Resolution** line of its entry,
+    `blueprint/findings/<ID>.md` - never to `closed` at P0 or P1, because a repair
+    is re-reviewed by `review` before it clears. A fix can introduce a worse
+    defect than the one it removed. A P2 or P3 is the exception in Step 4.
+
+    Then offer a short choice:
+
+    - **Continue** *(default)* - straight into the next step, no commit.
+    - **Commit checkpoint** - commit just this step on the branch with a
+      conventional message. A cheap rollback point, entirely optional.
+    - **Walk me through it** - a deeper, line-level explanation of the new code:
+      why this approach, what each part does, what to watch out for. Then re-ask
+      this choice. It is a loop-back, not a terminal answer.
+    - **Run the rest unattended** - hand the remaining steps to
+      `autopilot build..review`, which resumes from the first unchecked step and
+      ends with a review packet rather than stopping after each one.
+    - **Stop here** - pause. Say where things stand: the branch is intact, the
+      ticked steps record the progress, `build` resumes from the first
+      unchecked step.
 
 **Offer the unattended option by name, not just when asked.** Per-step review
 earns its keep on the first step of an item, where the code reveals decisions the

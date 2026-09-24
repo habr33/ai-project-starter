@@ -15,7 +15,7 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where work stopped (2026-09-23)
+## Where work stopped (2026-09-24)
 
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
@@ -35,17 +35,23 @@ passing, zero failures, on `design-kit`'s HEAD. Each new check was seen failing
 under a mutation first; the kit's four checks were run against four broken
 copies. The kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
+**This session - two of the agreed next six, on `design-kit` (uncommitted):**
+
+1. **Fresh context per build step.** `build` Step 3 now prepares a packet (spec
+   step text, done-when, claimed files, standards, no-commit rule) and hands it
+   to a subagent where the host supports one, falling back to inline where it does
+   not; the main session keeps the comprehension gate - reading the diff,
+   explaining it, and proving the done-when.
+2. **Test-first in `build`.** Step 3's "Prove the done-when" now states "Every
+   step with a behavioural done-when is proven test-first" - the test must be
+   seen failing before the step is claimed. `test-seams.sh` asserts this
+   generalization separately from the repair-specific rule.
+
 **Next - the agreed order, one commit each on a new branch off `design-kit`:**
 
-1. **Fresh context per build step.** `build` runs every step in the main
-   session; only `orchestrate` uses subagents. Start by reading `skills/build.md`
-   Step 3 and `skills/autopilot.md`, then have `build` hand each step to a
-   subagent with a packet (spec step, done-when, files, standards) where the
-   host supports it, and fall back to inline where it does not.
-2. **Test-first in `build`** - extend "seen failing" from repairs to every step
-   with a behavioural done-when.
 3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
-   budget agreed with the user before any run.
+   budget agreed with the user before any run. **Blocked on the user: what token
+   budget?**
 4. **A quick-fix path** - a lighter spec/build/ship for small fixes.
 5. **Optional hooks** (`.claude/settings.json`) for rules that must not depend
    on the model remembering them - e.g. no commit on `main`, the budget check.
@@ -54,6 +60,17 @@ copies. The kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
 Also open: the `verify` redirect sweep and `review` redirect-target check
 (see *Can be done here*), and a ledger migration script.
+
+**Verify with:**
+
+    git status --short                       # three modified files: build.md, test-seams.sh, status.md
+    ./check.sh                               # OK - 27 skills ... 18 rules
+    ./tests/run.sh                           # 919 passed, 0 failed, all 4 test files
+
+**Reset to agreed work:** the uncommitted changes in this checkout were an incomplete
+attempt to add a `design` skill and `validate` skill that would conflict with the
+pack's existing design system (the design kit + prototype). They are reverted to
+continue with the agreed next steps above.
 
 **Gotchas:**
 
