@@ -13,13 +13,6 @@
 > be determined says so** - an invented convention is worse than an absent one,
 > because `review` will enforce it.
 
-# Part 2 - This project
-
-*Written against the real repo by `scaffold` (new project) or `setup` (existing
-code). Until then these are prompts, not standards. **Anything that could not be
-determined says so** - an invented convention is worse than an absent one,
-because `review` will enforce it.*
-
 ## Where these rules come from
 
 <!-- Fill this in when the project already had standards. Three kinds, and the

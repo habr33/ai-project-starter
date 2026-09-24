@@ -227,7 +227,10 @@ assert_refuses "a declaration with no instruction behind it is caught" \
   "skills/verify.md: declares it writes blueprint/context/design.md, but nothing else in the skill names it" lint "$r"
 
 r=$(fresh_repo)
-sed -i 's/^\(| `blueprint\/context\/design.md` | [^|]* | \)`prototype` |$/\1`prototyp` |/' "$r/template/AGENTS.md"
+sed -i 's/^\(| `blueprint\/context\/design.md` | [^|]* | \)`prototype`/\1`prototyp`/' "$r/template/AGENTS.md"
+# The row once had one writer and the pattern ended at it; a second writer made
+# the edit a no-op and this test "passed" by lint staying green. Prove it landed.
+assert_ok "the mutation really renamed the writer" grep -qF '| `prototyp`' "$r/template/AGENTS.md"
 assert_refuses "a table writer that is not a skill is caught" "names \`prototyp\` as its writer, which is not a skill" lint "$r"
 
 r=$(fresh_repo)

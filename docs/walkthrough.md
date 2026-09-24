@@ -41,9 +41,10 @@ be true. Two kinds, and knowing which you are looking at saves confusion:
   `coding-standards.md` was never written is the difference between "checked and
   consistent" and "there was nothing to check against".
 
-**A skill stopping is it working.** `ideate`, `setup`, `progress`, `preflight`,
-`debug` and `docs` have no preconditions by design — they are the entry points
-and the read-only reporters, and they work in any state.
+**A skill stopping is it working.** `setup`, `progress`, `preflight`, `debug`,
+`docs` and `prepare` have no preconditions by design — the entry point for an
+existing project and the reporters, and they work in any state. `ideate` has
+one: it stops on a plan that is already filled, unless you ask for `--rescope`.
 
 ## 2. Plan it
 
@@ -56,7 +57,7 @@ and the read-only reporters, and they work in any state.
 | `scaffold` | Installs the whole stack into the layout just approved, then audits itself against the plan | Approve the command list. **Read the audit** — it reports anything missing rather than quietly succeeding. |
 | `ci` | Writes one workflow file using the project's own verify command, runs it locally, **stops before pushing** | **Do this before the first item, not after the last.** One test and a typecheck is enough — the point is that the pipeline exists before the code does. |
 | `context` | Generates the overview every session loads | Re-run it whenever a plan changes. |
-| `prototype` | *Optional.* Throwaway mockups that settle the look, plus a durable `design.md` | Decide deliberately. Redoing HTML is free; redoing components is not. |
+| `prototype` | *Required when there is a UI* — `spec` stops without `design.md`. Throwaway mockups that settle the look, plus that durable record; on an app that already has a look, it records the existing one | Pick the direction. Redoing HTML is free; redoing components is not. A CLI, library or API skips this. |
 
 **The mockups are throwaway; the decisions are not.** `prototype` also writes
 `blueprint/context/design.md` — the states, component conventions, and any

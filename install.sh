@@ -18,8 +18,8 @@ Usage:
   install.sh [--target DIR] [--force]
 
   --target DIR   Where to install (default: the current directory)
-  --force        Replace skill files that were edited locally.
-                 Never touches files you own - plans, specs, dev-notes.
+  --force        Accepted but no longer needed: skills are always replaced.
+                 Nothing touches files you own - plans, specs, dev-notes.
   --skills-only  Install the skills and nothing else. For the product root of a
                  multi-part project, which needs every skill available but has
                  no build loop of its own - no build-plan, no current-work.

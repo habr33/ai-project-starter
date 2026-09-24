@@ -51,7 +51,10 @@ for f in "$HERE"/skills/*.md; do
   # The first `---` closes it, so everything before that must look like
   # frontmatter. Without this a file missing its terminator passed on any later
   # `---` - a horizontal rule - with the whole body parsed as YAML.
-  fm=$(tail -n +2 "$f" | sed '/^---$/q' | sed '$d')
+  # A range, not `sed '/^---$/q'`: sed reads the whole file either way, so
+  # nothing upstream is cut off mid-write - a quit here ended the run under
+  # `set -e` with SIGPIPE, exit 141 and no output, about one run in fifteen.
+  fm=$(sed -n '2,/^---$/p' "$f" | sed '$d')
   if grep -qvE '^([A-Za-z_-]+:.*|[[:space:]].*|)$' <<< "$fm"; then
     fail "$rel: unterminated frontmatter - a body line comes before the closing ---"
     continue

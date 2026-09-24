@@ -5,7 +5,7 @@ description: "Validate the two planning docs and generate `blueprint/context/pro
 
 # context - generate the source of truth from the plans
 
-**Writes:** `blueprint/context/project-overview.md`
+**Writes:** `blueprint/context/project-overview.md` · `blueprint/project-plan.md` · `blueprint/build-plan.md`
 
 Where this sits:
 
@@ -177,9 +177,10 @@ is never silent.
 Then point at what is next:
 
 - `architect` if the architecture section is still thin
-- **`prototype` if the first item is a screen and no visual reference exists** -
-  building a design from prose alone is how an approximation lands and then
-  becomes what the app permanently looks like
+- **`prototype` if the project has a UI and `blueprint/context/design.md` does
+  not exist yet** - `spec` stops without it. Building a design from prose alone
+  is how an approximation lands and then becomes what the app permanently looks
+  like
 - otherwise `spec` to start the first item
 
 ## When to re-run

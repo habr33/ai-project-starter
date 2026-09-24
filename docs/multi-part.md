@@ -264,7 +264,9 @@ before you do:
 approval on every step; a subagent cannot wait for you, it reports to the session
 that launched it. Delegating `build` converts the reviewed loop into an
 unattended one — make that a choice, not an accident. Give subagents an
-`autopilot` range instead, which is honest about what it is.
+`autopilot` range instead, which is honest about what it is. (`build` handing
+one step's code to a subagent of its own is different: the diff, the
+explanation and your approval stay in your session, so nothing is skipped.)
 
 **Give each its own git worktree.** Parts on separate branches in one working
 tree fight over the index. The board stays in the main checkout, so the cap and

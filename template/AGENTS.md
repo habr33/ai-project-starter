@@ -32,12 +32,12 @@ its history - closed items move out, detail lives in files read on demand.
 | File | What it holds | Written by |
 |---|---|---|
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack - `spec`, `build` and `review` read it | the pack - refreshed on every install, your edits are overwritten |
-| `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype` |
+| `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype`, `spec` |
 | `blueprint/design-kit/` | tokens, components and the UX checklist `prototype` starts from | the pack - refreshed on every install |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
-| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup` |
-| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup` |
+| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `context` |
+| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `context` |
 | `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/history/` | every completed item, archived | `ship` |
 | `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
@@ -82,13 +82,13 @@ fails `preflight`.
 ## The loop
 
     ideate -> architect -> stack -> layout -> scaffold -> ci -> context (plan it)
+         -> prototype                                      (with a UI)
          -> spec -> build -> verify -> review -> ship      (build it)
          -> preflight -> host -> deploy -> monitor         (run it)
 
 Not everything is in that line. These are reached for when needed, and are just
 as available:
 
-- `prototype` - settle the look before building, in throwaway mockups
 - `debug` - reproduce and isolate a failure, without editing code
 - `migrate` - change the database schema safely
 - `rollback` - reverse a completed feature

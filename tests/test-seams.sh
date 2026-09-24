@@ -453,7 +453,9 @@ stack layout
 layout scaffold
 scaffold ci
 ci context
+context prototype
 context spec
+prototype spec
 spec build
 build verify
 verify review ## Step 4
@@ -482,7 +484,7 @@ _step7=$(awk '/^## Step 7/{f=1; next} f && /^## /{exit} f' skills/setup.md | tr 
          | grep -oE '`[a-z-]+`' | tr -d '`' | awk '!seen[$0]++' \
          | while read -r n; do case " $_chain " in *" $n "*) echo "$n" ;; esac; done \
          | tr '\n' ' ' | sed 's/ *$//')
-assert_eq "setup's chain still names what follows it" "ci context" "$_chain"
+assert_eq "setup's chain still names what follows it" "ci context prototype" "$_chain"
 assert_eq "setup's report names the chain's next skills, in the chain's order" "$_chain" "$_step7"
 
 section "no skill refers to state without naming a path"
@@ -946,6 +948,17 @@ assert_eq "no file-reading pipeline in check.sh ends in grep -q" "" \
 assert_eq "nor in any suite that runs under pipefail" "" \
   "$(grep -nE '(< *"\$[A-Za-z_]|(grep|sed|awk|tr|cat)[^|]*"\$[A-Za-z_])[^|]*\| *([a-z]+[^|]*\| *)*grep -q' \
        check.sh tests/*.sh | grep -v 'bash -c' | grep -vE ':[0-9]+: *#' || true)"
+# **`grep -q` was one reader of a wider class: anything that stops reading early.**
+# `sed '/x/q'`, `head` and `grep -m` quit the same way, and in check.sh - the one
+# script here under `set -e` - an assignment whose pipeline takes SIGPIPE ends the
+# whole run: exit 141, no output. Rule 1's `fm=$(tail ... | sed '/^---$/q' | ...)`
+# did exactly that, in roughly one lint fixture in fifteen, for a week after the
+# rule above was declared closed. The suites are not under `set -e`, so there it
+# costs a value, not the run, and the rule above already covers their gates.
+# `|| true` is the escape: the status is discarded, and the value is complete.
+assert_eq "no assignment in check.sh pipes into a reader that quits early" "" \
+  "$(grep -nE '=\$\(.*\| *(head|sed [^|]*/q'"'"'|grep -[a-zA-Z]*[qm])' check.sh \
+       | grep -v '|| true' | grep -vE ':[0-9]+: *#' || true)"
 
 section "one skill applies a migration to an environment"
 # Both migrate (Step 4, production last) and deploy ("Run migrations before the
@@ -2031,6 +2044,28 @@ assert_ok "and proves it by reverting the repair, not by some other break" \
 # against the broken thing.
 assert_ok "build proves every behavioural done-when test-first, not just repairs" \
   _says skills/build.md 'proven test-first'
+# The first wording called it test-first and then described breaking the code
+# after the fact - a copy of the mutation paragraph below it - and required a
+# test for every behavioural done-when while the same item said UI steps ride
+# on a screenshot and never to invent a test runner.
+assert_ok "test-first means the test is written and seen red before the code" \
+  _says skills/build.md 'write the test from the done-when **before** the code'
+assert_ok "and where no test can observe the claim, the running app is the evidence" \
+  _says skills/build.md 'Where no test can observe the claim, the evidence is the running app'
+assert_fails "the after-the-fact wording is gone" \
+  _says skills/build.md 'considered done — break the thing it covers'
+
+section "build's subagent packet carries every standard by path"
+# The packet named coding-standards and the quality bar. fundamentals.md stopped
+# being loaded every session in the same week, and principles.md had just been
+# added - so the subagent writing the code saw neither, while review and
+# preflight audit against both.
+# One phrase, not four: build.md names two of these elsewhere, so a check per
+# file passes on mentions outside the packet.
+assert_ok "the packet lists all four standards together" \
+  _says skills/build.md 'by path, all four**: `blueprint/context/fundamentals.md`, `blueprint/context/coding-standards.md`, `blueprint/context/quality-bar.md` and `blueprint/context/principles.md`'
+assert_ok "and says why: a subagent loads none of them by itself" \
+  _says skills/build.md 'A subagent loads none of them by itself'
 
 section "a changed file git shows as binary is reported, not silently skipped"
 # On a real run a regex held raw NUL/DEL bytes instead of escapes, so git called
@@ -2150,8 +2185,17 @@ section "an unrecorded principles file has a route that actually writes it"
 # exists; the declining sentence is inside the writer.
 assert_ok "setup refuses to infer a principles file" \
   _says skills/setup.md 'Do not write `blueprint/context/principles.md`, and say so'
-assert_ok "and names ideate --rescope as its only writer" \
-  _says skills/setup.md '`ideate --rescope`, which is the only skill that writes one'
+assert_ok "and names ideate as its only writer" \
+  _says skills/setup.md 'point at `ideate`, which is the only skill that writes one'
+# `--rescope` alone was the wrong door for an adopted project whose plans are
+# still empty: rescope reconciles a filled plan against built work, and there
+# is none. Plain `ideate` writes the file with the plans.
+assert_ok "plain ideate while the plans are empty, --rescope once they are filled" \
+  _says skills/setup.md 'plain `ideate` while the plans are still empty'
+# Step 3 said it; the report that names every next action did not, and a next
+# step the report leaves out is dropped - the reason Step 7 says to name them all.
+assert_ok "and setup's report names it among the next actions" \
+  _says skills/setup.md 'name it in that list, not only in Step 3'
 assert_ok "ideate --rescope writes one when there is none" \
   _says skills/ideate.md 'When there is no `principles.md` at all, ask Step 1'
 assert_ok "and says why leaving it alone would strand setup's pointer" \
@@ -2403,5 +2447,101 @@ assert_ok "the checklist names the journey a screen-by-screen check misses" \
   _says template/blueprint/design-kit/ux-checklist.md 'Change or reset **your own** password'
 assert_ok "review reports a literal where a token belongs" \
   _says skills/review.md 'written as a literal instead of a token is drift'
+
+# ==== seams-G: found by reading all 27 skills end to end (2026-09-25) ====
+# Not by running a skill: by reading each one whole and asking whether it agrees
+# with itself and with the files around it. Every defect below lints clean.
+
+section "a skill's reference to its own step names a step it has"
+# build said "Step 6 tells you" with four steps; autopilot said "the budget from
+# Step 1b" when the budget is Step 2. Both read as correct, and an agent told to
+# follow a step that does not exist follows whichever one it guesses. A
+# reference qualified by another skill's name - "`build`'s Step 2" - is that
+# skill's step and is skipped.
+_dangling_steps() {
+  python3 - "$@" <<'PYSTEP'
+import re, sys
+for f in sys.argv[1:]:
+    s = open(f).read()
+    heads = set(re.findall(r'^## Step (\d+[a-z]?)\b', s, re.M))
+    flat = re.sub(r'\s+', ' ', s)
+    for m in re.finditer(r'\bSteps? (\d+[a-z]?)\b', flat):
+        if m.group(1) in heads:
+            continue
+        before = flat[max(0, m.start() - 40):m.start()]
+        if re.search(r"`[a-z-]+`('s)?\s*(\w+\s){0,3}$", before) or "'s" in before[-8:]:
+            continue
+        print(f"{f}: Step {m.group(1)}")
+PYSTEP
+}
+assert_eq "no skill refers to a step it does not have" "" "$(_dangling_steps skills/*.md)"
+_ds_tmp=$(mktemp -d "$TEST_TMP/steps.XXXXXX")
+printf '## Step 1 - a\n\nThe rule in Step 6 says so.\n' > "$_ds_tmp/x.md"
+assert_eq "and the check sees one" "$_ds_tmp/x.md: Step 6" "$(_dangling_steps "$_ds_tmp/x.md")"
+printf '## Step 1 - a\n\nAs `build`'"'"'s Step 6 says.\n' > "$_ds_tmp/y.md"
+assert_eq "but not another skill's step" "" "$(_dangling_steps "$_ds_tmp/y.md")"
+
+section "a skill agrees with itself"
+assert_lacks "stack no longer claims to work in an empty directory" skills/stack.md 'It works in an empty directory'
+assert_lacks "stack's description no longer hands back text without the workflow" skills/stack.md 'hands the decision back as text'
+assert_ok "stack names every section it touches" \
+  _says skills/stack.md "Tech and Deployment, the data model's owners in sections 4 and 6"
+assert_ok "architect takes Step 2's six answers instead of asking again" \
+  _says skills/architect.md 'Take the six answers from Step 2 - do not ask them again'
+assert_ok "and its rules allow the Constraints it writes" \
+  _says skills/architect.md 'the platform Step 2 records under Constraints'
+assert_ok "autopilot counts the four blocked actions it lists" \
+  _says skills/autopilot.md 'Four actions are **blocked in every range'
+assert_ok "autopilot's board checks read as conditions to start" \
+  _says skills/autopilot.md 'each of these must hold, or the run stops'
+assert_ok "spec counts its modes" _says skills/spec.md 'Five modes, chosen from the argument'
+assert_ok "preflight counts its buckets" _says skills/preflight.md 'Sort everything into six buckets'
+assert_eq "preflight asks the same config question once" "1" \
+  "$(grep -c "genuinely separate" skills/preflight.md)"
+assert_ok "progress counts its lists" _says skills/progress.md 'Four lists exist'
+assert_ok "ship's rules name all three ways past the gate" \
+  _says skills/ship.md '`deferred`, `accepted` and `invalid`'
+# verify's needs-you rule sat inside Step 5, which only --manual runs.
+assert_ok "verify records a could-not-verify in every mode, not only --manual" \
+  bash -c 'awk "/In every mode, not only/{a=NR} /could-not-verify becomes a line/{b=NR} /^## Step 5/{c=NR} END{exit !(a && b>a && c>b)}" skills/verify.md'
+assert_lacks "verify's description no longer calls it read-only" skills/verify.md 'Read-only either way'
+assert_ok "orchestrate tells build's own subagent apart from delegating build" \
+  _says skills/orchestrate.md "This is not the subagent \`build\` uses itself"
+assert_ok "and so does the multi-part guide" \
+  _says docs/multi-part.md "one step's code to a subagent of its own is different"
+assert_lacks "README no longer sends upgrades through --force" README.md '^install.sh --force$'
+assert_ok "install's help says --force changes nothing" \
+  _says install.sh 'Accepted but no longer needed'
+assert_ok "the walkthrough's no-precondition list matches check.sh" \
+  _says docs/walkthrough.md '`setup`, `progress`, `preflight`, `debug`, `docs` and `prepare` have no preconditions'
+
+section "design is required wherever there is a UI"
+# prototype was optional, so a UI project could reach spec with no design.md and
+# every item answered the same design questions again. D18.
+assert_ok "spec stops on a UI with no design record" \
+  _says skills/spec.md 'The project has a UI and `blueprint/context/design.md` does not exist'
+assert_ok "and names prototype" _says skills/spec.md 'stop and say to run `prototype` first'
+assert_ok "a project with no UI passes" _says skills/spec.md 'a CLI, a library or an API with no UI'
+assert_ok "a fix does not wait on design work" _says skills/spec.md 'must not wait on design work'
+# Without this an adopted app deadlocked: prototype stopped on a shipped look,
+# and spec stopped without the record.
+assert_ok "prototype records a look that already exists" \
+  _says skills/prototype.md '## Recording a look that already exists'
+assert_lacks "and no longer stops on a shipped look alone" skills/prototype.md 'or the tokens have already'
+assert_ok "prototype's description says it is required" \
+  _says skills/prototype.md 'Required before the first `spec` in any project with a UI'
+assert_lacks "architect no longer calls skipping it legitimate" skills/architect.md 'Skipping it is'
+assert_ok "context names prototype when the record is missing" \
+  _says skills/context.md '`prototype` if the project has a UI and `blueprint/context/design.md` does not exist'
+assert_ok "setup's report names it for an adopted UI" \
+  _says skills/setup.md '**And `prototype`, if the project has a UI'
+assert_ok "progress names prototype rather than sending the user into spec's stop" \
+  _says skills/progress.md 'the next action is `prototype`, not `spec`'
+for f in README.md docs/walkthrough.md docs/mobile.md; do
+  assert_eq "$f no longer calls prototype optional" "" \
+    "$(tr -s ' ' < "$f" | grep -niE 'prototype.{0,60}optional|optional.{0,20}prototype' || true)"
+done
+assert_ok "the template's loop line includes it" \
+  _says template/AGENTS.md '-> prototype (with a UI)'
 
 finish

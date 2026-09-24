@@ -5,7 +5,7 @@ description: "Turn one work item into a buildable spec written to blueprint/cont
 
 # spec - turn one item into something buildable
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/project-plan.md` · `blueprint/context/design.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -48,6 +48,19 @@ than working around it**:
   one produces a full, confident spec for a feature of a different product.
   **A plan with nothing queued is obvious; a plan queued with the wrong thing is
   not**, which is why this is a stop rather than a note.
+- **The project has a UI and `blueprint/context/design.md` does not exist** -
+  stop and say to run `prototype` first. A UI means the plan's platform is one
+  that renders: a web app, a content website, a PWA or a mobile app. **Design
+  is not optional where there is something to see**: without the record, every
+  item invents its own answer to the same questions - the empty state, the
+  error message, the focus ring - and the first screen built becomes the look
+  by accident. `prototype` also covers an app that already has a look: it
+  records what is there rather than proposing something new.
+
+  Three cases pass this: a CLI, a library or an API with no UI, where there is
+  nothing to design - say so in one line; a **fix**, which repairs what exists
+  and must not wait on design work - name the missing record in the spec's
+  Notes instead; and `--preview`, which writes nothing.
 - **`blueprint/context/coding-standards.md` is still unfilled prompts** while
   real code exists - mention it. `blueprint/context/fundamentals.md` still
   applies, being the pack's own and always present, but `build`
@@ -58,7 +71,7 @@ than working around it**:
 
 ## Input
 
-Four modes, chosen from the argument:
+Five modes, chosen from the argument - a plan addition arrives two ways:
 
 | Argument | Mode | Writes |
 |---|---|---|

@@ -406,3 +406,34 @@ page by another route).
 **Rejected: a generator from `tokens.json` to CSS.** It would be a script in
 every project; the test holds the two files in step in the pack, and a project
 changes `theme.css`, not the JSON.
+
+## D18 - Design is required wherever there is a UI (2026-09-25)
+
+`prototype` was optional: `architect` called skipping it "a legitimate choice",
+and `context` named it only when the first item was a screen with no visual
+reference. So a project with a UI could reach `spec` with no `design.md`, and
+then every item answered the same questions itself - the empty state, the error
+message, the navigation on a phone - and the first screen built became the look
+by accident. D17 gave `prototype` a kit worth starting from; leaving it
+skippable meant the kit reached only the projects that asked for it.
+
+**`spec` now stops on a project with a UI and no
+`blueprint/context/design.md`**, and names `prototype`. A UI is the plan's
+platform rendering: a web app, a content website, a PWA or a mobile app.
+
+**Three things pass, on purpose:** a CLI, a library or an API with no UI, since
+there is nothing to design; a **fix**, which repairs what exists and must not
+wait on design work - it notes the missing record instead; and `--preview`,
+which writes nothing.
+
+**An app that already has a look is recorded, not redesigned.** Without that, a
+project adopted through `setup` had no route past the gate: `prototype` stopped
+on a shipped look, and `spec` stopped without the record. `prototype` now reads
+the look from the code, names each value against the kit's token for the same
+role, measures the contrast actually drawn, and marks a required screen the app
+lacks as missing rather than not applicable.
+
+**Rejected: required for every project.** A CLI has no screens, and a gate that
+asks for a design record it cannot have is a gate people learn to walk past.
+**Rejected: an advisory note in `spec`.** That is what "optional, decide
+deliberately" already was.

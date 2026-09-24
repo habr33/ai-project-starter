@@ -60,8 +60,10 @@ Read the project's state before acting:
 - `blueprint/context/current-work.md` - the one item in flight, if any
 - `blueprint/context/findings.md` - open review findings against the current work
 
-Also read `blueprint/project-plan.md`, `blueprint/build-plan.md`, and the archives under
-`blueprint/history`, plus the git branch, working-tree state, and recent log.
+Also read `blueprint/project-plan.md`, `blueprint/build-plan.md`, the archives under
+`blueprint/history`, `blueprint/context/needs-you.md`,
+`blueprint/production-pending.md` and `blueprint/findings/backlog.md` - Step 4
+reports all three - plus the git branch, working-tree state, and recent log.
 
 ## Step 2 - work out where things are
 
@@ -94,6 +96,9 @@ Report only what is actually wrong:
   before the user types a word, and they grow by accretion - closed entries
   and prose restating other files - unless something measures them.
 - No verification command, or no test runner, when the project has real code.
+- **A UI with no `blueprint/context/design.md`.** `spec` stops on it, so the
+  next action is `prototype`, not `spec` - naming `spec` sends the user
+  straight into a stop.
 - **Drift from the loop.** The signals worth naming:
   - work committed directly to `main`
   - a spec with every step ticked that was never shipped
@@ -138,8 +143,8 @@ useful answer is what would start the next one - add an item and `spec` it,
 rather than reporting four empty lines and leaving the reader to work out whether
 something is wrong.
 
-**And say what the project already knows it might build next.** Two lists exist
-and neither is read by anything else:
+**And say what the project already knows it might build next.** Four lists exist,
+and nothing else asks them this question:
 
 - **Section 11 of `blueprint/project-plan.md`**, what `ideate` deferred and when
   it should come back. *"Editing and deleting sessions - soon after"* is an

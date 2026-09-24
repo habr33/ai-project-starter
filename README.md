@@ -73,7 +73,7 @@ own conventions rather than one imposed here.
 
 ```
 ideate → architect → stack → layout → scaffold → ci → context  plan it
-     → prototype                                    settle the look and navigation (optional)
+     → prototype                                    settle the look and navigation (any UI)
      → spec → build → verify → review → ship        build it
      → preflight → host → deploy → monitor          run it
 ```
@@ -126,7 +126,7 @@ already be true and what to run when it is not. Some stop; some report and carry
 on. **A skill stopping is it working** — it is refusing to build confident output
 on an empty file.
 
-**Work only a person can do is recorded, not just mentioned.** Six skills write
+**Work only a person can do is recorded, not just mentioned.** Nine skills write
 to `blueprint/context/needs-you.md` the moment they hit something an agent
 cannot do — an account, a card, an SDK, a device, a decision, a permission —
 each with what it blocks and when it is needed. `prepare` reports it, `progress`
@@ -221,12 +221,14 @@ records what is actually there. It never installs or upgrades anything.
 ## Updating
 
 ```bash
-install.sh --force
+install.sh
 ```
 
-Re-copies the skills. **Files you own are never touched**, with or without
-`--force`: the plans, the specs, `dev-notes/`, `AGENTS.md`. If you edited a skill
-and want the new version, `--force` overwrites it and git shows you what changed.
+Replaces the skills with the pack's current ones - always, since an installed
+skill is a copy of `skills/`, and a stale one behaves exactly like a current one.
+If you had edited one, the report names it and git has your version. **Files you
+own are never touched**: the plans, the specs, `dev-notes/`, `AGENTS.md`.
+`--force` is still accepted, and changes nothing.
 
 No manifest, no conflict detection, no backups. That is a deliberate trade at
 this size — the repo is the version control.

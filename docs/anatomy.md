@@ -45,14 +45,14 @@ by mentioning it.
 
 | File | Holds | Written by | Read by |
 |---|---|---|---|
-| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` | 12 skills |
-| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` | `context` `progress` `monitor` `preflight` |
+| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` `scaffold` `spec` `context` | 9 skills |
+| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` `context` | `context` `progress` `monitor` `preflight` |
 | `blueprint/context/project-overview.md` | the source of truth, generated | `context` | `spec` `build` `review` `progress` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack — **not loaded every session**; the three skills that need it read it | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments — what it will never trade away. **Product-level, like the plan.** Never inferred from code: `setup` reports it unrecorded rather than writing one | `ideate` | `architect` `review` `preflight` |
-| `blueprint/context/design.md` | visual decisions, measured values, the navigation map, the screens and journeys that apply | `prototype` | `spec` `review` `ship` |
+| `blueprint/context/design.md` | visual decisions, measured values, the navigation map, the screens and journeys that apply | `prototype` `spec` | `spec` `review` `ship` |
 | `blueprint/design-kit/` | the baseline tokens (JSON and CSS), every core component in every state, and the UX checklist — **the pack** refreshes it on every install | **the pack** | `prototype` `spec` |
 | `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` `rollback` | 7 skills |
 | `blueprint/context/findings.md` | the findings **index**, loaded every session — one heading per live finding, and status lives only here. Code findings close through `review` (or `build`, at P2 or P3, with a test seen failing first); non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
@@ -83,7 +83,7 @@ rows.
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
 | `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `context` |
 | `context` | both plans | project-overview | either plan missing | `prototype` or `spec` |
-| `prototype` | project-plan UI/UX, project-overview | `prototypes/`, **design.md** | project-overview absent | `spec` |
+| `prototype` | project-plan UI/UX, project-overview; or the built UI, for an app that already has a look | `prototypes/`, **design.md** | project-overview absent; design.md already exists | `spec` |
 
 **Why `architect` precedes `stack`.** Architecture is the design of the system;
 technology is how it is implemented, and it is chosen *against* that design.
@@ -111,7 +111,10 @@ later without moving an installed framework and its lockfile instead of markdown
 directories are called.** Those look like one question and are not.
 
 `prototype` sits after `context` because it reads `project-overview.md` for what
-the screens must show.
+the screens must show. **It is required wherever there is a UI** - `spec` stops
+without `design.md` - because without the record every item answers the same
+design questions again, differently. A CLI, a library or an API skips it, and
+an app that already has a look gets that look recorded rather than redesigned.
 
 **Three files are born here** that nothing else can produce: the quality bar, the
 coding standards, and the design record. Each exists so a later lens checks
@@ -121,7 +124,7 @@ against *this project's* recorded values rather than a generic standard.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight | `build` |
+| `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight; a UI with no design.md | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify) — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
 | `review` | source, standards, quality-bar, **principles**, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
@@ -162,7 +165,7 @@ backups passes `review` and fails here. It is allowed — required — to say no
 **`prepare` reports on you, not on the project.** Every other status skill asks
 about the code: `progress` — *where am I?*, `review` — *is the code sound?*,
 `preflight` — *can this face real users?* This one asks **whose turn is it, and
-what do I need to get?** It reads `blueprint/context/needs-you.md`, which eight
+what do I need to get?** It reads `blueprint/context/needs-you.md`, which nine
 skills write the moment they hit something an agent cannot do — an account, a
 card, an SDK, a device, a decision. Read-only: it never buys, installs or
 decides, which is the same boundary that makes `host` trustworthy.

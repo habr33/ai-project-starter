@@ -27,6 +27,31 @@ and `design-kit` (`blueprint/design-kit/` and the rewritten `prototype`; `D17`)
 were fast-forwarded into `main` on 2026-09-25 at the user's request, and `main`
 pushed. Both branches are deleted.
 
+**Open branch: `claude/admiring-meitner-w9m4vx`**, off `main` at `81da70f`, not
+merged. A read of all 27 skills end to end (`seams-G`) and `D18`:
+
+- **Design is required wherever there is a UI** (`D18`). `spec` stops on a UI
+  with no `design.md`; a CLI, library or API, a fix and `--preview` pass.
+  `prototype` gained *Recording a look that already exists*, without which an
+  adopted app could never reach `spec`.
+- **`check.sh` rule 1 took SIGPIPE** - `sed '/^---$/q'` in an assignment under
+  `set -e`, exit 141 with no output in roughly one lint fixture in fifteen. Now
+  a range; a seam check forbids an early-quitting reader in any check.sh
+  assignment.
+- **`build`'s packet** names all four standards by path, and test-first means
+  the test is written and seen red *before* the code, with the running app as
+  the evidence where no test can see the claim.
+- **Self-contradictions fixed**: `stack`'s empty-directory claim, `architect`
+  asking its six questions twice, steps that did not exist (`build` "Step 6",
+  `autopilot` "Step 1b" - now a check across every skill), `verify`'s needs-you
+  rule reachable only under `--manual`, and six miscounts.
+- **Undeclared writes declared**: `scaffold`, `context` and `spec` write the
+  plans, `spec` writes `design.md`. Paid for under rule 18 by cutting a
+  duplicated paragraph from the template's `coding-standards.md`.
+- **Proposed, not done - the user's call:** fold `prepare` into `progress`,
+  `layout` into `stack`, drop the overview's *Current state* so `context` is not
+  needed after every `ship`, and install a core set of skills by default.
+
 **Done, with evidence:** `./check.sh` OK and `./tests/run.sh` all four files
 passing, zero failures, on `main`. Each new check was seen failing under a
 mutation first; the kit's four checks were run against four broken copies. The
@@ -62,7 +87,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
 - **This repo is a public starter.** Rules state their general reason - never
   one project's names, sizes or story. The user rejected exactly that once.
-- **Rule 18 is at its edge.** The template's loaded set is a few dozen bytes
+- **Rule 18 is at its edge.** The template's loaded set is a few hundred bytes
   under half the budget; any row added to `template/AGENTS.md` must be paid for
   by cutting prose there. Measure with the loop in rule 18.
 - **A routing prompt may not be quoted** in its skill's description (five words

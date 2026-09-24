@@ -27,7 +27,7 @@ is true regardless of stack and is the pack's - refreshed on every install.
 overwritten. **Read both; where they disagree, the project's own file wins.**
 
 **If `coding-standards.md` is still unfilled prompts, say so.** The fundamentals
-always apply, but Step 6 tells you to prefer the project's own conventions over
+always apply, but the Rules below tell you to prefer the project's own conventions over
 generic best practice, and it cannot do that while the language, layout, imports
 and test shape are still comment prompts. `scaffold` fills it for a new project,
 `setup` for one that already had code.
@@ -100,12 +100,20 @@ Never build on `main` or `master`.
 
 Work the spec's build steps in order, one at a time. For each step:
 
-1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow (`coding-standards.md`, `quality-bar`). If the host supports subagents, hand the step to one with this packet:
+1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow. If the host supports subagents, hand the step to one with this packet:
 
     - The spec step text
-    - Its done-when
+    - Its done-when, and **whether it is behavioural** - if it is and a test
+      runner is configured, the instruction to write the test first and run it
+      red before writing the code (item 4)
     - The files it claims to create or modify
-    - The standards it must follow
+    - The standards it must follow, **by path, all four**:
+      `blueprint/context/fundamentals.md`, `blueprint/context/coding-standards.md`,
+      `blueprint/context/quality-bar.md` and `blueprint/context/principles.md` -
+      the last two at the product root in a multi-part product. **A subagent
+      loads none of them by itself**, and `fundamentals.md` is not loaded even in
+      the main session, so a standard left out of the packet is one the code is
+      never written against.
     - The instruction not to commit or push
 
     The subagent implements the step, shows the diff, and reports whether the done-when passed. If the host does not support subagents, or the subagent cannot proceed, implement the step inline and continue to the next checkpoint. The main session still reads the diff and proves the done-when - that is the comprehension gate.
@@ -149,10 +157,18 @@ Work the spec's build steps in order, one at a time. For each step:
      for a step that added none. If it says a string appears in the output, look for
      the string. **Match the evidence to the claim the step actually made.**
 
-     **Every step with a behavioural done-when is proven test-first.** The test
-     must be seen failing before the step is considered done — break the thing it
-     covers, watch it go red, put it back. A test that stays green with the
-     thing broken asserts the fix, not the failure.
+     **Every step with a behavioural done-when is proven test-first**, wherever a
+     test runner is configured: write the test from the done-when **before** the
+     code, run it, and see it fail for the reason the done-when describes - the
+     behaviour is missing, not a typo or an import error. Then write the code and
+     watch it pass. A test first seen after the code has only ever been green, so
+     nothing shows it can fail.
+
+     **Where no test can observe the claim, the evidence is the running app** -
+     no runner configured, or a claim a runner cannot see, such as a rendered
+     layout. That is the screenshot and `verify` above, not a test invented to
+     satisfy this rule; say which kind of proof each done-when got, because the
+     review packet in Step 4 reads it.
 
      **A new test is not trusted until it has failed once.** Break the thing it
      covers, watch it go red, put it back. **And check the break was real** - a

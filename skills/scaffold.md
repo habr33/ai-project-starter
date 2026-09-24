@@ -5,11 +5,11 @@ description: "Create the actual application from the stack recorded in the proje
 
 # scaffold - stand the whole stack up, then check your own work
 
-**Writes:** `blueprint/context/coding-standards.md` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md`
+**Writes:** `blueprint/context/coding-standards.md` · `blueprint/project-plan.md` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md`
 
 Where this sits:
 
-    `stack` -> `layout` -> scaffold -> `ci` -> `context` -> `spec`
+    `stack` -> `layout` -> scaffold -> `ci` -> `context` -> `prototype` (with a UI) -> `spec`
 
 `stack` decided what to build with. This builds it. **It is bigger than running
 the framework's CLI** - a stack of "Next.js, Postgres, Prisma, Auth.js, Tailwind,

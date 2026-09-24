@@ -1,6 +1,6 @@
 ---
 name: verify
-description: "Prove the current work actually does what its spec says, by running the real app and observing behavior against the done-when criteria in blueprint/context/current-work.md. Drives the app - browser, CLI, or server - captures evidence, and reports pass, fail, or could-not-verify per criterion. With --manual, writes a human walkthrough instead: what to start, where to go, what to click, what to expect, and what would count as wrong. With --all, re-proves the archived done-whens of every feature already shipped, which is the only check in this workflow that would catch a new item breaking an old one by observation rather than by test. Read-only either way: it observes and never edits source or commits. Use when the user runs `verify`, asks to confirm something works, wants proof before shipping, or asks how to test the change by hand."
+description: "Prove the current work actually does what its spec says, by running the real app and observing behavior against the done-when criteria in blueprint/context/current-work.md. Drives the app - browser, CLI, or server - captures evidence, and reports pass, fail, or could-not-verify per criterion. With --manual, writes a human walkthrough instead: what to start, where to go, what to click, what to expect, and what would count as wrong. With --all, re-proves the archived done-whens of every feature already shipped, which is the only check in this workflow that would catch a new item breaking an old one by observation rather than by test. It never edits source or commits: it writes only a regression to the findings ledger and a could-not-verify to needs-you.md. Use when the user runs `verify`, asks to confirm something works, wants proof before shipping, or asks how to test the change by hand."
 ---
 
 # verify - prove it against the running app
@@ -232,20 +232,7 @@ that before a release, after a dependency upgrade, or when something feels off -
 not every item. Saying the cost is what stops it being run out of habit and then
 skipped when it matters.
 
-## Step 5 - the manual walkthrough (`--manual` only)
-
-Instead of Steps 2-4, write a guide a person can follow with no further context:
-
-1. **Start it** - the exact command, the URL, how to tell it is ready.
-2. **Set up** - any account, seed data, or state needed first. Say how to get it.
-3. **Walk the path** - numbered steps: where to go, what to click or type, what
-   should happen at each point. One action per step.
-4. **What good looks like** - the observable result for each done-when.
-5. **What would count as wrong** - the specific failure modes worth watching for,
-   including anything the automated checks cannot see.
-6. **Gaps** - what this walkthrough cannot cover and why.
-
-Write it for someone who has not read the spec.
+**In every mode, not only `--manual`:**
 
 **Every could-not-verify becomes a line in
 `blueprint/context/needs-you.md`.** A criterion needing a screen reader, a
@@ -260,6 +247,21 @@ the line carries `Widened: N`, raised by one each time an item adds to it.
 accepted risk is `dropped` with the user's reason, and the next item starts a
 fresh line. A check widened by every item and never done ends up accepted all
 at once, at the end, as a single decision over screens nobody has looked at.
+
+## Step 5 - the manual walkthrough (`--manual` only)
+
+Instead of Steps 2-4, write a guide a person can follow with no further context:
+
+1. **Start it** - the exact command, the URL, how to tell it is ready.
+2. **Set up** - any account, seed data, or state needed first. Say how to get it.
+3. **Walk the path** - numbered steps: where to go, what to click or type, what
+   should happen at each point. One action per step.
+4. **What good looks like** - the observable result for each done-when.
+5. **What would count as wrong** - the specific failure modes worth watching for,
+   including anything the automated checks cannot see.
+6. **Gaps** - what this walkthrough cannot cover and why.
+
+Write it for someone who has not read the spec.
 
 ## Rules
 

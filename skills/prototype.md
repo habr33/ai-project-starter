@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: "Settle how the app or website looks and works before building it. Classifies the product, recommends a visual direction and a navigation structure, then mocks it from the pack's design kit - tokens, every core component in every state, and the UX checklist - as throwaway static HTML, and records the decisions in design.md. The first UI item ports the tokens and components into the real app, and `ship` deletes the mockups. Use when the user runs `prototype`, wants to see the screens and how they look before any code is written, wants to explore the look and feel or the navigation, asks for UI or UX recommendations, or is unsure what the interface should be."
+description: "Settle how the app or website looks and works before building it. Classifies the product, recommends a visual direction and a navigation structure, then mocks it from the pack's design kit - tokens, every core component in every state, and the UX checklist - as throwaway static HTML, and records the decisions in design.md. The first UI item ports the tokens and components into the real app, and `ship` deletes the mockups. Required before the first `spec` in any project with a UI; for an app that already has a look, records the existing one instead of mocking a new one. Use when the user runs `prototype`, wants to see the screens and how they look before any code is written, wants to explore the look and feel or the navigation, asks for UI or UX recommendations, or is unsure what the interface should be."
 ---
 
 # prototype - settle the look and the navigation before you build them
@@ -25,6 +25,11 @@ or a focus ring, are the parts that ship missing.
 
 The mockups are disposable by design. The decisions are not.
 
+**It is required wherever there is something to see.** `spec` stops on a
+project with a UI and no `blueprint/context/design.md`, because without the
+record every item answers the same design questions again, differently. A CLI,
+a library or an API with no UI skips it.
+
 
 > **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
@@ -44,9 +49,13 @@ The mockups are disposable by design. The decisions are not.
 - **The plan's UI/UX section is empty** - say so, then recommend in Step 1
   rather than stopping. It is the direction `ideate` was meant to capture, so
   **the user decides; you propose**. Never proceed on an unstated direction.
-- **`blueprint/context/design.md` already exists, or the tokens have already
-  shipped into the app's real stylesheet** - stop and say so before mocking
-  anything. The mockups here are disposable and `ship` deletes them, but
+- **The app already has a look and there is no `design.md`** - a project
+  adopted through `setup`, or UI built before this skill was required. Do not
+  mock a new direction over it: **record the one that exists**, as *Recording a
+  look that already exists* below says. `spec` stops on a UI project with no
+  record, so this is the route that lets an adopted app reach it.
+- **`blueprint/context/design.md` already exists** - stop and say so before
+  mocking anything. The mockups here are disposable and `ship` deletes them, but
   `design.md` is not: `review` measures the built UI against it, and `spec` and
   `architect` read it. **A second run that writes a fresh `design.md` can leave
   it describing a look the code does not have**, and `review` then reports a
@@ -233,6 +242,30 @@ Then say explicitly what happens next:
   wherever this platform keeps its theme - a stylesheet, a theme object,
   `ThemeData`, or an asset catalogue
 - `ship` deletes prototypes once the look has been built
+
+## Recording a look that already exists
+
+For an app whose UI was built before any `design.md` - the case above. **The
+record describes the code as it is**; proposing changes is a separate run of
+this skill, after the record exists, and says that it is a redesign.
+
+1. **Read the look from the code, not from memory of it** - the stylesheet or
+   theme object, the component files, the rendered pages. Name each value
+   against the kit's token that plays the same role (`--color-primary`, the
+   radius, the type scale), so a later redesign has names to change.
+2. **Measure contrast on the pairs the app actually draws**, in every mode it
+   has. A value that fails is recorded as failing, with the number - and raised
+   as a finding by `review`, not quietly corrected here.
+3. **Map the navigation and the screens as they are built**, against sections 1
+   to 3 of `blueprint/design-kit/ux-checklist.md`. A required screen the app
+   does not have - no not-found page, no empty state - is marked **missing**,
+   never "not applicable", and named in the report as a candidate item for
+   `spec`.
+4. **Write `design.md` with Step 6's sections**, saying at the top that it was
+   recorded from existing code, on which date. Nothing is mocked and nothing
+   under `prototypes/` is written.
+
+Then hand to `spec`, which no longer stops on the missing record.
 
 ## Rules
 

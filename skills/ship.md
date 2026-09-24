@@ -62,7 +62,7 @@ finding no code fixes. The only ways
 past without more code are `deferred` (the user's decision to do it later, with
 the skill that will do it named) or `accepted` (the user's explicit decision in this
 conversation, with their reason recorded) or `invalid` (a `review`
-verdict backed by evidence). **Never set either on the user's behalf.** A missing
+verdict backed by evidence). **Never set any of the three on the user's behalf.** A missing
 ledger file means no findings.
 
 **Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
@@ -369,7 +369,9 @@ it - the spec with its ticks, and the branch it names.
   fix, or rollback, however many checkpoints the branch carried.
 - **Never merge failing or unfinished work.**
 - **Never merge past the findings gate.** The recorded ways through are
-  `accepted` and `invalid`; both travel into the archive, never a silent drop.
+  `deferred`, `accepted` and `invalid` - the last two travel into the archive,
+  and `deferred` stays in the ledger until its named skill runs. Never a silent
+  drop.
 - **A rollback preserves the original archive** and adds its own. Never rewrite
   history to make a feature look as though it never existed.
 - **Merging and pushing are separate decisions, and both are the user's.**

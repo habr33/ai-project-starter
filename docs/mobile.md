@@ -77,7 +77,7 @@ ideate → architect → stack → layout → scaffold → ci → context
 7. **`context`** — generates the overview every session loads. Re-run it whenever
    a plan changes.
 
-8. **`prototype`** *(optional, but decide deliberately)* — settles the look in
+8. **`prototype`** *(required — `spec` stops without `design.md`)* — settles the look in
    throwaway mockups before components exist. On mobile the tokens land in a
    **theme object or NativeWind config, not a stylesheet** — there is no CSS to
    port into.

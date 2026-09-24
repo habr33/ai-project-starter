@@ -87,7 +87,7 @@ the plan first; autopilot starts once there is something to build *from*.
 
 ## The line, and why it is where it is
 
-Three actions are **blocked in every range, permanently, regardless of what is
+Four actions are **blocked in every range, permanently, regardless of what is
 asked mid-run**. They are not blocked out of caution - they share one property:
 
 **git cannot undo them.**
@@ -165,7 +165,8 @@ what would supply it.
 
 **In a multi-part project, read the board first** - `orchestrate` maintains it at
 the product root, and **in a git worktree, resolve it under the main checkout**
-(`orchestrate` gives the command) - and **each of these is a stop**:
+(`orchestrate` gives the command) - and **each of these must hold, or the run
+stops**:
 
 - **the contract is frozen - unless this part owns it** (`Owner:` under *The
   contract* in the product root's `AGENTS.md`). Building against an unfrozen
@@ -296,7 +297,7 @@ points, and the reason an unattended pass is recoverable.
   skill after it in range - `stack`, `layout`, `scaffold` - would otherwise be
   answering for a project of a different shape.
   Report the recommendation and stop.
-- the budget from Step 1b is reached
+- the budget from Step 2 is reached
 
 Stopping early is the correct outcome in every one of those, not a failed run.
 **A run that stops at the first real question has done its job.**

@@ -132,7 +132,6 @@ to run it in, and `integrate` for whether they agree.
   skills that gate on it - `deploy` for its target, `migrate` for real data -
   cannot read what was never written down
 - secrets in the environment, never the repository
-- each environment's config genuinely separate
 
 **Operations**
 
@@ -263,7 +262,7 @@ case this is rather than treating silence as either a pass or a gap.
 
 ## Step 3 - report a verdict
 
-Sort everything into four buckets, and lead with the verdict:
+Sort everything into six buckets, and lead with the verdict:
 
 - **Blockers** - must be fixed before going live. Each one goes into the findings
   ledger as P0 or P1, so the existing machinery carries it: a heading in the
