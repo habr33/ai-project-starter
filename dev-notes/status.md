@@ -15,39 +15,36 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where work stopped (2026-09-24)
+## Where work stopped (2026-09-25)
 
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Branches - not merged, not pushed. The user squash-merges them; never merge
-or push without them.** `origin/main` is `c7cd606`, and the user is re-creating
-the GitHub remote themselves - do not push until they say it exists.
-
-- `retro-improvements` (off `main`): context budget and rule 18, findings index
-  and end state, overview cap, production-pending, needs-you closing, CI browser
-  tests, one skills copy linked for Claude Code. `D14`-`D16`.
-- `design-kit` (off `retro-improvements`, **checked out**):
-  `blueprint/design-kit/` and the rewritten `prototype`. `D17`.
+**Branches: none open.** `retro-improvements` (context budget and rule 18,
+findings index and end state, overview cap, production-pending, needs-you
+closing, CI browser tests, one skills copy linked for Claude Code; `D14`-`D16`)
+and `design-kit` (`blueprint/design-kit/` and the rewritten `prototype`; `D17`)
+were fast-forwarded into `main` on 2026-09-25 at the user's request, and `main`
+pushed. Both branches are deleted.
 
 **Done, with evidence:** `./check.sh` OK and `./tests/run.sh` all four files
-passing, zero failures, on `design-kit`'s HEAD. Each new check was seen failing
-under a mutation first; the kit's four checks were run against four broken
-copies. The kit sheet was rendered headless at 1280 and 390 px, light and dark.
+passing, zero failures, on `main`. Each new check was seen failing under a
+mutation first; the kit's four checks were run against four broken copies. The
+kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
-**This session - two of the agreed next six, on `design-kit` (uncommitted):**
+**Two of the agreed next six, now on `main`:**
 
-1. **Fresh context per build step.** `build` Step 3 now prepares a packet (spec
+1. **Fresh context per build step.** `build` Step 3 prepares a packet (spec
    step text, done-when, claimed files, standards, no-commit rule) and hands it
    to a subagent where the host supports one, falling back to inline where it does
    not; the main session keeps the comprehension gate - reading the diff,
    explaining it, and proving the done-when.
-2. **Test-first in `build`.** Step 3's "Prove the done-when" now states "Every
+2. **Test-first in `build`.** Step 3's "Prove the done-when" states "Every
    step with a behavioural done-when is proven test-first" - the test must be
    seen failing before the step is claimed. `test-seams.sh` asserts this
    generalization separately from the repair-specific rule.
 
-**Next - the agreed order, one commit each on a new branch off `design-kit`:**
+**Next - the agreed order, one commit each on a new branch off `main`:**
 
 3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
    budget agreed with the user before any run. **Blocked on the user: what token
@@ -60,17 +57,6 @@ copies. The kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
 Also open: the `verify` redirect sweep and `review` redirect-target check
 (see *Can be done here*), and a ledger migration script.
-
-**Verify with:**
-
-    git status --short                       # three modified files: build.md, test-seams.sh, status.md
-    ./check.sh                               # OK - 27 skills ... 18 rules
-    ./tests/run.sh                           # 919 passed, 0 failed, all 4 test files
-
-**Reset to agreed work:** the uncommitted changes in this checkout were an incomplete
-attempt to add a `design` skill and `validate` skill that would conflict with the
-pack's existing design system (the design kit + prototype). They are reverted to
-continue with the agreed next steps above.
 
 **Gotchas:**
 
@@ -95,8 +81,8 @@ continue with the agreed next steps above.
 **Verify with:**
 
     git status --short                       # nothing modified
-    git branch --show-current                # design-kit
-    git log --oneline main..design-kit       # both branches' commits
+    git branch --show-current                # main
+    git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
 
