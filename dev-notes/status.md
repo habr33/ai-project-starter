@@ -48,6 +48,14 @@ merged. A read of all 27 skills end to end (`seams-G`) and `D18`:
 - **Undeclared writes declared**: `scaffold`, `context` and `spec` write the
   plans, `spec` writes `design.md`. Paid for under rule 18 by cutting a
   duplicated paragraph from the template's `coding-standards.md`.
+- **Then three follow-ups:** `autopilot` stops at `prototype` when there is no
+  `design.md` (a look is the user's choice, and required design made every UI
+  range reach it), and checks for the record when its range starts past
+  `prototype`; a seam heuristic for a skill that tells the agent to write a
+  state file its `Writes:` line leaves out - it finds two of the four
+  undeclared writes above, and the other two name their file only as "it";
+  and `install.sh` names a hand edit found only in `.claude/skills` before
+  converting or overwriting it.
 - **Proposed, not done - the user's call:** fold `prepare` into `progress`,
   `layout` into `stack`, drop the overview's *Current state* so `context` is not
   needed after every `ship`, and install a core set of skills by default.

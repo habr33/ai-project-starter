@@ -203,6 +203,10 @@ whole point of the structure.
 here - a lighter grey, a larger title - changes a token, and a contrast value
 measured before the change describes a colour that no longer exists.
 
+**So an unattended run stops here.** Under `autopilot` there is nobody to show
+the mockups to: report where they are and end, and leave Step 6 for a person.
+A `design.md` written from mockups nobody saw records a look nobody chose.
+
 ## Step 6 - write the durable design record, once the direction is settled
 
 **The mockups are throwaway. The decisions in them are not.**

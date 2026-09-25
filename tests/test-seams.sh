@@ -2543,5 +2543,83 @@ for f in README.md docs/walkthrough.md docs/mobile.md; do
 done
 assert_ok "the template's loop line includes it" \
   _says template/AGENTS.md '-> prototype (with a UI)'
+# Required made it a stop on every UI project's unattended run: autopilot's
+# general "stop at any decision" rule never said a look was one, and prototype
+# writes design.md only after a person has seen the mockups.
+assert_ok "autopilot stops at prototype when there is no record" \
+  _says skills/autopilot.md 'the range reaches `prototype` on a project with no `design.md`'
+assert_ok "but records a look the app already has" \
+  _says skills/autopilot.md 'recording what the code already draws decides nothing'
+assert_ok "and a range starting past prototype checks for the record first" \
+  _says skills/autopilot.md 'a project with a UI has `blueprint/context/design.md`'
+assert_ok "prototype says where an unattended run stops" \
+  _says skills/prototype.md 'So an unattended run stops here.'
+
+
+section "a skill that tells the agent to write a state file declares it"
+# Rule 12 holds a declared write to its table row and to the skill's own text.
+# Nothing held the reverse: scaffold wrote the plan's Deployment section and
+# spec updated design.md, neither in its Writes: line, and both linted clean -
+# the writer table was simply wrong about who writes those files. Found by
+# reading, which is the weak way; this is the check for next time.
+#
+# **It is a heuristic, and it says so.** It matches an imperative write verb
+# followed, within the sentence, by a state file from the table - by path, by
+# `basename`, or for the project plan by "the plan's X section" - and skips
+# another skill's verb, a negation, and "writes it" (a different object). Run
+# on the tree before that fix it finds two of the four undeclared writes; the
+# other two name their target only as "it" or "the plan changes", which nothing
+# can resolve to one file. A new exemption belongs in the skipping rules here,
+# with its reason, not as a skill quietly reworded to dodge it.
+_undeclared() {
+  python3 - "$@" <<'PYW'
+import re, sys, os
+root = sys.argv[1]
+t = open(os.path.join(root, 'template/AGENTS.md')).read()
+paths = [m for m in re.findall(r'^\| `([^`]+)` \| [^|]+ \| [^|]+ \|$', t, re.M)]
+verb = (r"\b(write|writes|update|updates|append|appends|reset|resets|fill|fills|"
+        r"amend|amends|tick|ticks|add (?:a|it|them|each|every)\b[^.;()\"]{0,30}? to|"
+        r"move[^.;()\"]{0,30}? to|set (?:it|that finding|each)\b[^.;()\"]{0,20}? to)\b")
+names = sys.argv[2:] or sorted(f[:-3] for f in os.listdir(os.path.join(root, 'skills')))
+for name in names:
+    s = open(os.path.join(root, 'skills', name + '.md')).read()
+    wl = re.search(r'^\*\*Writes:\*\*(.*)$', s, re.M).group(1)
+    declared = set(re.findall(r'`([^`]+)`', wl))
+    body = re.sub(r'^\*\*Writes:\*\*.*$', '.', s, flags=re.M)   # the declaration itself
+    body = re.sub(r'^#+ .*$', '.', body, flags=re.M)       # a heading ends a sentence
+    flat = re.sub(r'\s+', ' ', body)
+    for sent in re.split(r'(?<=[.!?:])\s', flat):
+        for p in paths:
+            if p in declared:
+                continue
+            # how prose names it: the path, `basename`, or - for the project
+            # plan - one of its numbered or named sections
+            alias = [re.escape(p.rstrip('/')), r"`%s`" % re.escape(p.rstrip('/').split('/')[-1])]
+            if p == 'blueprint/project-plan.md':
+                alias.append(r"the plan's (?:[A-Z][\w/]+ )+section|section \d+ of the plan")
+            target = "(?:%s)" % "|".join(alias)
+            if not re.search(target, sent):
+                continue
+            for m in re.finditer(verb + r"[^.;()\"]{0,80}?" + target, sent, re.I):
+                pre = sent[:m.start()]
+                if re.search(r"\b(not|never|no)\s+(\w+\s+)?$", pre, re.I) \
+                        or re.match(r"\w+ nothing\b", m.group(0)):
+                    continue                                 # "do not write", "writes nothing"
+                if re.search(r"`(?!%s`)[a-z-]+`('s)?\s*(\w+\s+){0,2}$" % name, pre):
+                    continue                                 # another skill's verb
+                if re.search(r"\b(it|them)\b", m.group(0)[:len(m.group(1)) + 5]):
+                    continue                                 # "writes it" - a different object
+                print(f"{name}: {p}")
+                break
+PYW
+}
+assert_eq "no skill writes a state file its Writes: line leaves out" "" "$(_undeclared .)"
+_uw=$(mktemp -d "$TEST_TMP/undeclared.XXXXXX")
+mkdir -p "$_uw/skills" "$_uw/template"
+cp template/AGENTS.md "$_uw/template/"
+printf -- '---\nname: zz\n---\n\n**Writes:** nothing\n\nThen update `design.md` with the reason.\n' > "$_uw/skills/zz.md"
+assert_eq "and the check sees one" "zz: blueprint/context/design.md" "$(_undeclared "$_uw" zz)"
+printf -- '---\nname: zz\n---\n\n**Writes:** nothing\n\nDo not write `design.md`; `prototype` writes `design.md`.\n' > "$_uw/skills/zz.md"
+assert_eq "but not a negation, or another skill's write" "" "$(_undeclared "$_uw" zz)"
 
 finish

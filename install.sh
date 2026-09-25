@@ -139,6 +139,22 @@ for adapter in $adapters; do
   done
 done
 
+# A pack skill in a real .claude/skills directory is about to be overwritten (the
+# copy shape) or removed (the conversion), and the report above compared only
+# .agents/skills. An edit made in the copy Claude Code actually reads would go
+# without a word whenever the pack's own version had not changed - so compare
+# it here, before either happens, and name it with the rest.
+if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    { [ -f "$claude_skills/$name/SKILL.md" ] && ! cmp -s "$src" "$claude_skills/$name/SKILL.md"; } || continue
+    case " $replaced_names " in
+      *" $name "*) ;;
+      *) replaced_names="$replaced_names $name" ;;
+    esac
+  done
+fi
+
 # Copy the pack's skills into .claude/skills - the fallback shape, and the shape
 # an unconvertible existing directory keeps.
 copy_claude_skills() {

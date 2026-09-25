@@ -233,6 +233,9 @@ the coordinator no way to know - it sees a part that simply went quiet.
 - the overview exists and is newer than the plans - **only when `context` is not
   in the range.** If it is, the run regenerates it, and requiring it first is
   circular.
+- **a project with a UI has `blueprint/context/design.md`** - **only when
+  `prototype` is not in the range.** `spec` stops without it, and a run that
+  starts past `prototype` has no way to produce it.
 
 **If the range includes `scaffold`:**
 
@@ -279,6 +282,13 @@ points, and the reason an unattended pass is recoverable.
 
 **Stop the run immediately** if any of these happen, and report where it stopped:
 
+- **the range reaches `prototype` on a project with no `design.md`.** A look is
+  a choice nobody here can make for the user, even with the direction the
+  plan's UI/UX section names: `prototype` writes `design.md` only after a person
+  has seen the mockups. So run it as far as the mockups, then stop - they are
+  this run's packet, and `spec` stops without the record anyway. **An app that
+  already has a look is the exception**: recording what the code already draws
+  decides nothing, so that branch of `prototype` runs to the end.
 - **a step produces an empty diff** - it did nothing, and a passing verification
   command says nothing about that. Unattended, this is the failure most likely to
   go unnoticed, because every signal looks green.

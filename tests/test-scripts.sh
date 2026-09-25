@@ -1063,6 +1063,26 @@ assert_ok "and names why" grep -q 'theirs differs between .claude/skills and .ag
 assert_ok "while the pack's own skills are still current in both" \
   cmp -s "$REPO/skills/spec.md" "$o/.claude/skills/spec/SKILL.md"
 
+# A hand edit to a pack skill in .claude/skills alone - the copy Claude Code
+# reads - was removed by the conversion, or overwritten in the copy shape, with
+# no word: the report compared .agents/skills only, which held the pack's
+# unchanged text. Git has it; the report is what says to look.
+for shape in converts keeps; do
+  o=$(_old_shape)
+  if [ "$shape" = keeps ]; then
+    mkdir -p "$o/.claude/skills/theirs" "$o/.agents/skills/theirs"
+    echo one > "$o/.claude/skills/theirs/SKILL.md"; echo two > "$o/.agents/skills/theirs/SKILL.md"
+  fi
+  printf 'my local note\n' >> "$o/.claude/skills/debug/SKILL.md"
+  out=$("$IN" --target "$o" 2>&1)
+  assert_ok "an edit only .claude/skills had is named when the install $shape the shape" \
+    grep -qE 'updated from a different version:.* debug( |$)' <<< "$out"
+done
+o=$(_old_shape)
+out=$("$IN" --target "$o" 2>&1)
+assert_fails "and an unedited two-copy install names nothing" \
+  grep -q 'updated from a different version' <<< "$out"
+
 section "where a symlink does not work, the skills are copied and the report says so"
 # git on Windows without symlink support checks a link out as a plain file
 # holding its target - Claude Code then finds no skills and says nothing.
