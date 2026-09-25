@@ -56,6 +56,11 @@ merged. A read of all 27 skills end to end (`seams-G`) and `D18`:
   undeclared writes above, and the other two name their file only as "it";
   and `install.sh` names a hand edit found only in `.claude/skills` before
   converting or overwriting it.
+- **Then a run of a small project end to end** (`coverage.md`, 2026-09-25):
+  nineteen findings, thirteen fixed - the setup work committed before item 1
+  branches, the README filled as the loop runs, `preflight`/`deploy` honouring
+  "not published", release-only blockers offered as deferred, the kit's
+  controls at 44px on touch, and five smaller ones. Tested under `seams-J`.
 - **Proposed, not done - the user's call:** fold `prepare` into `progress`,
   `layout` into `stack`, drop the overview's *Current state* so `context` is not
   needed after every `ship`, and install a core set of skills by default.

@@ -25,6 +25,11 @@ they use the same target, the same credentials, and the same platform knowledge.
 
 ## Before you start
 
+**If section 8 of `blueprint/project-plan.md` says this is not published** -
+"runs from source", "not published" - say so and stop, the way `host` does.
+There is no target to name, and asking for one re-opens a decision the plan
+already records.
+
 Name which of these has not happened, rather than proceeding quietly past it:
 
 - **`preflight` has never run** and this is the first release - say so and

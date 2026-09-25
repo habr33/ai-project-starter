@@ -72,6 +72,15 @@ Create and check out a branch named from the spec: `feature/<name>` for a featur
 the user to run `git init` - the loop depends on branches and on being able to
 show diffs.
 
+**Before creating it, look at `git status`.** A new branch starts from whatever
+the tree holds, and `ship` later squashes all of it into this item's one commit.
+What `spec` just wrote belongs here - `current-work.md`, and any plan or
+needs-you line it added. **Anything else uncommitted is someone else's work**:
+a scaffold, a CI workflow, a regenerated overview, a design record. Name each
+file and ask to commit it on `main` first, as the skill that made it says to;
+carried along, it merges as this item, and `ship`'s check for unrelated work
+stops on it.
+
 On a resume the branch already exists. Check it out; do not create a second one.
 
 **In a multi-part project, mark this part building** before the first step, in
@@ -303,7 +312,9 @@ review packet:
 - checks run, with the exact command or proof used
 - how to try it by hand, and **which done-whens, if any, were proven live
   against the running app in Step 3 versus only by a green check** - that list
-  is what the next action reads
+  is what the next action reads. **A browser test that drives the served app
+  counts as live** - it observes the real page, the way `verify` would; a unit
+  test, or any check that never starts the app, does not
 - ledger state: any findings still `open` or `fixed`, by ID
 - known risks, skipped checks, or follow-ups
 - **next action:** `verify` first, when any behavioral done-when was proven

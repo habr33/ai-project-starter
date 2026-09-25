@@ -234,6 +234,13 @@ than the branch below rather than harder. Build it directly, in this order:
    and a project with no build step still needs a typecheck or a lint to have
    anything worth running.
 
+6. **The tools' output in `.gitignore`** - whatever the runner, the build and
+   the browser tool write on every run: a coverage directory, Playwright's
+   `test-results/`, a compiled `dist/`. `new-project.sh` ignores the common
+   ones; check each tool this step installed against the file. With no
+   scaffolder there is no generated `.gitignore` to merge, which is how a real
+   scaffold commit once carried `test-results/`.
+
 Nothing is merged and nothing is moved, so the collision rules below do not
 apply. Go to Step 5. **Say in your report that there was no scaffolder** - it is
 a fact about the project, not an omission.
@@ -508,6 +515,20 @@ front end share nothing here - written into that part's own
 
 Then add a `dev-notes/decisions.md` entry for anything you chose during setup
 that the plan had not already settled, with the reason.
+
+**Fill the README's placeholders with what you just proved** - the title if it
+is still `# Project Name`, and the `<install command>`, `<dev command>`,
+`<build command>` and `<test command>` lines, from the commands recorded above.
+Only the placeholders: the README is the user's file, so leave any prose alone,
+and leave its one-sentence description to `context`. Left as template, it
+stays that way through the whole build loop until `preflight` calls it a
+blocker.
+
+**Commit what landed, before handing on** - one `chore: scaffold ...` commit
+on `main`, covered by Step 3's approval, once Step 8 has proved it runs. Nothing
+later commits it: `build` branches for the first item from whatever the tree
+holds, so an uncommitted scaffold rides into that item's squashed commit, and
+`ship`'s own check for unrelated work stops on it.
 
 **Then say what comes next: `ci`.** It runs here rather than later, and the
 reason is this step: the verification command and the runtime version it needs

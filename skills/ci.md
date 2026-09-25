@@ -196,6 +196,11 @@ Then **stop**. Report:
 Record the verification command in `dev-notes/status.md` under running it by
 hand, so the same checks can be run without the pipeline.
 
+**Commit the workflow file on `main`, locally** - `ci: ...`, naming the file,
+with the yes Step 3's review of the config already asked for. **Committing is
+not pushing**, and pushing stays the user's separate call. Left uncommitted, it
+is carried onto the first item's branch and merged as part of that item.
+
 **Then say what comes next: `context`.** It generates the overview the build
 loop reads, and it is the last planning step before `spec` starts on items.
 

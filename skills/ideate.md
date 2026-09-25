@@ -102,7 +102,10 @@ scope into. Say one of three things, out loud, before moving on:
   the same posture `preflight` takes when it says no-go. **This is advisory,
   never a refusal**: if the user still wants to build it, say so and continue
   to Step 3. It is their project; the point of saying it is that the decision
-  gets made on purpose, not skipped.
+  gets made on purpose, not skipped. **Record it**, in `dev-notes/decisions.md`:
+  the reason it did not clear the bar, and the user's reason for building it
+  anyway. Said only out loud, it is gone with the conversation, and a later
+  session cannot tell a considered choice from one nobody made.
 
 This is the same judgment the scope-cut step below already exercises, one step
 earlier and blunter: instead of asking *how small can the first version be*, it

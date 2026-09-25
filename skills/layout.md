@@ -128,6 +128,15 @@ requires, so `scaffold` hit a second failure the same decision had caused.
 layout are usually the runner, the typechecker, the bundler and the build's file
 tracing, and they disagree.
 
+**Probe each claim with the runtime that is installed, or say it is unverified.**
+Nothing is scaffolded yet, so a claim like "the runner is given this directory"
+is reasoning until something runs it - make a scratch directory, put two empty
+files in the proposed shape, and run the command. A real run reasoned that
+`node --test tests/unit/` searches that directory; on Node 22 a directory
+argument is loaded as a module, and `scaffold` Step 8 was where it failed.
+Where a probe is not possible, record the claim as **unverified until
+`scaffold`**, so the step that can check it knows to.
+
 ## Step 4 - stop for approval
 
 Show the directory tree, one line per entry saying what it is for, and the

@@ -165,12 +165,22 @@ the plan changes - **but leave it alone if someone has already written prose
 there**, since it is a user-owned file and a hand-written description beats a
 regenerated one.
 
+**And the README's opening line, the same way.** It ships as "One or two
+sentences: what this is, and who it is for." - replace that placeholder
+sentence with the same two sentences, and leave the line alone once someone has
+written their own. `scaffold` fills the README's commands; this is the part
+only the plan knows.
+
 ## Step 4 - report what changed
 
 If an overview already existed, say what this regeneration changed - new items,
 a changed stack, a resolved contradiction. If this is the first generation, say
 so. **Give its size**, so a file creeping toward the cap is seen before it
-passes it. **Say whether `AGENTS.md`'s `## What this is` was filled, left alone because
+passes it. **Then commit what this run wrote** - the overview, and any plan,
+`AGENTS.md` or README line it filled - as one `docs: ...` commit, after the
+approval Step 2 already asked for. **Between items that is `main`**, and it is
+the commit that keeps the next item's branch free of it; mid-item it is the
+item's branch, where the plan change belongs to that item anyway. **Say whether `AGENTS.md`'s `## What this is` was filled, left alone because
 it already had prose, or updated** - it is a user-owned file, so a write to it
 is never silent.
 

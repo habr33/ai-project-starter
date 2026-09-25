@@ -158,7 +158,6 @@ a:hover, a.is-hover { color: var(--color-primary-hover); }
 .btn[aria-busy="true"] { cursor: progress; }
 .btn[aria-busy="true"]::before { content: ""; width: 1em; height: 1em; border-radius: var(--radius-full);
   border: 2px solid currentColor; border-right-color: transparent; animation: spin 700ms linear infinite; }
-@media (pointer: coarse) { .btn, .nav__link { min-height: var(--size-target-min); } }
 
 /* ---- Forms --------------------------------------------------------------- */
 .field { display: grid; gap: var(--space-1); }
@@ -270,3 +269,18 @@ legend { font-weight: var(--font-weight-medium); font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
 .stat__value { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); }
 .stat__label { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+
+/* ---- Touch --------------------------------------------------------------- */
+/* On a touch screen every control is at least a 44px target - the UX
+ * checklist's section 4 asks it, and the md control height (40px) falls short.
+ * Buttons and nav links alone had this once; inputs were left at 40px.
+ * Mouse and keyboard keep the denser --size-control-* heights. */
+@media (pointer: coarse) {
+  .nav__link, .btn, .btn--sm, .input, .select, .textarea, .choice {
+    min-height: var(--size-target-min);
+  }
+  .pagination a, .pagination span, .btn--icon {
+    min-width: var(--size-target-min); height: var(--size-target-min);
+  }
+  .btn--icon { width: var(--size-target-min); }
+}

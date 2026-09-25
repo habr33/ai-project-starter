@@ -41,6 +41,7 @@ Real projects, named here by what they are rather than what they are called.
 | abandon-run | a scratch ES-module project, one item part-built on a branch | **`ship --abandon` and `spec`'s resume, end to end** - the park-and-resume round trip, with a four-entry ledger and a half-built step in a new file |
 | layout-move | a seeded two-part product, moved before any code existed | **`layout`'s documented move of a seeded part** - the four steps, and `seed-part.sh`'s refusal |
 | paperlog | an existing Express + SQLite JSON API, no workflow in it | **`setup`'s adoption route** - filling plan sections 5 and 6 from the code, then `context`'s check against the result |
+| splitbill | one-page web app, plain HTML/JS, `node:test` + Playwright, not published | **the loop with design required** (`D18`) - `new-project.sh` to `ship`, then `preflight`, `docs` and the operate stops, every skill followed as written; the user's answers were played by the agent |
 
 ## Plan
 
@@ -93,6 +94,31 @@ Real projects, named here by what they are rather than what they are called.
 | `setup` | yes | brownfield-nextjs, expo-workspace | **Ran 2026-09-06.** Found `ci` unreachable on the brownfield route, and that template files froze at install time forever. **2026-09-11 on expo-workspace:** a code-first npm workspace adopted single-part. Backfilled coding standards and a quality bar from the code - most bar rows honestly left unmeasured - recorded four contradictions in the existing docs as UNDECIDED rather than resolving them by guess, and opened 14 `needs-you.md` lines, 2 blocking. Its report named `context` then `ci`, because **Step 5 named `ci` as the next skill, Step 7 named only `context`, and the skill's own chain puts `ci` first** - the file disagreed with itself about what comes next. **Fixed 2026-09-15**: Step 7 now names every remaining step in the chain's order, with a seams test proven to fail on the old text **2026-09-22 on paperlog: the adoption route's sections 5 and 6 ran for the first time.** Sections 5 and 6 each carry **a second seeded paragraph** below the obvious one - the note that 5 is filled after 6, and the note that `layout` adds the directory tree. "Replace the seeded instruction *sentence*" leaves both, `context` reads seeded text as unfilled "whatever has been added around it", and it routes to `architect` and `stack` - the two skills this very route says never run. Now: replace every seeded paragraph, naming those two |
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `context` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
+
+## 2026-09-25: splitbill, end to end with design required
+
+Every skill on the single-part path ran as written except `rollback`,
+`migrate`, `integrate`, `orchestrate`, `autopilot`, `setup` and `debug`, which
+the project gave no reason to reach. **What it proved:** `spec` stopped on a UI
+with no `design.md`, and passed once `prototype` wrote one; `scaffold` Step 8
+caught a test-runner claim `layout` had only reasoned about; `review` found a
+real defect (a comma decimal on a phone never produced a result), which went
+`open` -> `fixed` by `build` -> `closed` by a second `review` before `ship`
+would merge; `ship`'s stubs came back byte-identical to the template's;
+`preflight` said no-go, `docs` repaired the README and `preflight` closed it.
+
+**Nineteen findings.** Fixed in the pack the same day: nothing committed the
+setup work, so it would ride into item 1; the README stayed a placeholder until
+`preflight`; `preflight` and `deploy` ignored "not published", and a release-
+only blocker held every later `ship`; the kit's inputs were 40px against its own
+44px touch line; the checklist had no row for a one-screen tool; `layout`
+reasoned instead of probing; `build`'s packet did not say a browser test is
+live; `progress` called kept mockups drift; `ideate`'s override verdict was
+said and not recorded; test output was not ignored without a scaffolder.
+
+**Not covered:** `build`'s subagent packet - it built inline, the documented
+fallback - and any real person's answers. A real phone is still a needs-you
+line, deferred to publishing.
 
 ## The honest summary
 

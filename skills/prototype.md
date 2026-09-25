@@ -69,7 +69,7 @@ Read `blueprint/project-plan.md` - the UI/UX section and who the users are - and
 `blueprint/context/project-overview.md`. Then:
 
 **Name the product type** from section 1 of `blueprint/design-kit/ux-checklist.md`:
-web app, content website, store or booking, mobile app, or mixed. It decides the
+web app, content website, store or booking, mobile app, mixed, or a one-screen tool. It decides the
 navigation pattern and the screens in Step 2, so say which and why.
 
 **Recommend, do not just ask.** Propose two or three directions, each stated as
@@ -238,6 +238,11 @@ project did not change.
 **Measure contrast against the tokens as they are now**, after the last
 iteration - not a value carried over from a round the user changed.
 
+**Commit the record and the mockups on `main`** - `design.md` and
+`prototypes/`, as one `design: ...` commit, now that the user has approved the
+direction. The first UI item ports the theme from them on its own branch;
+uncommitted, they would be merged as part of that item instead of before it.
+
 Then say explicitly what happens next:
 
 - `spec` links the relevant mockups as the design reference for a UI item, and
@@ -267,7 +272,7 @@ this skill, after the record exists, and says that it is a redesign.
    `spec`.
 4. **Write `design.md` with Step 6's sections**, saying at the top that it was
    recorded from existing code, on which date. Nothing is mocked and nothing
-   under `prototypes/` is written.
+   under `prototypes/` is written. Commit it as Step 6 says.
 
 Then hand to `spec`, which no longer stops on the missing record.
 

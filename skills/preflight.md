@@ -52,7 +52,14 @@ the repository. Know the platform and the environments.
 standards and the ledger are **this part's own** - so an unqualified "the plan"
 has two answers and the wrong one is silently plausible.
 
-**First settle which of the two audits this is, and say so** - they ask different
+**Before either, read section 8, Deployment, of `blueprint/project-plan.md` -
+is a release planned at all?** "Runs from source, not published" is a complete
+answer there, and `host` stops on it. Here it means there is no go-live to gate:
+**say so first, and ask whether one is coming.** If not, audit what a release
+would need and report it, but **write nothing to the ledger** - a P0 or P1 for a
+release nobody plans blocks every later `ship` in this part for nothing.
+
+**Then settle which of the two audits this is, and say so** - they ask different
 questions and mixing them produces a report where half the findings are noise:
 
 - **Before the first release.** Nothing is deployed. Configuration and Operations
@@ -267,6 +274,14 @@ Sort everything into six buckets, and lead with the verdict:
 - **Blockers** - must be fixed before going live. Each one goes into the findings
   ledger as P0 or P1, so the existing machinery carries it: a heading in the
   index, the entry in `blueprint/findings/<ID>.md`, in `review`'s format.
+
+  **A blocker only a release needs holds the build loop too.** A person trying
+  it on a real device, an account, a backup - once `open` at P0 or P1, it
+  blocks every later `ship` in this part, though the next item's code has
+  nothing to do with it. **Say so, and offer the user `deferred`**, with
+  `Deferred to:` the skill that releases - `host` or `deploy`. It stays in the
+  ledger and in every audit until that skill runs; setting it is the user's
+  call, never this skill's.
 
   **On a re-run, close what was repaired.** A blocker no code fixes - backups, a
   host, a README, a rotated secret - is marked `fixed` with evidence by the skill

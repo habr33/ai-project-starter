@@ -68,6 +68,12 @@ ledger file means no findings.
 **Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
 proves it, and "could not verify" beats a fabricated pass every time.
 
+**When the finding holding the gate is one `preflight` raised** - a release
+blocker no code in this item touches, such as a device check or a backup - say
+so plainly. The user may set it `deferred` to the release (`host` or `deploy`)
+with their reason; that is their decision, never this skill's, and it is the
+difference between a release blocker and a merge blocker.
+
 If required evidence is missing, **stop here.** Do not proceed to Step 2 and
 mention it afterwards.
 
@@ -187,7 +193,10 @@ several items: a login item consumes the theme and one screen while the editor,
 the list and the public page wait for items 2, 3 and 4. **Check each remaining
 file against `blueprint/context/design.md` and every unchecked item in
 `blueprint/build-plan.md` before removing it**, delete what is spent, and say
-which files stayed and which item holds each. The whole directory goes only when
+which files stayed and which item holds each - **in the archive too**, under a
+`## Prototypes kept` heading, one line per file. The report is gone after this
+session; `progress` reads the archive, and without that line it reports a
+deliberate keep as the old forgotten directory. The whole directory goes only when
 the last of them is consumed - on a real run a session had to keep it and explain
 why, against this skill's own text.
 

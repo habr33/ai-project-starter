@@ -2622,4 +2622,92 @@ assert_eq "and the check sees one" "zz: blueprint/context/design.md" "$(_undecla
 printf -- '---\nname: zz\n---\n\n**Writes:** nothing\n\nDo not write `design.md`; `prototype` writes `design.md`.\n' > "$_uw/skills/zz.md"
 assert_eq "but not a negation, or another skill's write" "" "$(_undeclared "$_uw" zz)"
 
+# ==== seams-J: found by running a small project end to end (2026-09-25) ====
+# A one-page web app from `new-project.sh` to `ship`, then `preflight`, `docs`
+# and the operate stops - every skill followed as written, the user's answers
+# played by the agent. Nineteen findings; these are the ones the pack's text
+# caused. The log is summarised in dev-notes/coverage.md.
+
+section "the setup work is committed before the first item branches"
+# Only scaffold committed anything, and only the plans. Followed literally, the
+# scaffold, the CI workflow, the overview and design.md were all in the working
+# tree when build branched for item 1 - merged as item 1, and stopped by ship's
+# own check for unrelated work.
+assert_ok "scaffold commits what landed" _says skills/scaffold.md 'Commit what landed, before handing on'
+assert_ok "ci commits its workflow locally, and does not push" \
+  _says skills/ci.md 'Commit the workflow file on `main`, locally'
+assert_ok "context commits what it wrote" _says skills/context.md 'Then commit what this run wrote'
+assert_ok "prototype commits the record and the mockups" \
+  _says skills/prototype.md 'Commit the record and the mockups on `main`'
+assert_ok "and build looks at git status before it branches" \
+  _says skills/build.md 'Before creating it, look at `git status`.'
+
+section "the README is filled as the loop runs, not at preflight"
+# It stayed "# Project Name" and "<install command>" through a whole build loop;
+# preflight's README blocker was the first thing to notice.
+assert_ok "scaffold fills the README's command placeholders" \
+  _says skills/scaffold.md "Fill the README's placeholders with what you just proved"
+assert_ok "context fills its one-sentence description" \
+  _says skills/context.md "And the README's opening line, the same way."
+assert_ok "and the placeholder context replaces is the one the template ships" \
+  grep -qF 'One or two sentences: what this is, and who it is for.' template/README.md
+
+section "a project that is not published has no release to block on"
+# The plan said "runs from source, not published". preflight audited a release
+# nobody planned and wrote its blockers as P1s - one only the user could clear -
+# which then held every later ship. deploy would have asked for a target.
+assert_ok "preflight reads section 8 before auditing" \
+  _says skills/preflight.md 'is a release planned at all?'
+assert_ok "and writes nothing to the ledger when none is" \
+  _says skills/preflight.md 'but **write nothing to the ledger**'
+assert_ok "a release-only blocker is offered as deferred to the release" \
+  _says skills/preflight.md 'A blocker only a release needs holds the build loop too.'
+assert_ok "ship says so when one holds its gate" \
+  _says skills/ship.md 'When the finding holding the gate is one `preflight` raised'
+assert_ok "deploy stops on not published, as host does" \
+  _says skills/deploy.md 'say so and stop, the way `host` does'
+
+section "the design kit's controls meet its own touch-target line"
+# The checklist asks 44px on touch; .input was 40px (--size-control-md). A size,
+# so the kit's contrast test could not see it. Every interactive rule sized by an
+# md or sm control token must reappear under pointer: coarse.
+_touch_gaps() {
+  python3 - template/blueprint/design-kit/components.css <<'PYT'
+import re, sys
+css = re.sub(r'/\*.*?\*/', '', open(sys.argv[1]).read(), flags=re.S)
+coarse, rest, pos = '', '', 0
+for m in re.finditer(r'@media \(pointer: coarse\)', css):   # every such block
+    j = css.index('{', m.start()) + 1; d = 1; k = j
+    while d:
+        d += {'{': 1, '}': -1}.get(css[k], 0); k += 1
+    coarse += css[j:k - 1]; rest += css[pos:m.start()]; pos = k
+rest += css[pos:]
+covered = {x.strip() for sel in re.findall(r'([^{}]+)\{[^{}]*size-target-min', coarse) for x in sel.split(',')}
+for sel, body in re.findall(r'([^{}@]+)\{([^{}]*)\}', rest):
+    if not re.search(r'(min-height|height|width|min-width):\s*var\(--size-control-(sm|md)\)', body):
+        continue
+    for x in (s.strip() for s in sel.split(',')):
+        if x != '.avatar' and x not in covered:
+            print(x)
+PYT
+}
+assert_eq "every control sized by --size-control-sm/md grows to 44px on touch" "" "$(_touch_gaps)"
+assert_ok "the checklist has a row for a one-screen tool" \
+  _says template/blueprint/design-kit/ux-checklist.md '| **Tool** (one screen'
+assert_ok "and prototype can name it" _says skills/prototype.md 'mixed, or a one-screen tool'
+
+section "what the run found in layout, build, ship, progress and ideate"
+assert_ok "layout probes a trap claim with the installed runtime" \
+  _says skills/layout.md 'Probe each claim with the runtime that is installed, or say it is unverified.'
+assert_ok "build's packet says a browser test against the served app is live" \
+  _says skills/build.md 'A browser test that drives the served app counts as live'
+assert_ok "ship records the mockups it kept in the archive" \
+  _says skills/ship.md '`## Prototypes kept` heading'
+assert_ok "and progress reads that before calling the directory drift" \
+  _says skills/progress.md 'has a `## Prototypes kept` section'
+assert_ok "ideate records a verdict the user built past" \
+  _says skills/ideate.md 'Record it**, in `dev-notes/decisions.md`'
+assert_ok "scaffold's no-scaffolder path ignores the tools' output" \
+  _says skills/scaffold.md "The tools' output in \`.gitignore\`"
+
 finish

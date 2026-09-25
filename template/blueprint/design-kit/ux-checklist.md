@@ -17,6 +17,7 @@ Decide first; it sets the navigation and the screens below.
 | **Store / booking** | Top nav with search and cart or basket; category navigation | Catalogue or search results |
 | **Mobile app** | Bottom tab bar with 3-5 destinations; stack navigation inside each | The primary tab |
 | **Mixed** (public site + signed-in area) | Both, on separate layouts - never one nav trying to serve both audiences | Public home; the app's main list after sign-in |
+| **Tool** (one screen: a calculator, a converter) | None - one destination needs no navigation; the page title orients | The tool itself, in its empty state |
 
 **Navigation rules for every type:** the current location is always shown
 (`aria-current`); primary items are nouns the user would say, not internal
@@ -77,7 +78,7 @@ form submit, since they take different code paths.
 - [ ] Focus visible on every interactive element, in the order the page reads
 - [ ] Everything works with a keyboard alone; no keyboard trap; dialogs return focus when closed
 - [ ] Every input has a visible label; errors are announced (`aria-invalid`, `aria-describedby`)
-- [ ] Targets at least 24×24 px, 44×44 on touch (`--size-target-min`)
+- [ ] Targets at least 24×24 px, 44×44 on touch (`--size-target-min`) - the kit's controls grow to it under `pointer: coarse`
 - [ ] Colour is never the only signal - links in text are underlined, states have a word or icon
 - [ ] Motion respects `prefers-reduced-motion`
 - [ ] Images have alt text, or empty alt when decorative

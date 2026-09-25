@@ -219,7 +219,14 @@ target/
 *.log
 .cache/
 coverage/
+
+# Test runners' own output. Playwright writes these on every run, and a
+# project scaffolded with no framework has no scaffolder to add them - so the
+# first scaffold commit once carried test-results/.
+test-results/
+playwright-report/
 IGNORE
+
 
 if [ -z "$PARTS" ]; then
   # Single-session project: one loop, one state. The default.
@@ -245,6 +252,18 @@ else
     "$HERE/lib/seed-part.sh" "$TARGET" "$part" --quiet
   done
 fi
+
+# The README's title is the one line the pack can fill correctly already: the
+# name was just given. Left as "# Project Name", it stayed that way through a
+# whole build loop until preflight called it a blocker.
+name_readme() {
+  [ "$(head -1 "$1" 2>/dev/null)" = "# Project Name" ] || return 0
+  sed -i.bak "1s|.*|# $2|" "$1" && rm -f "$1.bak"
+}
+name_readme "$TARGET/README.md" "$(basename "$TARGET")"
+for part in ${PARTS:+"${clean_parts[@]}"}; do
+  name_readme "$TARGET/$part/README.md" "$(basename "$TARGET") - $part"
+done
 
 if [ "$DO_GIT" -eq 1 ]; then
   if command -v git >/dev/null 2>&1; then
@@ -313,7 +332,7 @@ fi
 cat <<DONE
 Created $TARGET
 
-  $skills skills, installed for Claude Code (.claude/) and everything else (.agents/)
+  $skills skills, one copy in .agents/, linked from .claude/ where Claude Code looks
   blueprint/   the workflow's state - plans, specs, findings, history
   dev-notes/   decisions and status, for picking this up cold later
   .gitignore   $([ "$DO_GIT" -eq 1 ] && echo "written before git init, so the first commit is clean" || echo "written, ready for whenever this becomes a repository")

@@ -1115,4 +1115,16 @@ assert_ok "an edited kit file is restored on install - it is pack-owned" \
   cmp -s "$REPO/template/blueprint/design-kit/tokens.css" "$w/dk/blueprint/design-kit/tokens.css"
 assert_ok "and the install says it refreshed something" grep -q 'pack-owned file(s) refreshed' <<< "$out"
 
+section "new-project.sh names the README and ignores test output"
+# Both surfaced on an end-to-end run: "# Project Name" survived to preflight,
+# and Playwright's test-results/ was committed with the scaffold.
+w=$(workdir); (cd "$w" && "$NP" named-app >/dev/null 2>&1)
+assert_eq "the README's title is the project's name" "# named-app" "$(head -1 "$w/named-app/README.md")"
+assert_ok "test-results/ is ignored" grep -qx 'test-results/' "$w/named-app/.gitignore"
+assert_ok "playwright-report/ is ignored" grep -qx 'playwright-report/' "$w/named-app/.gitignore"
+(cd "$w" && "$NP" shop --parts web,api >/dev/null 2>&1)
+assert_eq "a product root is named too" "# shop" "$(head -1 "$w/shop/README.md")"
+assert_eq "and each part, under the product" "# shop - web" "$(head -1 "$w/shop/web/README.md")"
+assert_eq "and the first commit is still clean" "" "$(git -C "$w/shop" status --short)"
+
 finish
