@@ -92,7 +92,12 @@ kit sheet was rendered headless at 1280 and 390 px, light and dark.
    seen failing before the step is claimed. `test-seams.sh` asserts this
    generalization separately from the repair-specific rule.
 
-**Next - the agreed order, one commit each on a new branch off `main`:**
+**Next, before the list below: re-run one small project end to end** against
+`seams-J` and `seams-K`, per `dev-notes/rerun-plan.md` - a fixed checklist of
+fifteen observations in three phases, each able to stop on its own. **Blocked
+on the user: a token cap for it.**
+
+**Then the agreed order, one commit each on a new branch off `main`:**
 
 3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
    budget agreed with the user before any run. **Blocked on the user: what token
