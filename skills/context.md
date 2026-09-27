@@ -176,13 +176,17 @@ only the plan knows.
 If an overview already existed, say what this regeneration changed - new items,
 a changed stack, a resolved contradiction. If this is the first generation, say
 so. **Give its size**, so a file creeping toward the cap is seen before it
-passes it. **Then commit what this run wrote** - the overview, and any plan,
-`AGENTS.md` or README line it filled - as one `docs: ...` commit, after the
-approval Step 2 already asked for. **Between items that is `main`**, and it is
-the commit that keeps the next item's branch free of it; mid-item it is the
-item's branch, where the plan change belongs to that item anyway. **Say whether `AGENTS.md`'s `## What this is` was filled, left alone because
+passes it. **Say whether `AGENTS.md`'s `## What this is` was filled, left alone because
 it already had prose, or updated** - it is a user-owned file, so a write to it
 is never silent.
+
+**Then ask to commit what this run wrote** - `project-overview.md`, any change
+to `project-plan.md` or `build-plan.md`, and the `AGENTS.md` or README line it
+filled - as one `docs: ...` commit. Step 2 asks only when it proposes a plan
+change, so this question is the yes; commit on it. **Between items that is
+`main`**, and it is the commit that keeps the next item's branch free of it;
+mid-item it is the item's branch, where the plan change belongs to that item
+anyway.
 
 Then point at what is next:
 

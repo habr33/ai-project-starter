@@ -238,8 +238,8 @@ than the branch below rather than harder. Build it directly, in this order:
    the browser tool write on every run: a coverage directory, Playwright's
    `test-results/`, a compiled `dist/`. `new-project.sh` ignores the common
    ones; check each tool this step installed against the file. With no
-   scaffolder there is no generated `.gitignore` to merge, which is how a real
-   scaffold commit once carried `test-results/`.
+   scaffolder there is no generated `.gitignore` to merge, so anything missed
+   here is carried by the first scaffold commit.
 
 Nothing is merged and nothing is moved, so the collision rules below do not
 apply. Go to Step 5. **Say in your report that there was no scaffolder** - it is
@@ -525,7 +525,9 @@ stays that way through the whole build loop until `preflight` calls it a
 blocker.
 
 **Commit what landed, before handing on** - one `chore: scaffold ...` commit
-on `main`, covered by Step 3's approval, once Step 8 has proved it runs. Nothing
+on `main`, covered by Step 3's approval, once Step 8 has proved it runs: the
+generated tree, the README, and what this step recorded - `coding-standards.md`,
+`project-plan.md`, `needs-you.md` and `decisions.md`. Nothing
 later commits it: `build` branches for the first item from whatever the tree
 holds, so an uncommitted scaffold rides into that item's squashed commit, and
 `ship`'s own check for unrelated work stops on it.

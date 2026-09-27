@@ -74,9 +74,10 @@ show diffs.
 
 **Before creating it, look at `git status`.** A new branch starts from whatever
 the tree holds, and `ship` later squashes all of it into this item's one commit.
-What `spec` just wrote belongs here - `current-work.md`, and any plan or
-needs-you line it added. **Anything else uncommitted is someone else's work**:
-a scaffold, a CI workflow, a regenerated overview, a design record. Name each
+What `spec` just wrote belongs here - `current-work.md`, and any change it made
+to `build-plan.md`, `project-plan.md`, `needs-you.md` or `design.md` for this
+item. **Anything else uncommitted is someone else's work**: a scaffold, a CI
+workflow, a regenerated overview, a new design record `prototype` wrote. Name each
 file and ask to commit it on `main` first, as the skill that made it says to;
 carried along, it merges as this item, and `ship`'s check for unrelated work
 stops on it.

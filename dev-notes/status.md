@@ -15,7 +15,7 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where work stopped (2026-09-25)
+## Where work stopped (2026-09-28)
 
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
@@ -27,8 +27,9 @@ and `design-kit` (`blueprint/design-kit/` and the rewritten `prototype`; `D17`)
 were fast-forwarded into `main` on 2026-09-25 at the user's request, and `main`
 pushed. Both branches are deleted.
 
-**Open branch: `claude/admiring-meitner-w9m4vx`**, off `main` at `81da70f`, not
-merged. A read of all 27 skills end to end (`seams-G`) and `D18`:
+**`claude/admiring-meitner-w9m4vx` is on `main`**: `origin/main` was
+fast-forwarded to it (`b2e2477`), seen 2026-09-28; the remote branch still
+exists. It held a read of all 27 skills end to end (`seams-G`) and `D18`:
 
 - **Design is required wherever there is a UI** (`D18`). `spec` stops on a UI
   with no `design.md`; a CLI, library or API, a fix and `--preview` pass.
@@ -61,6 +62,15 @@ merged. A read of all 27 skills end to end (`seams-G`) and `D18`:
   branches, the README filled as the loop runs, `preflight`/`deploy` honouring
   "not published", release-only blockers offered as deferred, the kit's
   controls at 44px on touch, and five smaller ones. Tested under `seams-J`.
+- **Then a review of those fixes, run rather than read** (2026-09-28,
+  `seams-K`): seven were wrong or incomplete, each now with a test seen failing
+  first - the touch block shrinking `.textarea` and `.btn--lg`, the README
+  title broken by `&`, `|` or `\` in a name, commits citing a yes nobody asked
+  and `ci`'s leaving files behind, `build` misfiling `spec`'s `design.md`, a
+  release deferral nothing read, and `progress` reading only the latest archive.
+  `seams-K`'s commit check is a declared list (`setup_commits`): a skill that
+  commits setup work on `main` goes there, and its commit must name every file
+  in its `Writes:` line.
 - **Proposed, not done - the user's call:** fold `prepare` into `progress`,
   `layout` into `stack`, drop the overview's *Current state* so `context` is not
   needed after every `ship`, and install a core set of skills by default.

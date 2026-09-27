@@ -221,12 +221,11 @@ target/
 coverage/
 
 # Test runners' own output. Playwright writes these on every run, and a
-# project scaffolded with no framework has no scaffolder to add them - so the
-# first scaffold commit once carried test-results/.
+# project scaffolded with no framework has no scaffolder to add them - so
+# without these lines the first scaffold commit would carry them.
 test-results/
 playwright-report/
 IGNORE
-
 
 if [ -z "$PARTS" ]; then
   # Single-session project: one loop, one state. The default.
@@ -254,11 +253,13 @@ else
 fi
 
 # The README's title is the one line the pack can fill correctly already: the
-# name was just given. Left as "# Project Name", it stayed that way through a
-# whole build loop until preflight called it a blocker.
+# name was just given. Left as "# Project Name", nothing fills it until
+# preflight calls it a blocker. printf, not sed: a name is data, and '&', '|' or
+# '\' in a sed replacement is syntax - one of them failing here would leave the
+# tree written and git never initialised.
 name_readme() {
   [ "$(head -1 "$1" 2>/dev/null)" = "# Project Name" ] || return 0
-  sed -i.bak "1s|.*|# $2|" "$1" && rm -f "$1.bak"
+  { printf '# %s\n' "$2"; tail -n +2 "$1"; } > "$1.tmp" && mv "$1.tmp" "$1"
 }
 name_readme "$TARGET/README.md" "$(basename "$TARGET")"
 for part in ${PARTS:+"${clean_parts[@]}"}; do

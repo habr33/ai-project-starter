@@ -273,12 +273,14 @@ legend { font-weight: var(--font-weight-medium); font-size: var(--font-size-sm);
 /* ---- Touch --------------------------------------------------------------- */
 /* On a touch screen every control is at least a 44px target - the UX
  * checklist's section 4 asks it, and the md control height (40px) falls short.
- * Buttons and nav links alone had this once; inputs were left at 40px.
- * Mouse and keyboard keep the denser --size-control-* heights. */
+ * Mouse and keyboard keep the denser --size-control-* heights. Only raise:
+ * .textarea (6rem) is already taller, and .btn--lg (48px) sits on a .btn this
+ * block would otherwise pull down to 44px - same specificity, later rule. */
 @media (pointer: coarse) {
-  .nav__link, .btn, .btn--sm, .input, .select, .textarea, .choice {
+  .nav__link, .btn, .btn--sm, .input, .select, .choice {
     min-height: var(--size-target-min);
   }
+  .btn--lg { min-height: var(--size-control-lg); }
   .pagination a, .pagination span, .btn--icon {
     min-width: var(--size-target-min); height: var(--size-target-min);
   }

@@ -111,10 +111,13 @@ Report only what is actually wrong:
   - an overview older than the plans it was generated from
   - **a `prototypes/` directory still present** after the look was built - `ship`
     should have deleted it, and this is exactly the drift that went unnoticed for
-    thirteen features in a real project. **Unless the latest archive under
+    thirteen features in a real project. **Unless any archive under
     `blueprint/history/` has a `## Prototypes kept` section naming each file
-    and an unchecked item that holds it** - that is `ship` keeping what a later
-    item still needs, and reporting it as drift sends the user to delete it
+    still present, and the item it names for that file is still unchecked** -
+    that is `ship` keeping what a later item still needs, and reporting it as
+    drift sends the user to delete it. Any archive, not the latest: `ship`
+    writes the section only for an item that consumed mockups, so the next item
+    that did not leaves none
   - **the spec disagreeing with git**: steps ticked that no commit or working-tree
     change accounts for, or committed work no step claims. **Report the
     disagreement; never pick a side** - the files and the repository are both

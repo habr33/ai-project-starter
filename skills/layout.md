@@ -131,10 +131,10 @@ tracing, and they disagree.
 **Probe each claim with the runtime that is installed, or say it is unverified.**
 Nothing is scaffolded yet, so a claim like "the runner is given this directory"
 is reasoning until something runs it - make a scratch directory, put two empty
-files in the proposed shape, and run the command. A real run reasoned that
-`node --test tests/unit/` searches that directory; on Node 22 a directory
-argument is loaded as a module, and `scaffold` Step 8 was where it failed.
-Where a probe is not possible, record the claim as **unverified until
+files in the proposed shape, and run the command. How a runner treats a
+directory argument - search it, glob it, or load it as a module - differs
+between versions of the same runtime, so a claim reasoned from another version
+passes review here and fails at `scaffold` Step 8. Where a probe is not possible, record the claim as **unverified until
 `scaffold`**, so the step that can check it knows to.
 
 ## Step 4 - stop for approval

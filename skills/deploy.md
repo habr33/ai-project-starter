@@ -42,6 +42,14 @@ Name which of these has not happened, rather than proceeding quietly past it:
 - **In a multi-part product, `integrate` has not run since the last part
   shipped** - each part can be individually correct and the product still broken.
 
+**Then read the ledger for what was put off until now** - a `deferred` finding
+whose `Deferred to:` names this skill, in `blueprint/context/findings.md`. A
+release-only blocker - a check on a real device, a backup - is deferred to the
+release so it stops holding `ship`, and this is the release. **Stop on each**,
+as `ship` stops on an `open` P0 or P1: it is repaired and set `fixed` with
+evidence, for `preflight` to close, or the user accepts it with their reason.
+Releasing past it turns "later" into "never".
+
 ## Input
 
 - *(no argument)* - deploy to the default non-production environment, if one

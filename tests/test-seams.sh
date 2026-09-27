@@ -2635,8 +2635,8 @@ section "the setup work is committed before the first item branches"
 # own check for unrelated work.
 assert_ok "scaffold commits what landed" _says skills/scaffold.md 'Commit what landed, before handing on'
 assert_ok "ci commits its workflow locally, and does not push" \
-  _says skills/ci.md 'Commit the workflow file on `main`, locally'
-assert_ok "context commits what it wrote" _says skills/context.md 'Then commit what this run wrote'
+  _says skills/ci.md 'Ask to commit what this run wrote, on `main`, locally'
+assert_ok "context commits what it wrote" _says skills/context.md 'Then ask to commit what this run wrote'
 assert_ok "prototype commits the record and the mockups" \
   _says skills/prototype.md 'Commit the record and the mockups on `main`'
 assert_ok "and build looks at git status before it branches" \
@@ -2687,7 +2687,8 @@ for sel, body in re.findall(r'([^{}@]+)\{([^{}]*)\}', rest):
     if not re.search(r'(min-height|height|width|min-width):\s*var\(--size-control-(sm|md)\)', body):
         continue
     for x in (s.strip() for s in sel.split(',')):
-        if x != '.avatar' and x not in covered:
+        # .avatar is not a control; .textarea's own rule makes it 6rem
+        if x not in ('.avatar', '.textarea') and x not in covered:
             print(x)
 PYT
 }
@@ -2709,5 +2710,129 @@ assert_ok "ideate records a verdict the user built past" \
   _says skills/ideate.md 'Record it**, in `dev-notes/decisions.md`'
 assert_ok "scaffold's no-scaffolder path ignores the tools' output" \
   _says skills/scaffold.md "The tools' output in \`.gitignore\`"
+
+# ==== seams-K: a review of seams-J, run rather than read (2026-09-28) ====
+# seams-J asserted that sentences existed. Each defect below passed it, and was
+# found by rendering the kit, running new-project.sh, or following one skill's
+# new text into the skill it hands to.
+
+# The paragraph of $1 that contains $2, flattened to one line.
+_para() {
+  python3 - "$1" "$2" <<'PYP'
+import re, sys
+for p in re.split(r'\n\s*\n', open(sys.argv[1]).read()):
+    flat = re.sub(r'\s+', ' ', p)
+    if sys.argv[2] in flat:
+        print(flat); break
+PYP
+}
+# The files in a skill's **Writes:** line, as prose names them: a file by its
+# basename, a directory by its last segment and slash.
+_writes() {
+  sed -n 's/^\*\*Writes:\*\*//p' "skills/$1.md" | grep -oE '`[^`]+`' | tr -d '`' \
+    | sed -E 's#^.*/([^/]+/)$#\1#; s#^.*/([^/]+)$#\1#'
+}
+
+section "a setup skill's commit names everything the skill wrote"
+# ci committed only the workflow file; the status.md line and the Environments
+# row it also wrote stayed in the tree and rode into item 1 - the defect the
+# commit existed to prevent. The list below is the rule: a skill that commits
+# its setup work on main goes here, with the phrase that opens its commit.
+setup_commits=(
+  'scaffold|Commit what landed, before handing on'
+  'ci|Ask to commit what this run wrote, on `main`, locally'
+  'context|Then ask to commit what this run wrote'
+  'prototype|Commit the record and the mockups on `main`'
+)
+for entry in "${setup_commits[@]}"; do
+  s=${entry%%|*}; anchor=${entry#*|}; para=$(_para "skills/$s.md" "$anchor")
+  assert_ok "$s has its commit paragraph" test -n "$para"
+  while IFS= read -r f; do
+    [ "$f" = "status/" ] && continue   # blueprint/status/ is never committed
+    case "$para" in *"$f"*) _name="$s's commit names $f"; _ok ;;
+      *) _name="$s's commit names $f"; _no "its Writes: line has $f; the commit paragraph does not" ;; esac
+  done < <(_writes "$s")
+done
+_name="ci's commit names AGENTS.md, whose Environments row it adds"
+case "$(_para skills/ci.md 'Ask to commit what this run wrote')" in *AGENTS.md*) _ok ;; *) _no "not named" ;; esac
+
+section "a commit asks for its own yes rather than citing one that was never asked"
+# ci Step 3 shows the config and writes it - no stop. context Step 2 asks only
+# when it proposes a plan change. Both commits cited that approval anyway, and
+# the template's rule is "never commit code the user has not seen and approved".
+assert_lacks "ci no longer cites a yes Step 3 never asked" skills/ci.md "the yes Step 3"
+assert_lacks "context no longer cites an approval Step 2 may not ask" skills/context.md "approval Step 2 already asked for"
+
+section "build treats what spec wrote as this item's, all of it"
+# spec may update design.md "as part of that item", and declares it; build's
+# git status check called a design record someone else's work and sent it to main.
+bpara=$(_para skills/build.md 'Before creating it, look at `git status`.')
+while IFS= read -r f; do
+  [ "$f" = "status/" ] && continue
+  case "$bpara" in *"$f"*) _name="build's git status check counts spec's $f as the item's"; _ok ;;
+    *) _name="build's git status check counts spec's $f as the item's"; _no "not named" ;; esac
+done < <(_writes spec)
+
+section "a finding deferred to the release is due when the release runs"
+# preflight offers `Deferred to:` host or deploy for a release-only blocker; its
+# own Deferred bucket says "a release goes out with them live", and neither host
+# nor deploy read the ledger's deferred entries. Deferred to the release meant
+# never blocking it.
+for s in $(_para skills/preflight.md 'A blocker only a release needs' | grep -oE '`Deferred to:` the skill that releases - `[a-z]+` or `[a-z]+`' | grep -oE '`[a-z]+`' | tr -d '`'); do
+  assert_ok "$s reads the findings deferred to it" _says "skills/$s.md" 'a `deferred` finding whose `Deferred to:` names this skill'
+done
+assert_ok "and preflight names the ones it can defer to" test -n "$(_para skills/preflight.md 'A blocker only a release needs')"
+assert_ok "preflight's audit before a release counts one deferred to it as a blocker" \
+  _says skills/preflight.md 'deferred to the release this audit is for is due now'
+
+section "mockups kept by one item are still kept after the next"
+# ship writes `## Prototypes kept` only when its item consumed mockups, so the
+# next non-UI item's archive - the latest - has none, and progress, reading only
+# the latest, called the kept files drift again.
+assert_lacks "progress does not read only the latest archive" skills/progress.md 'latest archive under'
+assert_ok "progress reads any archive's list" _says skills/progress.md 'any archive under `blueprint/history/` has a `## Prototypes kept` section'
+
+section "the touch block never makes a control smaller"
+# .textarea is 6rem and .btn--lg 48px; a later min-height of 44px in
+# `pointer: coarse`, same specificity, shrank both on every phone. The block
+# may only raise sizes - for a selector it names, and for that selector's BEM
+# modifiers, which always sit on the same element.
+_touch_shrinks() {
+  python3 - template/blueprint/design-kit/tokens.css template/blueprint/design-kit/components.css <<'PYS'
+import re, sys
+tok = open(sys.argv[1]).read()
+var = dict(re.findall(r'(--[\w-]+):\s*([^;]+);', tok))
+def px(v):
+    v = v.strip()
+    m = re.match(r'var\((--[\w-]+)\)', v)
+    if m: return px(var.get(m.group(1), 'x'))
+    m = re.match(r'([\d.]+)(rem|px)$', v)
+    return None if not m else float(m.group(1)) * (16 if m.group(2) == 'rem' else 1)
+css = re.sub(r'/\*.*?\*/', '', open(sys.argv[2]).read(), flags=re.S)
+coarse, rest, pos = [], '', 0
+for m in re.finditer(r'@media \(pointer: coarse\)', css):
+    j = css.index('{', m.start()) + 1; d = 1; k = j
+    while d:
+        d += {'{': 1, '}': -1}.get(css[k], 0); k += 1
+    coarse.append(css[j:k - 1]); rest += css[pos:m.start()]; pos = k
+rest += css[pos:]
+def heights(block):
+    out = {}   # selector -> the last min-height/height it gets in this block
+    for sel, body in re.findall(r'([^{}@]+)\{([^{}]*)\}', block):
+        for prop in ('min-height', 'height'):
+            m = re.search(r'(?:^|;|\s)' + prop + r':\s*([^;]+)', body)
+            if m and px(m.group(1)) is not None:
+                for s in sel.split(','):
+                    out[s.strip()] = max(out.get(s.strip(), 0), px(m.group(1)))
+    return out
+base = heights(rest); touch = heights(''.join(coarse))
+for s, h in base.items():
+    root = s.split('--')[0] if re.fullmatch(r'\.[\w-]+--[\w-]+', s) else s
+    for t in {s, root} & touch.keys():
+        if touch.get(s, touch[t]) < h:
+            print(s); break
+PYS
+}
+assert_eq "no control is smaller under pointer: coarse than without it" "" "$(_touch_shrinks)"
 
 finish

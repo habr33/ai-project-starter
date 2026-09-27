@@ -41,7 +41,7 @@ Real projects, named here by what they are rather than what they are called.
 | abandon-run | a scratch ES-module project, one item part-built on a branch | **`ship --abandon` and `spec`'s resume, end to end** - the park-and-resume round trip, with a four-entry ledger and a half-built step in a new file |
 | layout-move | a seeded two-part product, moved before any code existed | **`layout`'s documented move of a seeded part** - the four steps, and `seed-part.sh`'s refusal |
 | paperlog | an existing Express + SQLite JSON API, no workflow in it | **`setup`'s adoption route** - filling plan sections 5 and 6 from the code, then `context`'s check against the result |
-| splitbill | one-page web app, plain HTML/JS, `node:test` + Playwright, not published | **the loop with design required** (`D18`) - `new-project.sh` to `ship`, then `preflight`, `docs` and the operate stops, every skill followed as written; the user's answers were played by the agent |
+| one-page-app | one-page web app, plain HTML/JS, `node:test` + Playwright, not published | **the loop with design required** (`D18`) - `new-project.sh` to `ship`, then `preflight`, `docs` and the operate stops, every skill followed as written; the user's answers were played by the agent |
 
 ## Plan
 
@@ -95,7 +95,7 @@ Real projects, named here by what they are rather than what they are called.
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `context` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
 
-## 2026-09-25: splitbill, end to end with design required
+## 2026-09-25: one-page-app, end to end with design required
 
 Every skill on the single-part path ran as written except `rollback`,
 `migrate`, `integrate`, `orchestrate`, `autopilot`, `setup` and `debug`, which
@@ -115,6 +115,19 @@ only blocker held every later `ship`; the kit's inputs were 40px against its own
 reasoned instead of probing; `build`'s packet did not say a browser test is
 live; `progress` called kept mockups drift; `ideate`'s override verdict was
 said and not recorded; test output was not ignored without a scaffolder.
+**The other six were not written down** when the run was recorded - `seams-J`
+notes only that the ones fixed were the ones the pack's text caused. They are
+not recoverable from this repository.
+
+**Then a review of those fixes, run rather than read (2026-09-28, `seams-K`)**,
+found seven of them wrong or incomplete: the touch block shrank `.textarea`
+(96px to 66px) and `.btn--lg`; a project name holding `&`, `|` or `\` broke the
+README title, and `|` left a half-made project; `ci` and `context` committed on
+a yes nobody had asked for, and `ci` left its status and `AGENTS.md` lines
+uncommitted; `build` sent `spec`'s own `design.md` change to `main`; a blocker
+deferred to the release was read by nothing at the release; and `progress`
+read only the latest archive, which the next non-UI item leaves without
+`## Prototypes kept`.
 
 **Not covered:** `build`'s subagent packet - it built inline, the documented
 fallback - and any real person's answers. A real phone is still a needs-you

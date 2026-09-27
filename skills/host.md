@@ -49,6 +49,13 @@ If `architect` has not run at all, say so - the services a project needs are a
 consequence of its structure, and inventing them now means paying for the wrong
 ones.
 
+**Then read the ledger for what was put off until now** - a `deferred` finding
+whose `Deferred to:` names this skill, in `blueprint/context/findings.md`. It
+was deferred to this run, so it is this run's work: name each before
+provisioning, and do not report done while one is still `deferred`. Repaired, it
+is set `fixed` with evidence, for `preflight` to close; otherwise the user
+accepts it with their reason. Left alone, it is a release blocker nobody holds.
+
 **If hosting already exists** - rows in the Environments table in `AGENTS.md`, or
 resources the provider already lists - start from what is there, not from a blank
 sheet. Report what is provisioned, change only what the plan now needs, and never

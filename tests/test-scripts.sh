@@ -1127,4 +1127,15 @@ assert_eq "a product root is named too" "# shop" "$(head -1 "$w/shop/README.md")
 assert_eq "and each part, under the product" "# shop - web" "$(head -1 "$w/shop/web/README.md")"
 assert_eq "and the first commit is still clean" "" "$(git -C "$w/shop" status --short)"
 
+section "new-project.sh names the README whatever characters the name holds"
+# The title went through a sed replacement: '&' pasted the matched placeholder
+# back in, and '|' ended the expression - the script then failed after writing
+# the whole tree, before git init, and a re-run was refused as "Already exists".
+for n in 'r&d' 'x|y' 'back\slash'; do
+  w=$(workdir)
+  assert_ok "new-project.sh accepts '$n'" bash -c 'cd "$1" && "$2" "$3" >/dev/null' _ "$w" "$NP" "$n"
+  assert_eq "and titles the README '# $n'" "# $n" "$(head -1 "$w/$n/README.md" 2>/dev/null)"
+  assert_exists "and still makes its first commit" "$w/$n/.git"
+done
+
 finish

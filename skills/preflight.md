@@ -295,7 +295,10 @@ Sort everything into six buckets, and lead with the verdict:
   skill or milestone named in it. These are risks the project carries *now*: a
   release goes out with them live, and the only difference from an accepted one
   is that something is meant to come back. Report them at every audit, never as
-  resolved, until that skill has run.
+  resolved, until that skill has run. **But a finding deferred to the release
+  this audit is for is due now**: when this audit gates a release and a
+  finding's `Deferred to:` names `host` or `deploy`, put it under Blockers, not
+  here - the release is the later it was put off to.
 - **Backlog** - the count in `blueprint/findings/backlog.md`, naming any whose
   file this release changed. P3s gate nothing, but a backlog nobody counts is a
   deletion by another name.
