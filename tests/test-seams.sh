@@ -2851,4 +2851,16 @@ assert_ok "$waits_for names layout's mark" _says "skills/$waits_for.md" "$mark"
 assert_ok "and replaces it with what its run showed" \
   _says "skills/$waits_for.md" 'replace the mark with what the run showed'
 
+
+section "build's handoff is the user's request, and says which path it took"
+# Claude Code's own Agent tool says "do not spawn agents unless the user asks".
+# build said only "if the host supports subagents", so on the re-run - and the
+# 2026-09-25 run before it - every step was built inline and nothing said so:
+# a skipped handoff reads exactly like a chosen one.
+hpara=$(_para skills/build.md 'Prepare the packet and hand the step off.')
+assert_ok "build says running it is the user asking for the handoff" \
+  grep -qF 'Running `build` is the user asking for this handoff' <<<"$hpara"
+assert_ok "build reports which path each step took" \
+  _says skills/build.md 'Say which path the step took'
+
 finish

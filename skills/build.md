@@ -110,7 +110,7 @@ Never build on `main` or `master`.
 
 Work the spec's build steps in order, one at a time. For each step:
 
-1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow. If the host supports subagents, hand the step to one with this packet:
+1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow. **Running `build` is the user asking for this handoff** - a host whose tools say not to spawn agents unless the user asks has had its answer, so that is never a reason to build inline. If the host supports subagents, hand the step to one with this packet:
 
     - The spec step text
     - Its done-when, and **whether it is behavioural** - if it is and a test
@@ -126,7 +126,7 @@ Work the spec's build steps in order, one at a time. For each step:
       never written against.
     - The instruction not to commit or push
 
-    The subagent implements the step, shows the diff, and reports whether the done-when passed. If the host does not support subagents, or the subagent cannot proceed, implement the step inline and continue to the next checkpoint. The main session still reads the diff and proves the done-when - that is the comprehension gate.
+    The subagent implements the step, shows the diff, and reports whether the done-when passed. If the host does not support subagents, or the subagent cannot proceed, implement the step inline and continue to the next checkpoint. The main session still reads the diff and proves the done-when - that is the comprehension gate. **Say which path the step took** when you show it - handed off, or inline and why - because an inline build that says nothing reads exactly like a handoff that happened.
 
 2. **Confirm the step actually did something, before claiming it passed.**
     **An empty diff means the step did nothing**, whatever the verification
