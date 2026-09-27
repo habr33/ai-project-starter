@@ -27,11 +27,19 @@ in `coverage.md`, with a checklist fixed before it starts.
 
 ## Phases - each can stop and report on its own
 
-| phase | skills | covers |
-|---|---|---|
-| A | `new-project.sh` → `ideate` … `scaffold` → `ci` → `context` → `spec` → `prototype` → `spec` → `build` → `verify`/`review` → `ship` (item 1) | checks 1-9 |
-| B | items 2 and 3, `progress` after each `ship` | checks 10-11 |
-| C | `preflight` (not published); plan changed to publish; `preflight` again; `ship` item-sized fix; `host` and `deploy` up to their first stop | checks 12-15 |
+| phase | skills | covers | budget |
+|---|---|---|---|
+| A | `new-project.sh` → `ideate` … `scaffold` → `ci` → `context` → `spec` → `prototype` → `spec` → `build` → `verify`/`review` → `ship` (item 1) | checks 1-9 | 100M processed, 600k output |
+| B | items 2 and 3, `progress` after each `ship` | checks 10-11 | 70M, 400k |
+| C | `preflight` (not published); plan changed to publish; `preflight` again; `ship` item-sized fix; `host` and `deploy` up to their first stop | checks 12-15 | 50M, 300k |
+
+**Run A alone first**, then decide B and C from what A actually cost.
+
+**A fresh session per phase, and per item inside B**, handing over through the
+run's notes. Every turn re-reads the whole context, so a session's cost grows
+faster than its work: the same item costs several times more late in a long
+session than in a fresh one. Session length is the lever; the budget is the
+backstop.
 
 Nothing is provisioned or deployed: C stops `host` and `deploy` at the check
 under test, before any target or cost.
@@ -80,8 +88,39 @@ forced on, textarea still 6rem.
   they are; the checklist above with its marks; fixes and their tests follow as
   their own commits, each test seen failing first.
 
-## Cost - needs the user's number before starting
+## Cost - measured between phases, not guessed
 
-The last run's token count was not recorded; **record this one's**. Phase A is
-most of the work. **Set a cap, and the run stops at the end of the phase that
-reaches it**, reporting what it has.
+**Agreed 2026-09-28: the budgets in the phase table.** They are estimated from
+the session logs of a larger project built with this pack, so a one-page tool
+should come in under them. "Processed" is every token read per turn - mostly
+cache reads, which are cheap - and output is the smaller, dearer part.
+
+**At the end of each phase, measure it** from the local session logs, where
+Claude Code writes one `.jsonl` per session under
+`~/.claude/projects/<the run's path, with / as ->/`:
+
+```bash
+python3 - ~/.claude/projects/<run-dir>/*.jsonl <<'PY'
+import json, sys
+seen, t = set(), [0, 0]
+for f in sys.argv[1:]:
+    for line in open(f):
+        try: e = json.loads(line)
+        except ValueError: continue
+        m = e.get('message') or {}
+        u = m.get('usage') if isinstance(m, dict) else None
+        if e.get('type') == 'assistant' and u and m.get('id') not in seen:
+            seen.add(m.get('id'))
+            t[0] += sum(u.get(k, 0) for k in ('input_tokens',
+                  'cache_creation_input_tokens', 'cache_read_input_tokens'))
+            t[1] += u.get('output_tokens', 0)
+print(f"{len(seen)} turns, {t[0]/1e6:.1f}M processed, {t[1]/1e3:.0f}k output")
+PY
+```
+
+Pass only that phase's session files to get one phase's cost. **Record each
+phase's numbers in the run's notes and in `coverage.md`** - the last run's cost
+was not recorded, which is why these budgets are estimates.
+
+**Stop a phase at its budget**, report what it reached, and mark the checks it
+did not reach as *not reached*. Going over is the user's call, never the run's.

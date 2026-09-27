@@ -94,8 +94,9 @@ kit sheet was rendered headless at 1280 and 390 px, light and dark.
 
 **Next, before the list below: re-run one small project end to end** against
 `seams-J` and `seams-K`, per `dev-notes/rerun-plan.md` - a fixed checklist of
-fifteen observations in three phases, each able to stop on its own. **Blocked
-on the user: a token cap for it.**
+fifteen observations in three phases, each able to stop on its own. **Budgets
+agreed 2026-09-28** (in the plan's phase table); **run phase A alone first**, in
+a fresh session, and measure it before deciding B and C.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
