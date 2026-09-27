@@ -2835,4 +2835,20 @@ PYS
 }
 assert_eq "no control is smaller under pointer: coarse than without it" "" "$(_touch_shrinks)"
 
+
+# ==== the 2026-09-28 re-run, phase A ====
+
+section "a claim layout could not probe is settled by the step it waits for"
+# layout records such a claim as "unverified until `scaffold`", "so the step that
+# can check it knows to" - and scaffold never named the mark. On the re-run
+# scaffold proved both claims and left the plan saying they were open; context
+# found the stale line. The mark is read out of layout, so renaming it there
+# breaks this rather than leaving scaffold looking for the old words.
+mark=$(tr '\n' ' ' < skills/layout.md | tr -s ' ' | grep -oE '\*\*unverified until `[a-z]+`\*\*' | head -1 | tr -d '*')
+waits_for=$(grep -oE '`[a-z]+`' <<<"$mark" | tr -d '`')
+assert_ok "layout still names the step its unverified claims wait for" test -n "$waits_for"
+assert_ok "$waits_for names layout's mark" _says "skills/$waits_for.md" "$mark"
+assert_ok "and replaces it with what its run showed" \
+  _says "skills/$waits_for.md" 'replace the mark with what the run showed'
+
 finish

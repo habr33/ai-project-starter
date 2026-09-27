@@ -430,6 +430,14 @@ depends on the platform:**
 
 Then run the verification command. Report exactly what you ran and what happened.
 
+**Then settle every claim `layout` could not probe.** It marks each one in
+`blueprint/project-plan.md` as **unverified until `scaffold`** - this is the
+step it was waiting for. Run each against the tree that now exists, and
+replace the mark with what the run showed and the command that showed it. A
+claim that fails is a Step 8 failure like any other. A mark left in place tells
+every later reader a question is open after it was answered: on a real run
+this step proved both claims and left the plan saying neither was checked.
+
 **If it does not start, that is the result.** Do not describe a broken project
 as scaffolded.
 
