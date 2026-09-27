@@ -95,6 +95,40 @@ Real projects, named here by what they are rather than what they are called.
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `context` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
 
+## 2026-09-28: re-run against seams-J and seams-K, phase A
+
+A one-page decision weigher named `pros&cons`, per `rerun-plan.md`: plain
+HTML/JS, `node:test` + Playwright, not published. A headless `claude -p`
+session inside the project, answered from a script written before the run.
+`new-project.sh` to item 1 merged: `ideate`, `architect`, `stack`, `layout`,
+`scaffold`, `ci`, `context`, `prototype`, `spec`, `build` (6 steps and a repair
+pass), `review`, `ship`.
+
+**Checklist:** 1-7 pass, 9 pass, the kit's touch check passes (every control
+44px or more with `pointer: coarse`, `.textarea` still 96px). **8 not reached
+as written:** no step packet was ever built (finding 5), though the review
+packet counted the Playwright tests against the real page as live proof. 10-15
+wait on phases B and C.
+
+**Cost:** 141 turns, 28.1M processed, 144k output - a quarter of the budget.
+
+**Six findings.** Two are the pack's:
+- **Nothing closes `layout`'s "unverified until `scaffold`" marks.** `scaffold`
+  proved both claims and left the plan saying they were unverified; `context`
+  caught the stale line. The mark has no reader: `scaffold.md` never names it.
+- **`build` never handed a step to a subagent, and said nothing.** The host's
+  own `Agent` tool says "do not spawn agents unless the user asks", which
+  silently beats `build`'s "if the host supports subagents". This also explains
+  the 2026-09-25 run's inline build.
+
+Four were the agent's own or minor: `scaffold` rewrote the README title that
+`new-project.sh` wrote, against its own text; the README keeps its "Replace
+everything" comment once nothing is left to replace; the prototype's one-row
+item-text `.textarea` is 42px on touch, because the kit exempts `.textarea` as
+"already taller"; and `review` said the touch targets were all tested when the
+test covered three controls. The last two are one gap that ran from
+`prototype` to `review` without any step measuring every control.
+
 ## 2026-09-25: one-page-app, end to end with design required
 
 Every skill on the single-part path ran as written except `rollback`,

@@ -97,10 +97,12 @@ cache reads, which are cheap - and output is the smaller, dearer part.
 
 **At the end of each phase, measure it** from the local session logs, where
 Claude Code writes one `.jsonl` per session under
-`~/.claude/projects/<the run's path, with / as ->/`:
+`~/.claude/projects/<the run's path, with / as ->/`, **and each subagent's
+turns in a separate file under `<session-id>/subagents/`** - which a
+`*.jsonl` glob misses, and `build` Step 3 hands its steps to subagents:
 
 ```bash
-python3 - ~/.claude/projects/<run-dir>/*.jsonl <<'PY'
+python3 - $(find ~/.claude/projects/<run-dir> -name '*.jsonl') <<'PY'
 import json, sys
 seen, t = set(), [0, 0]
 for f in sys.argv[1:]:
@@ -118,7 +120,8 @@ print(f"{len(seen)} turns, {t[0]/1e6:.1f}M processed, {t[1]/1e3:.0f}k output")
 PY
 ```
 
-Pass only that phase's session files to get one phase's cost. **Record each
+Pass only that phase's session files - each with its own `subagents/`
+directory - to get one phase's cost. **Record each
 phase's numbers in the run's notes and in `coverage.md`** - the last run's cost
 was not recorded, which is why these budgets are estimates.
 
