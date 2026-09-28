@@ -104,6 +104,22 @@ handoff is the user's request and says which path ran). **Phase C (checks
 12-15) is next, the user's call.** The run is in `~/tmp/rerun-2026-09-28/`;
 `notes.md` there holds the turn log, findings and costs.
 
+**To run phase C** (after the user says yes; budget 50M / 300k): `cd
+~/tmp/rerun-2026-09-28 && ./say.sh 46 "<message>"` starts a fresh headless
+session in the project, and `./say.sh N "<msg>" <session-id>` resumes it. Each
+call saves `tN.json` and prints the reply and the git state. Play the user from
+`notes.md`'s scripted answers, log every turn and finding there, and follow
+`rerun-plan.md` phase C: `preflight` while not published (it should say so,
+ask whether a release is coming, and write nothing to the ledger); then change
+the plan to published; `preflight` again; an item-sized `ship`; then `host` and
+`deploy`, each stopped before any target or spend. Measure cost with the plan's
+script, passing only the session's `.jsonl` plus its `subagents/`, under
+`~/.claude/projects/-home-panda-tmp-rerun-2026-09-28-pros-cons/`.
+**Gotchas:** new pack fixes reach the run only after `install.sh --target .`
+in the project, committed there as the user. The project's overview is stale
+on purpose (finding 7); do not refresh it by hand. A test appended after
+`finish` in a test file is not counted, so add new ones above it.
+
 **Then the agreed order, one commit each on a new branch off `main`:**
 
 3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
