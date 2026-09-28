@@ -71,9 +71,9 @@ Real projects, named here by what they are rather than what they are called.
 
 | skill | run | where | what it proved, or found |
 |---|---|---|---|
-| `preflight` | yes | brownfield-nextjs, static-app, nextjs-app, cms-rr | Returned **no-go** as predicted; found 3 gaps in itself. **2026-09-08 on nextjs-app:** correct NO-GO. Found three things that were cheap at `scaffold` and retrofits by then, which became the `scaffold` fixes **2026-09-16 on cms-rr:** first-release audit on a live server: seven findings, no-go, two P1. **A P1 the user deferred to `monitor` had no status saying so** - `accepted` ("not fixing") was the only way past `ship`, and the finding was archived before `monitor` repaired it. `deferred` now exists. |
-| `host` | partial | cli (stopped), static-site VPS, **django-loop**, cms-rr | **Only the self-managed shape.** Managed, container, static-host and serverless rows are written from knowledge **2026-09-16 on cms-rr:** a **shared** VPS with another site on it, Caddy by `import` rather than owning the Caddyfile, PostgreSQL installed from scratch on 954 MB, systemd, no Docker. Setup script idempotent across two runs; a missing `libatomic1` broke Node and was caught by the script checking `node --version`. **A restore drill killed production** for a minute with `pkill -f` - now a rule. |
-| `deploy` | partial | static-site, static-app, **django-loop**, cms-rr | Self-managed only. Rollback tested both directions (~700ms) **2026-09-16 on cms-rr:** first real deploy of a Node app to a self-managed server, built from a clean clone, migrations routed to `migrate`. **Its own verification found a P0 the whole loop had missed**: behind a TLS-terminating proxy the framework compared its `http://` origin with the browser's `https://` and rejected every form post. Health check, pages and redirects all passed. `preflight` now checks the proxy seam. Rollback drilled: 5 s back, 3 s forward, proven by the old bug reappearing. |
+| `preflight` | yes | brownfield-nextjs, static-app, nextjs-app, cms-rr | Returned **no-go** as predicted; found 3 gaps in itself. **2026-09-08 on nextjs-app:** correct NO-GO. Found three things that were cheap at `scaffold` and retrofits by then, which became the `scaffold` fixes **2026-09-16 on cms-rr:** first-release audit on a live server: seven findings, no-go, two P1. **A P1 the user deferred to `monitor` had no status saying so** - `accepted` ("not fixing") was the only way past `ship`, and the finding was archived before `monitor` repaired it. `deferred` now exists. **2026-09-28 on pros&cons:** while not published it said so first, asked, and wrote nothing to the ledger; once a release was planned it filed five P1s, and on the re-run listed the four deferred to `host`/`deploy` under Blockers. **Nothing routes the change to published** - it rewrote plan section 8 itself, outside its `Writes:`. |
+| `host` | partial | cli (stopped), static-site VPS, **django-loop**, cms-rr | **Only the self-managed shape.** Managed, container, static-host and serverless rows are written from knowledge **2026-09-16 on cms-rr:** a **shared** VPS with another site on it, Caddy by `import` rather than owning the Caddyfile, PostgreSQL installed from scratch on 954 MB, systemd, no Docker. Setup script idempotent across two runs; a missing `libatomic1` broke Node and was caught by the script checking `node --version`. **A restore drill killed production** for a minute with `pkill -f` - now a rule. **2026-09-28 on pros&cons:** static-host shape, stopped before provisioning: named the three findings deferred to it, priced three options, asked. |
+| `deploy` | partial | static-site, static-app, **django-loop**, cms-rr | Self-managed only. Rollback tested both directions (~700ms) **2026-09-16 on cms-rr:** first real deploy of a Node app to a self-managed server, built from a clean clone, migrations routed to `migrate`. **Its own verification found a P0 the whole loop had missed**: behind a TLS-terminating proxy the framework compared its `http://` origin with the browser's `https://` and rejected every form post. Health check, pages and redirects all passed. `preflight` now checks the proxy seam. Rollback drilled: 5 s back, 3 s forward, proven by the old bug reappearing. **2026-09-28 on pros&cons:** stopped with no target and named the finding deferred to it - but a real-device check deferred to `deploy` can only run after a release, and `deploy` stops until it is `fixed`. |
 | `monitor` | yes | static-site, local rig, cms-rr | 3 checks on a timer. **2026-09-07: delivery closed** - a webhook channel stood up, service killed, and the alert message proven to arrive and be recorded. Detection-without-delivery is no longer the gap **2026-09-16 on cms-rr:** UptimeRobot on a `/healthz` that queries the database, keyword alerting, certificate expiry, backup heartbeat plumbed but deliberately unset. **Alert delivery proven by accident** - a monitor aimed at the wrong hostname sent a real down email. |
 | `migrate` | yes | two-part-api, cms-rr | Against real rows; the naive `ADD COLUMN NOT NULL` failed exactly as written **2026-09-16 on cms-rr:** applied the first migration to production from `deploy`, after a fresh backup, as the service user; re-ran it to prove it was a no-op. |
 | `docs` | yes | static-app, nextjs-app, cms-rr | Wrote the changelog from the archive. **2026-09-08 on nextjs-app:** replaced a template README that `preflight` blocked on, and caught two decisions the code carried with nothing explaining them **2026-09-16 on cms-rr:** rewrote a template README and **ran every command in it**; caught that `verify` excludes the browser tests. |
@@ -95,7 +95,7 @@ Real projects, named here by what they are rather than what they are called.
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `context` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
 
-## 2026-09-28: re-run against seams-J and seams-K, phases A and B
+## 2026-09-28: re-run against seams-J and seams-K, phases A, B and C
 
 A one-page decision weigher named `pros&cons`, per `rerun-plan.md`: plain
 HTML/JS, `node:test` + Playwright, not published. Headless `claude -p`
@@ -103,20 +103,40 @@ sessions inside the project, answered from a script written before the run,
 one session for phase A and one per item in B. Every single-part plan-and-build
 skill ran: `ideate`, `architect`, `stack`, `layout`, `scaffold`, `ci`,
 `context`, `prototype`, then `spec`, `build`, `review`, `ship` three times,
-and `progress` after the last two.
+and `progress` after the last two. Phase C, one more session, ran
+`preflight` three times, an item-sized fix through `spec` to `ship`, then
+`host` and `deploy`, each stopped before any target or spend.
 
 **Checklist:** 1-11 pass, and the kit's touch check passes (every control
 44px or more with `pointer: coarse`, `.textarea` still 96px). Check 10 was
 only partly exercised: item 2 used the mockup's notice, so its own archive
 listed the kept mockups and `progress` never had to look past the latest.
-12-15 wait on phase C.
+Phase C: 12-15 pass. Check 13's deferral offer came at `ship`'s gate rather
+than `preflight`'s, which offered the three host-side blockers but not the
+real-device check. Check 14's `deploy` half stopped on "no host" first, so
+its stop on a deferred finding with a target present is not reached - the run
+may not provision.
 
 **Cost, measured:** A 141 turns, 28.1M processed, 144k output; B 297 turns,
 26.6M, 113k, of which 11 subagents were about a third of the processed tokens.
-Each is under half its budget. B's two items together cost less than A,
+C 62 turns, 5.6M, 46k, against 50M / 300k. Each is under half its budget. B's two items together cost less than A,
 which spent most of its turns on setup.
 
-**Seven findings, two fixed with tests seen failing first:**
+**Nine findings, two fixed with tests seen failing first.** Phase C's two
+are open, both pack defects:
+- **Open: nothing owns changing "not published" to published.** `preflight`,
+  `host` and `deploy` all stop on it, and `preflight` asks whether a release is
+  coming, but none says what a yes routes to. So `preflight` rewrote plan
+  sections 4, 5, 8 and 10 itself, though its `Writes:` line is the ledger;
+  section 8 belongs to `architect` and `stack`.
+- **Open, a design call: a check deferred to `deploy` that can only run after
+  a release deadlocks it.** `ship` offered the real-device check as deferred to
+  `deploy`, rightly - it needs the hosted copy. `deploy` then stops on each such
+  finding until it is `fixed` or accepted, and on a production-only host it
+  cannot be fixed first, so acceptance - dropping the check - is the only way
+  out. `Deferred to:` has no notion of *after* the release.
+
+Phase A and B's seven:
 - **Fixed: nothing cleared `layout`'s "unverified until `scaffold`" marks.**
   `scaffold` proved both claims but left the plan saying they were unverified,
   and `context` caught the stale line. `scaffold` Step 8 now settles each

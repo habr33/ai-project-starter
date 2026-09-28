@@ -92,35 +92,25 @@ kit sheet was rendered headless at 1280 and 390 px, light and dark.
    seen failing before the step is claimed. `test-seams.sh` asserts this
    generalization separately from the repair-specific rule.
 
-**Next, before the list below: re-run one small project end to end** against
-`seams-J` and `seams-K`, per `dev-notes/rerun-plan.md` - a fixed checklist of
-fifteen observations in three phases, each able to stop on its own. **Budgets
-agreed 2026-09-28** (in the plan's phase table); **run phase A alone first**, in
-a fresh session, and measure it before deciding B and C.
-**Phases A and B ran 2026-09-28** (`coverage.md`): checks 1-11 pass, at
-28.1M + 26.6M processed of 100M + 70M budgets. The two pack findings are fixed,
-each with a test (`scaffold` settles `layout`'s unverified marks; `build`'s
-handoff is the user's request and says which path ran). **Phase C (checks
-12-15) is next, the user's call.** The run is in `~/tmp/rerun-2026-09-28/`;
-`notes.md` there holds the turn log, findings and costs.
+**The re-run of one small project against `seams-J` and `seams-K` is done**
+(`dev-notes/rerun-plan.md`; results in `coverage.md`, 2026-09-28): all fifteen
+checks pass, at 28.1M + 26.6M + 5.6M processed of 100M + 70M + 50M budgets.
+Phase A and B's two pack findings are fixed with tests. **Phase C found two
+more, both open - fixing them is next, the user's call:**
 
-**To run phase C** (after the user says yes; budget 50M / 300k): the run
-directory's `say` script, given a turn number and a message (`46 "<message>"`),
-starts a fresh headless session in the project; given a session id as well, it
-resumes that one. It is named here without its extension because it is not in
-this repo, and rule 9 reads any `.sh` name in the prose as a claim that it is.
-Each call saves `tN.json` and prints the reply and the git state. Play the user from
-`notes.md`'s scripted answers, log every turn and finding there, and follow
-`rerun-plan.md` phase C: `preflight` while not published (it should say so,
-ask whether a release is coming, and write nothing to the ledger); then change
-the plan to published; `preflight` again; an item-sized `ship`; then `host` and
-`deploy`, each stopped before any target or spend. Measure cost with the plan's
-script, passing only the session's `.jsonl` plus its `subagents/`, under
-`~/.claude/projects/-home-panda-tmp-rerun-2026-09-28-pros-cons/`.
-**Gotchas:** new pack fixes reach the run only after `install.sh --target .`
-in the project, committed there as the user. The project's overview is stale
-on purpose (finding 7); do not refresh it by hand. A test appended after
-`finish` in a test file is not counted, so add new ones above it.
+- **Nothing owns changing "not published" to published.** `preflight`, `host`
+  and `deploy` stop on it and `preflight` asks whether a release is coming, but
+  no skill says where a yes goes; `preflight` wrote plan section 8 itself,
+  outside its `Writes:` line. Section 8 is `architect`'s and `stack`'s.
+- **A check deferred to `deploy` that can only run after a release deadlocks
+  it** (`deploy.md`, *read the ledger for what was put off*). Needs a design
+  choice first: a `Deferred to:` that can mean *after* the release, or `deploy`
+  running such a check straight after it releases, with rollback as the failure.
+
+The run is in `~/tmp/rerun-2026-09-28/`; `notes.md` there holds the turn log,
+findings 1-9 and costs. **Gotchas:** new pack fixes reach the run only after
+`install.sh --target .` in the project, committed there as the user. A test
+appended after `finish` in a test file is not counted, so add new ones above it.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
