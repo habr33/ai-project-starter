@@ -97,12 +97,12 @@ kit sheet was rendered headless at 1280 and 390 px, light and dark.
 fifteen observations in three phases, each able to stop on its own. **Budgets
 agreed 2026-09-28** (in the plan's phase table); **run phase A alone first**, in
 a fresh session, and measure it before deciding B and C.
-**Phase A ran 2026-09-28** (`coverage.md`): checks 1-7 and 9 pass, 8 not
-reached; 28.1M processed and 144k output of a 100M/600k budget. Two pack
-findings wait for fixes with tests: nothing closes `layout`'s "unverified until
-`scaffold`" marks, and `build`'s subagent handoff loses silently to the host's
-"do not spawn agents unless the user asks". The run is in
-`~/tmp/rerun-2026-09-28/`; `notes.md` there holds the turn log and findings.
+**Phases A and B ran 2026-09-28** (`coverage.md`): checks 1-11 pass, at
+28.1M + 26.6M processed of 100M + 70M budgets. The two pack findings are fixed,
+each with a test (`scaffold` settles `layout`'s unverified marks; `build`'s
+handoff is the user's request and says which path ran). **Phase C (checks
+12-15) is next, the user's call.** The run is in `~/tmp/rerun-2026-09-28/`;
+`notes.md` there holds the turn log, findings and costs.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
