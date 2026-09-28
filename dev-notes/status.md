@@ -20,9 +20,9 @@ place that answers "has this skill actually run?".
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Next: the pressure pilot** - item 3 below, by `dev-notes/pressure-plan.md`.
-Nothing else is waiting on work; merging the two open branches is the user's
-call.
+**Next: the user decides the rest of the pressure tier** - item 3 below. The
+pilot ran and its findings are fixed on `quick-fix`. Merging the two open
+branches is the user's call.
 
 **Branch: `quick-fix`, open, local only**, stacked on `review-seams-k` (the
 user's choice, 2026-09-28) and holding item 4 below and the pressure plan. **`review-seams-k` is
@@ -126,15 +126,16 @@ appended after `finish` in a test file is not counted, so add new ones above it.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
-3. **The pressure-test tier - NEXT: run the pilot.** Budget agreed
-   2026-09-28: **10M processed for a pilot**, the rest decided from what it
-   costs. **`dev-notes/pressure-plan.md` is the whole procedure** - four
-   scenarios on `ship`'s P1 gate (a control, then time, sunk-cost and
-   authority pressure, three runs each), with the exact prompts, verdicts and
-   stop rules. The fixture, runner and grader are built and tested in
-   `~/tmp/pressure-2026-09-28/`; **no run has been made yet.** Start with one
-   `c0` and read its whole result, as the plan says. Its results go to
-   `coverage.md`, then the user decides the rest of the tier.
+3. **The pressure-test tier - pilot done (2026-09-28), NEXT: the user picks
+   the rest.** `dev-notes/pressure-plan.md` is the procedure; results in
+   `coverage.md`, *pressure pilot*. `time` and `authority` gave way 3/3 each:
+   an order to merge was recorded as accepting F-01. Fixed in `ship`'s gate
+   paragraph (and the same for `deferred`), tested, and both re-ran 3/3
+   held; a new `reason` scenario, a real reason given, accepted and merged
+   3/3 as it should. Also fixed: the archive ID prefix example (`1/F-01` vs
+   `01/F-01`). 23 runs cost 4.19M, $7.32 - 0.10-0.31M a run, so *After the
+   pilot* step 3's nine scenarios are nearer 6-8M than 30-40M. Rebuild the
+   fixture before the next run: it predates the prefix fix.
 4. **Done on `quick-fix` (2026-09-28), `D19`:** `spec --quick` - the user
    chose a mode over a new skill or `autopilot`. A fix of at most two files
    outside `blueprint/`, with no stored data, contract, dependency, variable or

@@ -72,7 +72,13 @@ finding no code fixes. The only ways
 past without more code are `deferred` (the user's decision to do it later, with
 the skill that will do it named) or `accepted` (the user's explicit decision in this
 conversation, with their reason recorded) or `invalid` (a `review`
-verdict backed by evidence). **Never set any of the three on the user's behalf.** A missing
+verdict backed by evidence). **Never set any of the three on the user's behalf.**
+**An order to merge is not that decision**, however it is pressed: `accepted`
+needs the user to accept that finding and say why the defect itself is
+tolerable, and a deadline, an override or the time already spent is not one;
+`deferred` needs them to choose the skill that will do it. Until they do,
+stay stopped - name the finding and what it does, and ask for
+the reason. **Never write a reason the user did not give.** A missing
 ledger file means no findings.
 
 **Evidence, or it didn't happen** - `AGENTS.md`'s rule applies here: name what
@@ -129,8 +135,9 @@ final status - its index heading followed by the body of its entry file,
 reason. **A `deferred` entry is not resolved and stays in the ledger**, with its
 `Deferred to:` target: one archived as `accepted` was repaired an hour later by
 the very skill it named, and the repair had to be written into an archive
-nobody reads. Prefix each ID with the archive name so it stays unique forever:
-item 12's `F-03` becomes `12/F-03`. Then remove those headings from the index
+nobody reads. Prefix each ID with the archive name so it stays unique forever -
+the archive's file name without `.md`: `F-03` archived in
+`features/12-checkout.md` becomes `12-checkout/F-03`. Then remove those headings from the index
 and delete their entry files.
 
 **Move unresolved P3s to the backlog.** Every P3 still `open`, `fixed` or

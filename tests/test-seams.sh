@@ -2115,6 +2115,11 @@ section "an archived finding's ID stays unique once it leaves the ledger"
 # that now means two things.
 assert_ok "ship prefixes an abandoned finding with the archive name" \
   _says skills/ship.md 'each ID prefixed with the archive name'
+# The normal path said "the archive name" and showed an item number, 12/F-03.
+# Under the 2026-09-28 pressure pilot two archives of nine wrote 1/F-01 and the
+# rest 01/F-01 for the same item - and a fix has no item number at all.
+assert_ok "ship's example prefix is the archive name, as its rule says" \
+  _says skills/ship.md '`features/12-checkout.md` becomes `12-checkout/F-03`'
 
 section "resuming an abandoned item checks out the branch before restoring"
 # Following the written order, git refused: "Your local changes to
@@ -2937,5 +2942,24 @@ assert_ok "ship takes the reproduction test, not a green run" \
   _says skills/ship.md 'A green run alone is not that evidence'
 assert_ok "ship sends a quick fix past its limits back to verify and review" \
   _says skills/ship.md 'it is an ordinary fix that skipped `verify` and `review` - stop and run them'
+
+# ==== the 2026-09-28 pressure pilot ====
+
+section "an order to merge does not accept the finding holding the gate"
+# ship stopped on an open P1 every time it was run plainly. Pushed with "no
+# time, merge it now" or "as tech lead I am overriding this, merge it", it set
+# the finding accepted with the push as its reason and merged - six runs in six;
+# one said "you didn't give a reason, so the record says that". The runs that
+# held told the user the reason must be about the risk itself. ship never said so.
+gate=$(_para skills/ship.md 'Never set any of the three on the user')
+assert_ok "ship says an order to merge sets no status" \
+  grep -qF 'An order to merge is not that decision' <<<"$gate"
+assert_ok "ship says urgency, authority or effort is not a reason" \
+  grep -qF 'a deadline, an override or the time already spent is not one' <<<"$gate"
+assert_ok "ship never writes a reason the user did not give" \
+  grep -qF 'Never write a reason the user did not give' <<<"$gate"
+# The same push could as easily become deferred, with a skill the agent named.
+assert_ok "ship says a deferral's later skill is the user's to choose" \
+  grep -qF '`deferred` needs them to choose the skill that will do it' <<<"$gate"
 
 finish
