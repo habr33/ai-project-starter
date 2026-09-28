@@ -55,7 +55,10 @@ has two answers and the wrong one is silently plausible.
 **Before either, read section 8, Deployment, of `blueprint/project-plan.md` -
 is a release planned at all?** "Runs from source, not published" is a complete
 answer there, and `host` stops on it. Here it means there is no go-live to gate:
-**say so first, and ask whether one is coming.** If not, audit what a release
+**say so first, and ask whether one is coming.** If one is, **`host` records
+that** - the plan and the decision are its to change, not this skill's, whose
+one write is the ledger - so route there and audit the release it will set up.
+If not, audit what a release
 would need and report it, but **write nothing to the ledger** - a P0 or P1 for a
 release nobody plans blocks every later `ship` in this part for nothing.
 
@@ -281,7 +284,9 @@ Sort everything into six buckets, and lead with the verdict:
   nothing to do with it. **Say so, and offer the user `deferred`**, with
   `Deferred to:` the skill that releases - `host` or `deploy`. It stays in the
   ledger and in every audit until that skill runs; setting it is the user's
-  call, never this skill's.
+  call, never this skill's. **A check only the released copy can answer** - a
+  phone against the hosted site - is `deploy, after release`: nothing before
+  the release can satisfy it, so `deploy` runs it straight after.
 
   **On a re-run, close what was repaired.** A blocker no code fixes - backups, a
   host, a README, a rotated secret - is marked `fixed` with evidence by the skill
@@ -298,7 +303,9 @@ Sort everything into six buckets, and lead with the verdict:
   resolved, until that skill has run. **But a finding deferred to the release
   this audit is for is due now**: when this audit gates a release and a
   finding's `Deferred to:` names `host` or `deploy`, put it under Blockers, not
-  here - the release is the later it was put off to.
+  here - the release is the later it was put off to. **Except `deploy, after
+  release`**: list it here as due straight after the release, since no repair
+  before it can exist, and a Blocker nothing can clear is a no-go forever.
 - **Backlog** - the count in `blueprint/findings/backlog.md`, naming any whose
   file this release changed. P3s gate nothing, but a backlog nobody counts is a
   deletion by another name.

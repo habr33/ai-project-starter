@@ -5,7 +5,7 @@ description: "Provision what the project needs to run somewhere other than a lap
 
 # host - set up the places this runs
 
-**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md` · `dev-notes/status.md`
+**Writes:** `blueprint/project-plan.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `dev-notes/decisions.md` · `dev-notes/status.md`
 
 Where this sits:
 
@@ -41,6 +41,15 @@ mistake here that cannot be undone with git. Two different stops:
   quality bar whose availability line says the concept does not apply. **Say so
   and stop. Do not ask.** The question has an answer and asking it again is how a
   deliberate decision gets re-litigated into a bill.
+
+  **Unless the user has just said it changed** - `preflight` asks whether a
+  release is coming, and a yes there or at `deploy` routes here. **This skill records it,
+  and nothing else does:** a `dev-notes/decisions.md` entry superseding the one
+  that said it would not ship, and section 8's target line rewritten to "not
+  decided" until Step 6 names one. Then carry on. **Rewrite no other section** -
+  a Data, Tech or quality-bar line that assumed no release is named for the
+  user and left to its owner. If section 10 holds "never published" as a
+  constraint, that is scope, not hosting: `ideate --rescope` first.
 - **The plan is silent** - no third-party service, no database, no domain named,
   and nothing saying where it ships. **Stop and ask what this is for**, because
   silence is not the same as "no".
@@ -298,8 +307,10 @@ it blocks every later `ship` in this part.
 - what still needs doing by hand - a DNS record, a verification email
 - what `deploy` now needs in order to run
 
-Record all of it in `dev-notes/status.md` so it survives a cleared context, and
-add a `dev-notes/decisions.md` entry for the host choice and why.
+Record all of it in `dev-notes/status.md` so it survives a cleared context,
+add a `dev-notes/decisions.md` entry for the host choice and why, and name the
+host on the target line of section 8 of `blueprint/project-plan.md`, where
+`preflight` and `deploy` look for it.
 
 ## Rules
 

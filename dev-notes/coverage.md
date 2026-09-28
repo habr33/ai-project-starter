@@ -122,14 +122,20 @@ may not provision.
 C 62 turns, 5.6M, 46k, against 50M / 300k. Each is under half its budget. B's two items together cost less than A,
 which spent most of its turns on setup.
 
-**Nine findings, two fixed with tests seen failing first.** Phase C's two
-are open, both pack defects:
-- **Open: nothing owns changing "not published" to published.** `preflight`,
+**Nine findings, all four pack defects fixed with tests seen failing first.**
+Phase C's two were fixed on 2026-09-28, tested under *the 2026-09-28 re-run,
+phase C* in `tests/test-seams.sh`:
+- **Fixed - `host` owns it:** a yes at `preflight` or `deploy` routes to
+  `host`, which supersedes the decision, rewrites only section 8's target line
+  and names the rest for their owners. **Was: nothing owns changing "not published" to published.** `preflight`,
   `host` and `deploy` all stop on it, and `preflight` asks whether a release is
   coming, but none says what a yes routes to. So `preflight` rewrote plan
   sections 4, 5, 8 and 10 itself, though its `Writes:` line is the ledger;
   section 8 belongs to `architect` and `stack`.
-- **Open, a design call: a check deferred to `deploy` that can only run after
+- **Fixed - `Deferred to: deploy, after release`,** offered by `ship` and
+  `preflight`; `preflight` lists it as due after release, and `deploy` names it
+  before the gate and runs it in Step 3 with rollback as the failure path.
+  **Was: a check deferred to `deploy` that can only run after
   a release deadlocks it.** `ship` offered the real-device check as deferred to
   `deploy`, rightly - it needs the hosted copy. `deploy` then stops on each such
   finding until it is `fixed` or accepted, and on a production-only host it

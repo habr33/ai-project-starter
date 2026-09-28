@@ -2863,4 +2863,40 @@ assert_ok "build says running it is the user asking for the handoff" \
 assert_ok "build reports which path each step took" \
   _says skills/build.md 'Say which path the step took'
 
+
+# ==== the 2026-09-28 re-run, phase C ====
+
+section "a yes to publishing a project the plan says is not has an owner"
+# preflight, host and deploy all stopped on "not published", and preflight asked
+# whether a release was coming - but no skill said where a yes went. On the
+# re-run preflight rewrote four plan sections itself, outside its Writes: line.
+# The owner is read out of preflight, so re-routing it there moves every check.
+owner=$(_para skills/preflight.md 'ask whether one is coming' | grep -oE '\*\*`[a-z]+` records' | grep -oE '[a-z]+' | head -1)
+assert_ok "preflight names who records a yes" test -n "$owner"
+_name="$owner declares the plan it rewrites"
+if _writes "$owner" | grep -qx 'project-plan.md'; then _ok; else _no "project-plan.md is not in its Writes: line"; fi
+_name="preflight does not declare the plan - its one write is the ledger"
+if _writes preflight | grep -qx 'project-plan.md'; then _no "preflight writes the plan"; else _ok; fi
+assert_ok "$owner's not-hosted stop records the change instead of stopping" \
+  _says "skills/$owner.md" 'Unless the user has just said it changed'
+assert_ok "deploy routes the same yes to $owner" \
+  grep -qF "release is now coming, route to \`$owner\`" <<<"$(_para skills/deploy.md 'says this is not published')"
+
+section "a check only the released copy can answer runs after the release"
+# ship deferred a real-device check to deploy, rightly - it needs the hosted
+# copy. deploy stopped on every finding deferred to it until fixed or accepted,
+# and fixed was impossible before a release, so accepting - dropping the check -
+# was the only way out. The marker is read out of ship, where it is offered.
+after=$(_para skills/ship.md 'A check only the released copy can answer' | grep -oE '`deploy, after release`' | head -1)
+after=${after:-<ship names no marker>}   # an empty pattern matches anything
+assert_ok "ship offers the after-release deferral" test "$after" = '`deploy, after release`'
+assert_ok "preflight offers it too" \
+  grep -qF "$after" <<<"$(_para skills/preflight.md 'A blocker only a release needs')"
+assert_ok "preflight does not count it as a blocker before the release" \
+  grep -qF "Except $after" <<<"$(_para skills/preflight.md 'deferred to the release this audit is for is due now')"
+assert_ok "deploy does not stop on it before releasing" \
+  grep -qF "Except one deferred to $after" <<<"$(_para skills/deploy.md 'Except one deferred to')"
+assert_ok "deploy runs it once released, in Step 3" \
+  grep -qF "each finding deferred to $after" <<<"$(_para skills/deploy.md 'the **version now serving**')"
+
 finish

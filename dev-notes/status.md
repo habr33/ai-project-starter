@@ -95,17 +95,23 @@ kit sheet was rendered headless at 1280 and 390 px, light and dark.
 **The re-run of one small project against `seams-J` and `seams-K` is done**
 (`dev-notes/rerun-plan.md`; results in `coverage.md`, 2026-09-28): all fifteen
 checks pass, at 28.1M + 26.6M + 5.6M processed of 100M + 70M + 50M budgets.
-Phase A and B's two pack findings are fixed with tests. **Phase C found two
-more, both open - fixing them is next, the user's call:**
+Phase A and B's two pack findings are fixed with tests. **Phase C's two are
+fixed too** (2026-09-28, the user chose both designs; tests under *the
+2026-09-28 re-run, phase C* in `tests/test-seams.sh`, each seen failing under
+a mutation):
 
-- **Nothing owns changing "not published" to published.** `preflight`, `host`
-  and `deploy` stop on it and `preflight` asks whether a release is coming, but
-  no skill says where a yes goes; `preflight` wrote plan section 8 itself,
-  outside its `Writes:` line. Section 8 is `architect`'s and `stack`'s.
-- **A check deferred to `deploy` that can only run after a release deadlocks
-  it** (`deploy.md`, *read the ledger for what was put off*). Needs a design
-  choice first: a `Deferred to:` that can mean *after* the release, or `deploy`
-  running such a check straight after it releases, with rollback as the failure.
+- **`host` owns changing "not published" to published.** A yes at `preflight`
+  or `deploy` routes there; `host` supersedes the decision, rewrites only
+  section 8's target line (and names the host there at Step 6), and leaves
+  other sections to their owners. `project-plan.md` is on its `Writes:` line
+  and in the template's table.
+- **`Deferred to: deploy, after release`** for a check only the released copy
+  can answer. `ship` and `preflight` offer it; `preflight` lists it as due
+  after release, not as a blocker; `deploy` names it before the gate and runs
+  it in Step 3, with rollback as the failure path.
+
+Not re-run against a project yet - the tests prove the wording, not that an
+agent follows it.
 
 The run is in `~/tmp/rerun-2026-09-28/`; `notes.md` there holds the turn log,
 findings 1-9 and costs. **Gotchas:** new pack fixes reach the run only after

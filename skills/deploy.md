@@ -28,7 +28,8 @@ they use the same target, the same credentials, and the same platform knowledge.
 **If section 8 of `blueprint/project-plan.md` says this is not published** -
 "runs from source", "not published" - say so and stop, the way `host` does.
 There is no target to name, and asking for one re-opens a decision the plan
-already records.
+already records. **If the user says a release is now coming, route to `host`**,
+which records that change and provisions the target; do not edit the plan here.
 
 Name which of these has not happened, rather than proceeding quietly past it:
 
@@ -49,6 +50,13 @@ release so it stops holding `ship`, and this is the release. **Stop on each**,
 as `ship` stops on an `open` P0 or P1: it is repaired and set `fixed` with
 evidence, for `preflight` to close, or the user accepts it with their reason.
 Releasing past it turns "later" into "never".
+
+**Except one deferred to `deploy, after release`** - a check only the released
+copy can answer, which no repair before the release can satisfy. Stopping on it
+leaves acceptance, dropping the check, as the only way out. **Name each before
+the release gate as what Step 3 will run, and what failing it means** - a roll
+back, or on a first release, nothing to roll back to - so the approval covers
+it.
 
 ## Input
 
@@ -159,6 +167,9 @@ A deployment that reports success is not the same as one that works:
   something that touches the database
 - **no error spike** in the first minutes
 - the **version now serving** is the commit you deployed
+- **each finding deferred to `deploy, after release`**, run against this
+  environment - passed, it is set `fixed` with that evidence for `preflight` to
+  close
 
 **If any of these fail, roll back first and investigate afterwards.** A broken
 production is not a debugging session.

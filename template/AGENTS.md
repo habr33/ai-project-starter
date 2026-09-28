@@ -36,7 +36,7 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/design-kit/` | tokens, components and the UX checklist `prototype` starts from | the pack - refreshed on every install |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
-| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `context` |
+| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `context`, `host` |
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `context` |
 | `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/history/` | every completed item, archived | `ship` |

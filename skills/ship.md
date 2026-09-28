@@ -72,7 +72,10 @@ proves it, and "could not verify" beats a fabricated pass every time.
 blocker no code in this item touches, such as a device check or a backup - say
 so plainly. The user may set it `deferred` to the release (`host` or `deploy`)
 with their reason; that is their decision, never this skill's, and it is the
-difference between a release blocker and a merge blocker.
+difference between a release blocker and a merge blocker. **A check only the
+released copy can answer** - a phone against the hosted site - is deferred to
+`deploy, after release`, so `deploy` runs it once it has released rather than
+waiting for it first.
 
 If required evidence is missing, **stop here.** Do not proceed to Step 2 and
 mention it afterwards.
