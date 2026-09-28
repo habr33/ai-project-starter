@@ -141,6 +141,16 @@ point:
 - `ship` — *is this safe to merge?* An open **or fixed** P0/P1 blocks it, because
   a repair is re-examined by something other than what made it.
 
+**A quick fix is the same line with two checks left out.** `spec --quick`
+admits a fix of at most two files outside `blueprint/` that changes no stored
+data, contract, dependency or environment variable and touches nothing the
+quality bar names; it writes one step whose done-when is the bug's
+reproduction, and `build` hands it straight to `ship`. **The reproduction test,
+seen red and then green, is the evidence `verify` would have been**, and the
+limits are what make skipping `review` safe - so `build` drops the `**Quick:**`
+line if the diff crosses one, and `ship` checks them again before merging. The
+findings gate and the one commit are unchanged.
+
 **`debug` sits outside the line and is reached from inside it** — from `build`
 after a step fails twice unexplained, from `verify` when a criterion fails for a
 reason nobody can state, and from `deploy`, `monitor` and `integrate` when

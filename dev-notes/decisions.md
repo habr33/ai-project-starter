@@ -437,3 +437,30 @@ lacks as missing rather than not applicable.
 asks for a design record it cannot have is a gate people learn to walk past.
 **Rejected: an advisory note in `spec`.** That is what "optional, decide
 deliberately" already was.
+
+## D19 - A quick fix takes a shorter loop (2026-09-28)
+
+A one-line fix went through the same loop as a feature: sizing, a red-team
+pass, a subagent packet, `verify`, `review` and `ship`. Ceremony that costs more
+than the fix teaches people to leave the loop for small changes, and a change
+made outside it has no spec, no test seen failing and no findings gate at all.
+
+**`spec --quick` admits a fix only inside fixed limits**: at most two files
+outside `blueprint/`, not counting tests; no stored data, contract, dependency
+or environment variable; nothing the quality bar names and no security
+boundary; and a reproduction a test or one command can show. It writes one
+step whose done-when is that reproduction, skips sizing and the red-team, and
+marks the spec `**Quick:**`. `build` builds it inline and hands it straight to
+`ship`, which accepts the reproduction test - seen red, then green - in place
+of `verify` evidence.
+
+**The limits are what make skipping `review` safe**, so they are checked three
+times: by `spec` against the code, by `build` against the diff - which drops
+the `**Quick:**` line if one is crossed - and by `ship` before merging. What
+does not change: a branch, the test seen failing first, the findings gate and
+one commit.
+
+**Rejected: a separate `fix` skill.** Easiest to find by name, but a 28th
+description in every session's listing, and a second copy of the rules a spec
+already holds. **Rejected: `autopilot` over a fix.** It removes the stops, not
+the work - `verify` and `review` still run, unattended.

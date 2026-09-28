@@ -110,7 +110,7 @@ Never build on `main` or `master`.
 
 Work the spec's build steps in order, one at a time. For each step:
 
-1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow. **Running `build` is the user asking for this handoff** - a host whose tools say not to spawn agents unless the user asks has had its answer, so that is never a reason to build inline. If the host supports subagents, hand the step to one with this packet:
+1. **Prepare the packet and hand the step off.** From `blueprint/context/current-work.md`, take the step's spec text, its done-when, the files it claims, and the standards it must follow. **Running `build` is the user asking for this handoff** - a host whose tools say not to spawn agents unless the user asks has had its answer, so that is never a reason to build inline. **The one exception is a quick fix** - a spec with a `**Quick:**` line: one step in one or two files costs more to brief than to build, so build it inline and say that is why. If the host supports subagents, hand the step to one with this packet:
 
     - The spec step text
     - Its done-when, and **whether it is behavioural** - if it is and a test
@@ -173,6 +173,11 @@ Work the spec's build steps in order, one at a time. For each step:
      behaviour is missing, not a typo or an import error. Then write the code and
      watch it pass. A test first seen after the code has only ever been green, so
      nothing shows it can fail.
+
+     **A quick fix's test is its spec's reproduction**, written first and seen
+     failing for the reported reason, exactly as a finding's repair is in Step 4.
+     It is the only evidence the short path has, since `verify` and `review` do
+     not run: **name both runs in the packet**, the red one and the green one.
 
      **Where no test can observe the claim, the evidence is the running app** -
      no runner configured, or a claim a runner cannot see, such as a rendered
@@ -305,6 +310,15 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
   decision with a recorded reason; `invalid` is a `review` verdict backed
   by evidence. Neither is this skill's call.
 
+**A quick fix stays quick only inside its limits.** Before the packet, compare
+the diff against the list in `spec`'s quick path: at most two files outside
+`blueprint/`, not counting tests, and no stored data, contract, dependency,
+environment variable or anything `blueprint/context/quality-bar.md` names. **If
+the diff went past any of them, remove the `**Quick:**` line from the spec and
+say which limit it crossed** - it is an ordinary fix now, and `verify` and
+`review` apply. A repair that needed a third file is exactly the one whose
+reach nobody predicted.
+
 When every step is built and the project's checks pass, stop with a compact
 review packet:
 
@@ -324,7 +338,10 @@ review packet:
   promise unproven. Then `review`, then `ship`. **If every behavioral
   done-when was already run live in Step 3, say so and name `review`
   directly** - running `verify` again over work it already covers is not the
-  point of naming it in the chain.
+  point of naming it in the chain. **A quick fix still inside its limits names
+  `ship` directly**, saying that `verify` and `review` were skipped by the
+  short path - unless its claim is one only the running app shows, such as a
+  rendered layout, which goes to `verify` first.
 
 **In a multi-part project, post the packet** in `<product root>/blueprint/status/<this part>.md`:
 

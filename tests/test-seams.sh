@@ -458,6 +458,7 @@ context spec
 prototype spec
 spec build
 build verify
+build ship
 verify review ## Step 4
 review ship
 ship preflight
@@ -2494,7 +2495,7 @@ assert_ok "autopilot counts the four blocked actions it lists" \
   _says skills/autopilot.md 'Four actions are **blocked in every range'
 assert_ok "autopilot's board checks read as conditions to start" \
   _says skills/autopilot.md 'each of these must hold, or the run stops'
-assert_ok "spec counts its modes" _says skills/spec.md 'Five modes, chosen from the argument'
+assert_ok "spec counts its modes" _says skills/spec.md 'Six modes, chosen from the argument'
 assert_ok "preflight counts its buckets" _says skills/preflight.md 'Sort everything into six buckets'
 assert_eq "preflight asks the same config question once" "1" \
   "$(grep -c "genuinely separate" skills/preflight.md)"
@@ -2898,5 +2899,43 @@ assert_ok "deploy does not stop on it before releasing" \
   grep -qF "Except one deferred to $after" <<<"$(_para skills/deploy.md 'Except one deferred to')"
 assert_ok "deploy runs it once released, in Step 3" \
   grep -qF "each finding deferred to $after" <<<"$(_para skills/deploy.md 'the **version now serving**')"
+
+# ==== the quick path, D19 ====
+
+section "a quick fix's limits and marker are the same in all three skills"
+# spec --quick skips sizing, the red-team, verify and review. The limits are
+# what make that safe, and three skills check them - spec against the code,
+# build against the diff, ship before merging. A limit loosened in one of them,
+# or a marker spelled differently, lets a large change reach main unreviewed
+# with every file still reading correctly on its own. Both are read out of spec.
+limit=$(_para skills/spec.md 'It changes at most' | grep -oE 'at most [a-z]+ files outside `blueprint/`' | head -1)
+limit=${limit:-<spec states no limit>}   # an empty pattern matches anything
+assert_ok "spec states the file limit" test "$limit" != '<spec states no limit>'
+assert_ok "build holds the diff to spec's limit" \
+  grep -qF "$limit" <<<"$(_para skills/build.md 'A quick fix stays quick only inside its limits')"
+assert_ok "ship holds the branch to spec's limit" \
+  grep -qF "$limit" <<<"$(_para skills/ship.md 'A quick fix is still inside its limits')"
+marker=$(grep -oE '^ +\*\*[A-Z][a-z]+:\*\* yes - ' skills/spec.md | head -1 | sed 's/^ *//; s/ yes - $//')
+marker=${marker:-<no marker in the spec template>}
+assert_ok "spec's template writes the quick marker" test "$marker" = '**Quick:**'
+assert_ok "build reads the marker spec writes" _says skills/build.md "a spec with a \`$marker\` line"
+assert_ok "build drops it when a limit is crossed" _says skills/build.md "remove the \`$marker\` line from the spec"
+assert_ok "ship reads the marker spec writes" _says skills/ship.md "a spec with a \`$marker\` line"
+
+section "a quick fix skips steps, never the evidence"
+# The short path trades verify for the reproduction test. A green run is not
+# that evidence - only one seen failing first is - so each skill says so.
+assert_ok "spec's sizing step says a quick fix skips it" \
+  grep -qF 'A quick fix skips this step' <<<"$(awk '/^## Step 2/{f=1; next} f && /^## /{exit} f' skills/spec.md)"
+assert_ok "spec's red-team step says a quick fix checks the limits instead" \
+  grep -qF 'Check the draft against the quick path' <<<"$(awk '/^## Step 4/{f=1; next} f && /^## /{exit} f' skills/spec.md)"
+assert_ok "build proves a quick fix test-first, both runs named" \
+  _says skills/build.md 'name both runs in the packet'
+assert_ok "build hands a quick fix to ship only inside its limits" \
+  _says skills/build.md 'A quick fix still inside its limits names `ship` directly'
+assert_ok "ship takes the reproduction test, not a green run" \
+  _says skills/ship.md 'A green run alone is not that evidence'
+assert_ok "ship sends a quick fix past its limits back to verify and review" \
+  _says skills/ship.md 'it is an ordinary fix that skipped `verify` and `review` - stop and run them'
 
 finish

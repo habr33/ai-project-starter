@@ -40,6 +40,10 @@ the ones that matter into a hard stop:
   ledger, and an empty ledger because nothing looked is indistinguishable from an
   empty ledger because nothing was wrong.
 
+**A quick fix skips both by design** - a spec with a `**Quick:**` line, from
+`spec --quick`. Name that instead of the two above, and let Step 1 check that
+it earned the skip.
+
 ## Step 1 - the safety pass
 
 Before logging or committing anything, check each of these and **report only the
@@ -53,7 +57,13 @@ blockers**:
   declared, the build passed, and the tests passed when the project has a test
   command and this change touched logic.
 - Behavioral done-whens have `verify` evidence. Do not merge on an
-  unverified claim.
+  unverified claim. **A quick fix's evidence is its reproduction test instead**,
+  seen failing before the repair and passing after - both runs named in
+  `build`'s packet. A green run alone is not that evidence.
+- **A quick fix is still inside its limits**: the branch's diff against `main`
+  changes at most two files outside `blueprint/`, not counting tests, and no
+  stored data, contract, dependency or environment variable. If it does more,
+  it is an ordinary fix that skipped `verify` and `review` - stop and run them.
 - **No P0 or P1 finding in `blueprint/context/findings.md` is `open` or `fixed`.**
 
 That last one is the gate. `fixed` still blocks on purpose: the repair exists but

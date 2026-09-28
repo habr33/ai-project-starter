@@ -20,7 +20,9 @@ place that answers "has this skill actually run?".
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Branch: `review-seams-k`, open, local only.** It sits on `main` (=
+**Branch: `quick-fix`, open, local only**, stacked on `review-seams-k` (the
+user's choice, 2026-09-28) and holding item 4 below. **`review-seams-k` is
+itself open, local only.** It sits on `main` (=
 `origin/main`, `b2e2477`) and holds the `seams-K` review fixes, the re-run
 plan, the phase A-C records and the two fixes phase A found - `git log
 --oneline main..review-seams-k`. Not merged or pushed; both are the user's
@@ -123,7 +125,14 @@ appended after `finish` in a test file is not counted, so add new ones above it.
 3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
    budget agreed with the user before any run. **Blocked on the user: what token
    budget?**
-4. **A quick-fix path** - a lighter spec/build/ship for small fixes.
+4. **Done on `quick-fix` (2026-09-28), `D19`:** `spec --quick` - the user
+   chose a mode over a new skill or `autopilot`. A fix of at most two files
+   outside `blueprint/`, with no stored data, contract, dependency, variable or
+   quality-bar concern, gets one test-first step and skips sizing, red-team,
+   `verify` and `review`; `build` drops the `**Quick:**` marker if the diff
+   crosses a limit, and `ship` checks them again. Tests under *the quick path,
+   D19* in `tests/test-seams.sh`, every assertion seen failing under a
+   mutation. **Never run against a project** - the tests prove the wording.
 5. **Optional hooks** (`.claude/settings.json`) for rules that must not depend
    on the model remembering them - e.g. no commit on `main`, the budget check.
 6. **Living capability specs** that `ship` updates (OpenSpec-style); a Claude
@@ -155,7 +164,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 **Verify with:**
 
     git status --short                       # nothing modified
-    git branch --show-current                # review-seams-k
+    git branch --show-current                # quick-fix
     git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures

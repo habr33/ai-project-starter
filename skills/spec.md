@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Turn one work item into a buildable spec written to blueprint/context/current-work.md. With no argument, specs the next unchecked item in `blueprint/build-plan.md`; with a number or name, specs that one; with a bug or small change described in prose, specs it as an ad-hoc fix; with --preview, explains an upcoming item without writing anything. Sizes the item, splits anything too big into sub-items, writes small build steps with observable done-when criteria, then red-teams its own draft before showing it. Stops at a review gate and never starts building. Use when the user runs `spec`, names or numbers a feature, reports a bug to fix, asks to break down or start the next thing, or asks what an upcoming feature involves."
+description: "Turn one work item into a buildable spec written to blueprint/context/current-work.md. With no argument, specs the next unchecked item in `blueprint/build-plan.md`; with a number or name, specs that one; with a bug or small change described in prose, specs it as an ad-hoc fix; with --quick and a bug, specs a one- or two-file fix as a single test-first step on a shorter path; with --preview, explains an upcoming item without writing anything. Sizes the item, splits anything too big into sub-items, writes small build steps with observable done-when criteria, then red-teams its own draft before showing it. Stops at a review gate and never starts building. Use when the user runs `spec`, names or numbers a feature, reports a bug to fix, asks to break down or start the next thing, or asks what an upcoming feature involves."
 ---
 
 # spec - turn one item into something buildable
@@ -71,13 +71,14 @@ than working around it**:
 
 ## Input
 
-Five modes, chosen from the argument - a plan addition arrives two ways:
+Six modes, chosen from the argument - a plan addition arrives two ways:
 
 | Argument | Mode | Writes |
 |---|---|---|
 | *(none)* | Next unchecked item in `blueprint/build-plan.md` | the spec |
 | a number or name | That specific planned item | the spec |
 | prose describing a bug or small change | Ad-hoc fix, not a plan item | the spec |
+| `--quick` *(with prose describing a bug)* | Quick fix - an ad-hoc fix on the short path, below | the spec |
 | an observation from `monitor` - a slow path, an unused feature, a repeated request | Plan addition, gated | the plan line, then the spec |
 | **a new feature described in prose** - something the plan does not have | Plan addition, gated | the plan line, then the spec |
 | `--preview` *(optionally with a number or name)* | Read-only briefing | nothing |
@@ -108,6 +109,39 @@ context and reports what the item is, what it depends on, what it will touch, ho
 big it is, and whether it will need splitting - then stops. Nothing is written, so
 it is safe to run while thinking about ordering.
 
+### The quick path - `--quick`
+
+**A fix too small to earn the whole loop gets a shorter one.** A one-line
+repair taken through sizing, a red-team pass, a subagent packet, `verify` and
+`review` spends more on ceremony than on the fix, and a loop that costs that
+much for a typo teaches people to skip it altogether - which is worse than a
+short loop. It qualifies only when **every** one of these holds, checked
+against the code in Step 1, not against how the bug was described:
+
+- **It is a fix** - it repairs what exists and adds no capability.
+- **It changes at most two files outside `blueprint/`**, not counting their
+  tests.
+- **It changes no stored data, no contract, no dependency and no environment
+  variable** - so the spec's Data and contracts, Decisions and Production needs
+  are all "none".
+- **It touches nothing `blueprint/context/quality-bar.md` names** - a hot path,
+  authentication, personal data - and no security boundary. Those always get
+  `review`, however small the diff.
+- **The defect can be reproduced** by a test the project's runner runs, or,
+  with no runner, by one command whose output shows it.
+
+**If any one fails, say which and spec an ordinary fix instead.** Never stretch
+a criterion to keep the short path: the limits are what make skipping `review`
+safe, and a quick fix that is not small is an unreviewed change with a label on
+it.
+
+What the short path changes: **one build step**, whose done-when is the
+reproduction - the test that fails now and passes after the repair. Step 2 and
+Step 4 are skipped; in their place, check the draft against the list above
+once more. The spec carries a `**Quick:**` line, which is what `build` and
+`ship` read. What it keeps: the spec in `current-work.md`, the gate in Step 5,
+a branch, the test seen failing first, `ship`'s findings gate and one commit.
+
 ## Step 1 - pick the target and the mode
 
 Read the project's state before acting:
@@ -132,6 +166,10 @@ Then resolve what is being spec'd:
 - **A bug or small change** - this is a fix. It gets a spec marked `Type: Fix`
   with no build-plan number, and nothing is added to the plan. A fix repairs or
   adjusts what exists; it does not add a product capability.
+- **`--quick` with a bug** - check it against the quick path's list above
+  before anything else, and read the files it would touch to do so. If it
+  qualifies, it is a fix on the short path; if not, say which criterion failed
+  and continue as an ordinary fix.
 - **A genuinely new capability with no match in the plan** - follow the intake
   below. Never silently add scope to a file the user owns.
 
@@ -221,6 +259,8 @@ misleads the coordinator.
 
 ## Step 2 - size it, and split if it is too big
 
+**A quick fix skips this step** - it is one step by definition. Go to Step 3.
+
 Judge how big the item actually is:
 
 - **Buildable and reviewable as one unit** - one spec. Continue to Step 3.
@@ -256,6 +296,7 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
 
     **From build plan:** item <n>        (omit for a fix)
     **Type:** Feature | Fix
+    **Quick:** yes - <files it touches; each criterion held>   (only for --quick)
     **Status:** not started
 
     ## Goal
@@ -374,6 +415,11 @@ This is a draft. Do not present it yet.
 
 ## Step 4 - red-team your own draft
 
+**A quick fix skips this step.** Check the draft against the quick path's list
+instead, and if it no longer qualifies - the reproduction reached a third file,
+or a stored shape - drop the `**Quick:**` line, say why, and run this step as
+for any fix.
+
 Turn on the spec and try to break it. Here, before any code exists, is the
 cheapest place in the whole workflow to catch a scope problem or an oversized
 step. Run the draft against each of these:
@@ -402,6 +448,9 @@ Present the spec, leading with a short **what the critique changed** note - the
 splits, gaps, or scope cuts Step 4 produced, or "nothing, the draft held up."
 
 That note is the point. It shows the gate working before a line of code exists.
+**For a quick fix, lead with why it qualifies instead** - the files it touches
+and each criterion it was checked against - and say that `build` will hand it
+straight to `ship`, so the user can ask for the full loop now.
 
 Then tell the user to review and adjust, and that `build` is next. This
 skill never starts building.

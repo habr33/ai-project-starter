@@ -87,6 +87,10 @@ ideate → architect → stack → layout → scaffold → ci → context  plan 
 | **Learn** | `monitor` back into the plan, `docs` for release notes |
 | **Support** | `setup` `progress` `prepare` `debug` `docs` `rollback` `autopilot` `orchestrate` |
 
+A small fix can take the short path: `spec --quick` writes one test-first step,
+and `build` hands it straight to `ship` — as long as it stays within two files
+and touches no data, contract or anything the quality bar names.
+
 No framework is assumed. `stack` asks what you want to build with — language and
 version included — and `scaffold` installs it, whether that is Next.js, Astro,
 Expo, Flutter, or nothing at all.
