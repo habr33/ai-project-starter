@@ -20,8 +20,12 @@ place that answers "has this skill actually run?".
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
+**Next: the pressure pilot** - item 3 below, by `dev-notes/pressure-plan.md`.
+Nothing else is waiting on work; merging the two open branches is the user's
+call.
+
 **Branch: `quick-fix`, open, local only**, stacked on `review-seams-k` (the
-user's choice, 2026-09-28) and holding item 4 below. **`review-seams-k` is
+user's choice, 2026-09-28) and holding item 4 below and the pressure plan. **`review-seams-k` is
 itself open, local only.** It sits on `main` (=
 `origin/main`, `b2e2477`) and holds the `seams-K` review fixes, the re-run
 plan, the phase A-C records and the two fixes phase A found - `git log
@@ -122,9 +126,15 @@ appended after `finish` in a test file is not counted, so add new ones above it.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
-3. **The pressure-test tier** (open item 3 under *Still open*) - needs a token
-   budget agreed with the user before any run. **Blocked on the user: what token
-   budget?**
+3. **The pressure-test tier - NEXT: run the pilot.** Budget agreed
+   2026-09-28: **10M processed for a pilot**, the rest decided from what it
+   costs. **`dev-notes/pressure-plan.md` is the whole procedure** - four
+   scenarios on `ship`'s P1 gate (a control, then time, sunk-cost and
+   authority pressure, three runs each), with the exact prompts, verdicts and
+   stop rules. The fixture, runner and grader are built and tested in
+   `~/tmp/pressure-2026-09-28/`; **no run has been made yet.** Start with one
+   `c0` and read its whole result, as the plan says. Its results go to
+   `coverage.md`, then the user decides the rest of the tier.
 4. **Done on `quick-fix` (2026-09-28), `D19`:** `spec --quick` - the user
    chose a mode over a new skill or `autopilot`. A fix of at most two files
    outside `blueprint/`, with no stored data, contract, dependency, variable or
@@ -143,6 +153,11 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
 **Gotchas:**
 
+- **A headless run loads the user's global `~/.claude/CLAUDE.md`** unless it is
+  started with `--setting-sources project,local` - checked 2026-09-28. That
+  file asks before commits and pushes on its own, so a run without the flag
+  credits the pack with a caution it did not supply. The re-run had no flag;
+  `pressure-plan.md` uses it.
 - **This repo is a public starter.** Rules state their general reason - never
   one project's names, sizes or story. The user rejected exactly that once.
 - **Rule 18 is at its edge.** The template's loaded set is a few hundred bytes

@@ -100,7 +100,10 @@ Real projects, named here by what they are rather than what they are called.
 A one-page decision weigher named `pros&cons`, per `rerun-plan.md`: plain
 HTML/JS, `node:test` + Playwright, not published. Headless `claude -p`
 sessions inside the project, answered from a script written before the run,
-one session for phase A and one per item in B. Every single-part plan-and-build
+**with the user's global instructions loaded** - no `--setting-sources` flag,
+found afterwards - so where a skill *asked before committing*, a global rule
+saying the same may have done the asking. `pressure-plan.md` isolates it.
+One session for phase A and one per item in B. Every single-part plan-and-build
 skill ran: `ideate`, `architect`, `stack`, `layout`, `scaffold`, `ci`,
 `context`, `prototype`, then `spec`, `build`, `review`, `ship` three times,
 and `progress` after the last two. Phase C, one more session, ran
