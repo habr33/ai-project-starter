@@ -20,12 +20,12 @@ place that answers "has this skill actually run?".
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Branches: none open.** `retro-improvements` (context budget and rule 18,
-findings index and end state, overview cap, production-pending, needs-you
-closing, CI browser tests, one skills copy linked for Claude Code; `D14`-`D16`)
-and `design-kit` (`blueprint/design-kit/` and the rewritten `prototype`; `D17`)
-were fast-forwarded into `main` on 2026-09-25 at the user's request, and `main`
-pushed. Both branches are deleted.
+**Branch: `review-seams-k`, open, local only.** It sits on `main` (=
+`origin/main`, `b2e2477`) and holds the `seams-K` review fixes, the re-run
+plan, the phase A-C records and the two fixes phase A found - `git log
+--oneline main..review-seams-k`. Not merged or pushed; both are the user's
+call. Earlier branches (`retro-improvements`, `design-kit`) were merged into
+`main` on 2026-09-25 and deleted.
 
 **`claude/admiring-meitner-w9m4vx` is on `main`**: `origin/main` was
 fast-forwarded to it (`b2e2477`), seen 2026-09-28; the remote branch still
@@ -149,7 +149,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 **Verify with:**
 
     git status --short                       # nothing modified
-    git branch --show-current                # main
+    git branch --show-current                # review-seams-k
     git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
