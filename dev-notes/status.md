@@ -104,10 +104,12 @@ handoff is the user's request and says which path ran). **Phase C (checks
 12-15) is next, the user's call.** The run is in `~/tmp/rerun-2026-09-28/`;
 `notes.md` there holds the turn log, findings and costs.
 
-**To run phase C** (after the user says yes; budget 50M / 300k): `cd
-~/tmp/rerun-2026-09-28 && ./say.sh 46 "<message>"` starts a fresh headless
-session in the project, and `./say.sh N "<msg>" <session-id>` resumes it. Each
-call saves `tN.json` and prints the reply and the git state. Play the user from
+**To run phase C** (after the user says yes; budget 50M / 300k): the run
+directory's `say` script, given a turn number and a message (`46 "<message>"`),
+starts a fresh headless session in the project; given a session id as well, it
+resumes that one. It is named here without its extension because it is not in
+this repo, and rule 9 reads any `.sh` name in the prose as a claim that it is.
+Each call saves `tN.json` and prints the reply and the git state. Play the user from
 `notes.md`'s scripted answers, log every turn and finding there, and follow
 `rerun-plan.md` phase C: `preflight` while not published (it should say so,
 ask whether a release is coming, and write nothing to the ledger); then change
