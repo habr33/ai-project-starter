@@ -295,7 +295,9 @@ Sort everything into six buckets, and lead with the verdict:
   `closed` with what you checked in **Resolution**, or back to `open` if it does
   not hold. Code findings are not yours to close - they wait for `review`.
 - **Risks, accepted** - the user has decided to live with it. **Record who
-  accepted it and why.** Only they can put something here.
+  accepted it and why.** Only they can put something here. **An accepted
+  blocker counts as go** - it is a risk now, not a blocker - so a verdict of
+  no-go with every blocker accepted is a go that names them.
 - **Deferred, and to what** - every `deferred` finding in the ledger, with the
   skill or milestone named in it. These are risks the project carries *now*: a
   release goes out with them live, and the only difference from an accepted one
@@ -327,7 +329,8 @@ Then say **go** or **no-go**, plainly, in one line.
 
 **Record the verdict in `dev-notes/status.md`**, replacing any earlier one, as a
 `preflight:` line with the date and the commit audited -
-`preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14`. `deploy` gates
+`preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14`, or `preflight: go,
+2026-03-02, a1b2c3d - accepted F-12`. `deploy` gates
 production on it, and a verdict said only in the conversation is gone when the
 context is cleared.
 

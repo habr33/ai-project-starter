@@ -40,6 +40,18 @@ the ones that matter into a hard stop:
   ledger, and an empty ledger because nothing looked is indistinguishable from an
   empty ledger because nothing was wrong.
 
+**Read the spec's `**Verified:**` and `**Reviewed:**` lines**, then run the work
+fingerprint each of them recorded - the tree of every file outside `blueprint/`
+and `dev-notes/`, committed or not:
+
+    i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
+
+A line still reading `not yet` means that check has not run. **A fingerprint that
+differs means it ran on other code** - usually a repair made after it. Show
+what changed since with `git diff --stat <recorded> <current>`, and ask whether
+to run that check again; a line naming one lens or one path is that much of a
+review, and say so.
+
 **A quick fix skips both by design** - a spec with a `**Quick:**` line, from
 `spec --quick`. Name that instead of the two above, and let Step 1 check that
 it earned the skip.
@@ -56,7 +68,8 @@ blockers**:
 - The project's verification command passed **in this session**. If none is
   declared, the build passed, and the tests passed when the project has a test
   command and this change touched logic.
-- Behavioral done-whens have `verify` evidence. Do not merge on an
+- Behavioral done-whens have `verify` evidence - a `**Verified:**` line, or
+  `verify` run in this session. Do not merge on an
   unverified claim. **A quick fix's evidence is its reproduction test instead**,
   seen failing before the repair and passing after - both runs named in
   `build`'s packet. A green run alone is not that evidence.
@@ -102,7 +115,8 @@ Check what kind of item this is - the spec's `Type:` line - and archive
 accordingly:
 
 - **Feature** - archive `blueprint/context/current-work.md` to
-  `blueprint/history/features/NN-name.md`, where NN is its build-plan number, and
+  `blueprint/history/features/NN-name.md`, where NN is the spec's `From build plan:`
+  number, and
   check it off in blueprint/build-plan.md. Check the parent item too, but only once
   every sub-item under it is checked.
 - **Fix** - archive to `blueprint/history/fixes/name.md`. A fix is not a plan

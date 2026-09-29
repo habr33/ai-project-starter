@@ -21,17 +21,46 @@ place that answers "has this skill actually run?".
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
 **Done 2026-09-30, on `quick-fix`:** the pressure tier's fixes are committed
-(`88b9c9c`). **`preflight` now records its verdict**: a `preflight:` line in
-`dev-notes/status.md` with date and commit, declared in its `Writes:` line and
-the template's table; `deploy` reads that line for the production gate and
-treats a missing one as not run. Tests in `test-seams.sh`, each seen failing
-first; dropping either declaration fails rule 9 by name. `index.html`, the
-pack's landing page, is added to the repo.
+(`88b9c9c`). **`preflight` records its verdict** (`2fa00ed`): a `preflight:`
+line in `dev-notes/status.md` with date and commit; `deploy` reads it for the
+production gate and treats a missing one as not run. `index.html`, the pack's
+landing page, is in the repo.
 
-**Next: design with the user how `review` records a clean pass** - nothing
-records that `review` ran and found nothing, so `ship`'s claim that it did has
-nothing to check. It changes what `review` writes, so it starts with the
-options, not an edit.
+**Then `verify` and `review` records** (committed with this note):
+
+- **`verify` and `review` record what they examined.** `spec`'s header had a
+  `**Status:**` field nothing read, which agents filled in their own words; it
+  is replaced by `**Verified:**` and `**Reviewed:**`, each `not yet` until the
+  skill writes the date, a **work fingerprint** and the result. `review`
+  writes its line on a clean pass too - an empty ledger no longer reads the
+  same as one nobody looked at.
+- **The fingerprint is a tree id, not a commit**: a temporary index over every
+  file outside `blueprint/` and `dev-notes/`. Checkpoints are optional, so a
+  commit key calls every review of uncommitted work stale and never sees an
+  untracked file - both seen in a scratch repo. The command is written in
+  `verify`, `review` and `ship`; a seam test holds the three identical and
+  `test-scripts.sh` runs `ship`'s copy.
+- **`ship` names a stale line and asks** rather than refusing: repairs come
+  after `verify` in the loop, so a hard match would force a re-verify after
+  every repair. It shows `git diff --stat <recorded> <current>`.
+- **`preflight`: an accepted blocker counts as go**, and the line names it. A
+  verdict written as "no-go, every blocker accepted" would otherwise stop
+  `deploy` for a release the user had already cleared.
+- **A seam check: every field in `spec`'s header has a reader.** It found `ship`
+  paraphrasing `From build plan:` ("its build-plan number"); now named. It
+  would **not** have caught `**Status:**` on its own - finding entries have a
+  `Status:` field too - so that one has its own assertion.
+- `docs/anatomy.md`'s table corrected for all of it, including the `preflight`
+  row item 2 left saying "findings only".
+- Every new test seen failing first, then each fix broken in a copy: a
+  drifted copy, tracked files only, HEAD's tree, and a broken extraction each
+  fail the assertion that names them.
+
+**Unproven:** none of the new records has run in a real project yet.
+
+**Open, not started:** `preflight` blockers can escape the ledger - one filed at
+P2, others only as `needs-you` lines, their acceptance only in status prose -
+though `preflight` says each goes in as P0 or P1. Worth an item.
 
 Then merging the two open branches is the user's call.
 

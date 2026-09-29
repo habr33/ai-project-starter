@@ -1138,4 +1138,29 @@ for n in 'r&d' 'x|y' 'back\slash'; do
   assert_exists "and still makes its first commit" "$w/$n/.git"
 done
 
+section "the work fingerprint verify, review and ship record"
+# Run as ship gives it. A commit is the wrong key: checkpoints are optional, so
+# a review of uncommitted work already differs from its HEAD, and git diff never
+# sees a new file nobody has added.
+fpcmd=$(grep -h 'git write-tree' "$REPO/skills/ship.md" | sed 's/^ *//')
+assert_ok "ship gives the fingerprint command" test -n "$fpcmd"
+w=$(workdir); (cd "$w" && git init -q -b main && git config user.email t@t && git config user.name t \
+  && echo a >app.js && git add app.js && git commit -qm base && git checkout -qb item \
+  && echo b >>app.js && echo new >new.js) >/dev/null 2>&1
+fp() { (cd "$w" && eval "$fpcmd"); }
+f0=$(fp)
+assert_ok "prints a tree id" grep -qE '^[0-9a-f]{12}$' <<<"$f0"
+mkdir -p "$w/blueprint/context" "$w/dev-notes"
+echo "**Reviewed:** x" >"$w/blueprint/context/current-work.md"; echo s >"$w/dev-notes/status.md"
+assert_eq "ignores blueprint/ and dev-notes/" "$f0" "$(fp)"
+(cd "$w" && git add -A && git commit -qm checkpoint)
+assert_eq "ignores whether the work is committed" "$f0" "$(fp)"
+(cd "$w" && git reset -q --soft HEAD~1 && git reset -q)
+echo more >>"$w/new.js"
+f1=$(fp)
+assert_ok "sees a change to a file git does not track yet" test "$f0" != "$f1"
+assert_eq "leaves the real index alone" "" "$(cd "$w" && git diff --cached --name-only)"
+assert_eq "and git can say what changed between two" "new.js" \
+  "$(cd "$w" && git diff --name-only "$f0" "$f1")"
+
 finish

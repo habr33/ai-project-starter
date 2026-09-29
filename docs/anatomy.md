@@ -54,7 +54,7 @@ by mentioning it.
 | `blueprint/context/principles.md` | the project's non-negotiable commitments — what it will never trade away. **Product-level, like the plan.** Never inferred from code: `setup` reports it unrecorded rather than writing one | `ideate` | `architect` `review` `preflight` |
 | `blueprint/context/design.md` | visual decisions, measured values, the navigation map, the screens and journeys that apply | `prototype` `spec` | `spec` `review` `ship` |
 | `blueprint/design-kit/` | the baseline tokens (JSON and CSS), every core component in every state, and the UX checklist — **the pack** refreshes it on every install | **the pack** | `prototype` `spec` |
-| `blueprint/context/current-work.md` | the one item in flight, steps ticked | `spec` `build` `ship` `rollback` | 7 skills |
+| `blueprint/context/current-work.md` | the one item in flight, steps ticked, and what `verify` and `review` last examined | `spec` `build` `ship` `verify` `review` `rollback` | 5 skills |
 | `blueprint/context/findings.md` | the findings **index**, loaded every session — one heading per live finding, and status lives only here. Code findings close through `review` (or `build`, at P2 or P3, with a test seen failing first); non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
 | `blueprint/findings/` | each finding's full entry, `<ID>.md`, read on demand; and `backlog.md`, the unresolved P3s `ship` moves out of the index | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `review` `progress` `preflight` |
 | `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` `ship` | `prepare` `progress` `preflight` |
@@ -65,8 +65,9 @@ by mentioning it.
 | `project-plan.md` · §8 Deployment | target host, build and start commands, env vars by name, storage, health check | `stack` `architect` `scaffold` | `host` `deploy` `preflight` |
 | `AGENTS.md` · Environments | every place this code runs, and which hold real data | `scaffold` `host` | `deploy` `migrate` `preflight` `monitor` |
 
-**`current-work.md` is the hinge.** Eleven skills touch it and four write it.
-`spec` fills it, `build` ticks it, `ship` clears it, and `rollback` writes the
+**`current-work.md` is the hinge.** Eleven skills touch it and six write it.
+`spec` fills it, `build` ticks it, `verify` and `review` record the fingerprint
+of the code they examined, `ship` clears it, and `rollback` writes the
 guarded plan for a reversal into it. That is why shipping in
 one part of a multi-part product used to destroy another part's in-flight work,
 and why the coordination board is one file per part rather than one file with
@@ -126,8 +127,8 @@ against *this project's* recorded values rather than a generic standard.
 |---|---|---|---|---|
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight; a UI with no design.md | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
-| `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify) — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
-| `review` | source, standards, quality-bar, **principles**, design, findings | **findings only** | *(advisory)* — reports missing bars | repairs, or `ship` |
+| `verify` | current-work done-whens; with `--all`, **every archived done-when under `history/`** | findings (a regression), needs-you (a could-not-verify), the spec's `Verified:` line — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
+| `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
 | `ship` | current-work, findings, build-plan | history, build-plan, decisions, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the
@@ -160,7 +161,7 @@ something is already live. It edits no product code; it isolates and hands back.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `preflight` | plan, overview, standards, findings, quality-bar, **principles**, history, CHANGELOG | **findings only** — blockers as P0/P1, and `closed` on a non-code repair it re-checked | *(no gate — it audits any state)* | the skill fixing each blocker |
+| `preflight` | plan, overview, standards, findings, quality-bar, **principles**, history, CHANGELOG | findings — blockers as P0/P1, and `closed` on a non-code repair it re-checked; status (**the verdict line** `deploy` gates production on) | *(no gate — it audits any state)* | the skill fixing each blocker |
 | `host` | project-plan Deployment + Architecture | infrastructure, secrets, status, decisions, findings→`fixed` | plan names no service, database or domain | `deploy` |
 | `deploy` | build output, env, migrations | the release, status (**the commit**), findings→`fixed` | *(advisory)* — names missing preflight/ci/host; **stops on a pending migration**, which is `migrate`'s | `monitor`, `docs` |
 | `monitor` | signals, quality-bar, build-plan | status, findings→`fixed`, proposed plan items | nothing is deployed | `debug`, or `spec` |

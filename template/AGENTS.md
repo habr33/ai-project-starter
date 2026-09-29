@@ -17,7 +17,7 @@ These are already loaded, before you read anything else:
 | `blueprint/context/project-overview.md` | what this project is - at most 8 KB; it links, never restates | `context` |
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
-| `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `rollback` |
+| `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `verify`, `review`, `rollback` |
 | `blueprint/context/findings.md` | the findings index - one heading per live finding, status only | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `ship` |
 

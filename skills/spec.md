@@ -297,7 +297,8 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
     **From build plan:** item <n>        (omit for a fix)
     **Type:** Feature | Fix
     **Quick:** yes - <files it touches; each criterion held>   (only for --quick)
-    **Status:** not started
+    **Verified:** not yet
+    **Reviewed:** not yet
 
     ## Goal
     What this delivers, in a sentence or two, and why it matters.

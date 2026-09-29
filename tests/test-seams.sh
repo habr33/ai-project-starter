@@ -2992,4 +2992,52 @@ assert_ok "deploy reads preflight's verdict from that line" \
 assert_ok "and treats a missing line as not run" \
   _says skills/deploy.md 'No `preflight:` line means it has not run'
 
+section "verify and review record what they examined, and ship reads it"
+# Nothing recorded that verify or review had run. A review that found nothing
+# left an empty ledger, which reads exactly like one nobody looked at, and a
+# verify report lived only in the conversation - so ship either re-ran the
+# checks itself or merged on a claim nothing could confirm. spec's header had a
+# **Status:** field that nothing read, and agents filled it in their own words.
+hdr=$(sed -n '/^    # <Feature | Fix>: <name>$/,/^    ## Goal$/p' skills/spec.md)
+assert_ok "spec's header starts the verify record" grep -qF '**Verified:** not yet' <<<"$hdr"
+assert_ok "spec's header starts the review record" grep -qF '**Reviewed:** not yet' <<<"$hdr"
+assert_fails "spec's header has no field nothing reads" grep -qF '**Status:**' <<<"$hdr"
+for n in verify review; do
+  assert_ok "$n declares current-work.md as a write" \
+    grep -qE '^\*\*Writes:\*\*.*`blueprint/context/current-work.md`' skills/$n.md
+done
+assert_ok "verify records its result in the spec" \
+  _says skills/verify.md 'Record the result in the spec'"'"'s `**Verified:**` line'
+assert_ok "review records every pass in the spec" \
+  _says skills/review.md 'record the pass in the spec'"'"'s `**Reviewed:**` line'
+assert_ok "including a pass that found nothing" \
+  _says skills/review.md 'Including when nothing was found'
+assert_ok "ship reads both records" \
+  _says skills/ship.md 'Read the spec'"'"'s `**Verified:**` and `**Reviewed:**` lines'
+# One fingerprint, written three times: a copy that drifts makes every record
+# it writes look stale, or worse, makes a stale one match.
+fps=$(for n in verify review ship; do grep -h 'git write-tree' skills/$n.md | sed 's/^ *//'; done)
+assert_eq "verify, review and ship each give the fingerprint once" 3 "$(grep -c . <<<"$fps")"
+assert_eq "and it is the same command in all three" 1 "$(sort -u <<<"$fps" | grep -c .)"
+
+section "every field in spec's header has a reader"
+# **Status:** was written into every spec and read by nothing. A field with a
+# writer and no reader is filled in by whoever passes, in whatever words, and
+# trusted by nobody - the same defect as a board field with no writer, reversed.
+# Named, bold or not - a paraphrase binds nothing, as rule 17 says of the contract.
+fields=$(grep -oE '^    \*\*[A-Z][A-Za-z ]+:\*\*' <<<"$hdr" | sed 's/^ *\*\*//; s/\*\*$//' | sort -u)
+assert_ok "spec's header declares fields" test -n "$fields"
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  assert_ok "something other than spec reads $f" \
+    grep -qlF -- "$f" $(ls skills/*.md | grep -v '^skills/spec.md$')
+done <<<"$fields"
+
+section "preflight counts an accepted blocker as the user's go"
+# A verdict recorded as "no-go, every blocker accepted as risk" was followed by
+# a release: by preflight's own buckets an accepted blocker is a risk, not a
+# blocker, and deploy reads the line - so it has to say go, and name them.
+assert_ok "preflight says an accepted blocker counts as go" \
+  _says skills/preflight.md 'An accepted blocker counts as go'
+
 finish

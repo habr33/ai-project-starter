@@ -5,7 +5,7 @@ description: "Prove the current work actually does what its spec says, by runnin
 
 # verify - prove it against the running app
 
-**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/context/current-work.md`
 
 Where this sits:
 
@@ -204,6 +204,18 @@ Then the bottom line: are all the done-whens proven, or not yet.
   known cause; it is not where an unknown one gets found.
   Do not fix it here.
 - **Anything unverifiable** - say so plainly and why. Never report it as a pass.
+
+**Record the result in the spec's `**Verified:**` line**, replacing what is
+there: the date, the work fingerprint, and the count -
+`**Verified:** 2026-03-02, 6f06b62b2f2c, 4 of 5 proven, 1 could not verify`.
+`ship` reads it; a report said only in the conversation is gone when the
+context is cleared, and then the item is either verified again at the merge or
+merged on a claim nothing can confirm. The fingerprint is the tree of every
+file outside `blueprint/` and `dev-notes/`, committed or not, so a checkpoint
+commit does not change it and any edit to the code does. Run it from where this
+skill runs:
+
+    i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
 
 **With `--all`, the bottom line is a different sentence.** Nothing here is ready
 for `review` or `ship` - no item is in flight. Report instead:
