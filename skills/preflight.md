@@ -5,7 +5,7 @@ description: "The whole-project go-live audit: everything, once, before the firs
 
 # preflight - is this ready to be live at all?
 
-**Writes:** `blueprint/context/findings.md` · `blueprint/findings/`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `dev-notes/status.md`
 
 Where this sits:
 
@@ -324,6 +324,12 @@ scaffold-default README or absent dev-notes, `host` for backups and secrets,
 `spec` and `build` for anything needing code.
 
 Then say **go** or **no-go**, plainly, in one line.
+
+**Record the verdict in `dev-notes/status.md`**, replacing any earlier one, as a
+`preflight:` line with the date and the commit audited -
+`preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14`. `deploy` gates
+production on it, and a verdict said only in the conversation is gone when the
+context is cleared.
 
 **This skill must be able to say no.** A readiness check that always passes is
 worse than none, because it converts an unexamined risk into documented false

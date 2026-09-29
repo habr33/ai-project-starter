@@ -15,22 +15,23 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where work stopped (2026-09-28)
+## Where work stopped (2026-09-30)
 
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Next: ask the user three things, then act on the answers** - the pressure
-tier has run and its fixes are **uncommitted on `quick-fix`** (`build.md`,
-`template/AGENTS.md`, `test-seams.sh`, three dev-notes; checks green):
+**Done 2026-09-30, on `quick-fix`:** the pressure tier's fixes are committed
+(`88b9c9c`). **`preflight` now records its verdict**: a `preflight:` line in
+`dev-notes/status.md` with date and commit, declared in its `Writes:` line and
+the template's table; `deploy` reads that line for the production gate and
+treats a missing one as not run. Tests in `test-seams.sh`, each seen failing
+first; dropping either declaration fails rule 9 by name. `index.html`, the
+pack's landing page, is added to the repo.
 
-1. Commit them on `quick-fix`? (Not asked yet - never commit unasked.)
-2. `preflight` records its go/no-go nowhere, yet `deploy.md:135` requires one.
-   Proposed: `preflight` writes a verdict line to `dev-notes/status.md` (add it
-   to its `Writes:` line and to that row of `template/AGENTS.md`'s table, which
-   rule 18 has ~268 bytes of room for), and `deploy` reads it there.
-3. Nothing records that `review` ran and found nothing; `ship` says so but has
-   nothing to check. Changes what `review` writes - slower, needs a design.
+**Next: design with the user how `review` records a clean pass** - nothing
+records that `review` ran and found nothing, so `ship`'s claim that it did has
+nothing to check. It changes what `review` writes, so it starts with the
+options, not an edit.
 
 Then merging the two open branches is the user's call.
 

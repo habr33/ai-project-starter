@@ -2979,4 +2979,17 @@ assert_ok "and says a hurry is no exception" \
 assert_ok "the project's standing rules load a named skill however small the ask" \
   _says template/AGENTS.md 'A skill the user names is loaded first'
 
+section "preflight's verdict is recorded where deploy reads it"
+# deploy gated production on "preflight has been run and returned go", but
+# preflight wrote only the ledger - its go/no-go lived in the conversation, and
+# the pressure tier's fixtures had to write one into status.md by hand.
+assert_ok "preflight declares dev-notes/status.md as a write" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/status.md`' skills/preflight.md
+assert_ok "preflight records its verdict line there" \
+  _says skills/preflight.md 'Record the verdict in `dev-notes/status.md`'
+assert_ok "deploy reads preflight's verdict from that line" \
+  _says skills/deploy.md 'its `preflight:` line in `dev-notes/status.md` reads go'
+assert_ok "and treats a missing line as not run" \
+  _says skills/deploy.md 'No `preflight:` line means it has not run'
+
 finish

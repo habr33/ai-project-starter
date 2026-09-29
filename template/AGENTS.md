@@ -42,7 +42,7 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/history/` | every completed item, archived | `ship` |
 | `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
-| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate` |
+| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
 | `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
 | `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `ship`, `autopilot` |

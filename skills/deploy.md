@@ -33,9 +33,10 @@ which records that change and provisions the target; do not edit the plan here.
 
 Name which of these has not happened, rather than proceeding quietly past it:
 
-- **`preflight` has never run** and this is the first release - say so and
-  recommend it. It is the one step people skip, and it is the only one that asks
-  whether this can face real users at all.
+- **`preflight` has never run** - no `preflight:` line in `dev-notes/status.md` -
+  and this is the first release - say so and recommend it. It is the one step
+  people skip, and it is the only one that asks whether this can face real users
+  at all.
 - **`ci` is not set up** - the checks about to gate this release only ever ran on
   someone's laptop.
 - **`host` has not provisioned this environment** - there is nowhere for this to
@@ -132,8 +133,11 @@ Check, and report only what blocks:
   is the step that makes the two agree.
 - **for a multi-part project**: `integrate` passed against these exact versions,
   and the contract is current
-- **for production only**: `preflight` has been run and returned go, or the user
-  has explicitly accepted going without it
+- **for production only**: `preflight` has been run and returned go - its
+  `preflight:` line in `dev-notes/status.md` reads go; name its date and commit,
+  and what has merged since - or the user has explicitly accepted going without
+  it. **No `preflight:` line means it has not run**, whatever was said about it
+  earlier: say so, and proceed only on that acceptance.
 
 **A failing production build stops this.** Hand back to `build`.
 
