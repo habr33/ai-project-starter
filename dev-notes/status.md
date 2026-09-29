@@ -67,12 +67,10 @@ acceptance is set `accepted` in the ledger. Tested under *every preflight
 blocker, and its acceptance, is in the ledger*, each seen failing first.
 **Unproven against an agent.**
 
-**Merged 2026-09-30, not pushed:** `main` was fast-forwarded to `quick-fix`,
+**Merged and pushed 2026-09-30:** `main` was fast-forwarded to `quick-fix`,
 which was stacked on `review-seams-k`, so both are in - the `seams-K` review
 fixes, the re-run plan and records, `spec --quick` (item 4), the pressure
-plan and tier, and everything above. `origin/main` is still `b2e2477`;
-`git log --oneline origin/main..main` is what a push would publish, and
-pushing is the user's call. Earlier branches (`retro-improvements`, `design-kit`) were merged into
+plan and tier, and everything above. Both branches are deleted. Earlier branches (`retro-improvements`, `design-kit`) were merged into
 `main` on 2026-09-25 and deleted.
 
 **`claude/admiring-meitner-w9m4vx` is on `main`**: `origin/main` was
@@ -237,7 +235,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
     git status --short                       # empty
     git branch --show-current                # main
-    git log --oneline origin/main..main      # the merged work, until pushed
+    git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
 
