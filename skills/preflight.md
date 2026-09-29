@@ -278,6 +278,15 @@ Sort everything into six buckets, and lead with the verdict:
   ledger as P0 or P1, so the existing machinery carries it: a heading in the
   index, the entry in `blueprint/findings/<ID>.md`, in `review`'s format.
 
+  **Every blocker is a ledger entry at P0 or P1, whatever `review`'s scale
+  would call it** - this audit asks whether it is fit to go live, not how bad
+  the code is. One filed at P2 gates nothing, so the report says no-go while
+  `ship` merges past it; if it is not worth a P1, it is not a blocker. **A
+  blocker whose repair is a person's** - an account, a manual check, an open
+  `needs-you.md` line - **still goes in the ledger**, naming that line: the
+  line says what to do, the finding is what gates, and without it the
+  `preflight:` line has no ID to name.
+
   **A blocker only a release needs holds the build loop too.** A person trying
   it on a real device, an account, a backup - once `open` at P0 or P1, it
   blocks every later `ship` in this part, though the next item's code has
@@ -294,8 +303,10 @@ Sort everything into six buckets, and lead with the verdict:
   one that closes it**: re-check the evidence against the real system, move it to
   `closed` with what you checked in **Resolution**, or back to `open` if it does
   not hold. Code findings are not yours to close - they wait for `review`.
-- **Risks, accepted** - the user has decided to live with it. **Record who
-  accepted it and why.** Only they can put something here. **An accepted
+- **Risks, accepted** - the user has decided to live with it. **Set it
+  `accepted` in the ledger, with who accepted it and why in its entry** - an
+  acceptance written only in `dev-notes/status.md` is one nothing that gates
+  reads. Only they can put something here. **An accepted
   blocker counts as go** - it is a risk now, not a blocker - so a verdict of
   no-go with every blocker accepted is a go that names them.
 - **Deferred, and to what** - every `deferred` finding in the ledger, with the
@@ -352,7 +363,8 @@ still read as outstanding - and treating a stale line as a blocker fails a
 release for a reason that no longer exists, which is the same false answer as
 missing a real one. Verify, then report; where a line is satisfied, say so and
 name the skill that should close it. Anything genuinely still open and
-required for this release is a **blocker**, not a risk - a launch waiting on an
+required for this release is a **blocker**, not a risk, filed in the ledger
+like any other - a launch waiting on an
 account nobody has created is not ready, however good the code is. Anything
 open but not needed yet belongs in the knowingly-accepted section with its
 timing. `prepare` is the skill that reports that list in full.
@@ -365,7 +377,7 @@ timing. `prepare` is the skill that reports that list in full.
 - **Never claim compliance.** This checks against a standard; it certifies
   nothing. "Nothing found against the recorded bar" is the strongest true claim.
 - **Unverifiable is never a pass.**
-- **Only the user accepts a risk**, and the acceptance is recorded with a reason.
+- **Only the user accepts a risk**, and the acceptance is recorded in the ledger with a reason.
 - **Whole project, not a diff.** That is the entire point.
 
 ## Formatting

@@ -161,7 +161,7 @@ something is already live. It edits no product code; it isolates and hands back.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `preflight` | plan, overview, standards, findings, quality-bar, **principles**, history, CHANGELOG | findings — blockers as P0/P1, and `closed` on a non-code repair it re-checked; status (**the verdict line** `deploy` gates production on) | *(no gate — it audits any state)* | the skill fixing each blocker |
+| `preflight` | plan, overview, standards, findings, quality-bar, **principles**, history, CHANGELOG | findings — every blocker as P0/P1, a person's too, `accepted` only on the user's word, and `closed` on a non-code repair it re-checked; status (**the verdict line** `deploy` gates production on) | *(no gate — it audits any state)* | the skill fixing each blocker |
 | `host` | project-plan Deployment + Architecture | infrastructure, secrets, status, decisions, findings→`fixed` | plan names no service, database or domain | `deploy` |
 | `deploy` | build output, env, migrations | the release, status (**the commit**), findings→`fixed` | *(advisory)* — names missing preflight/ci/host; **stops on a pending migration**, which is `migrate`'s | `monitor`, `docs` |
 | `monitor` | signals, quality-bar, build-plan | status, findings→`fixed`, proposed plan items | nothing is deployed | `debug`, or `spec` |

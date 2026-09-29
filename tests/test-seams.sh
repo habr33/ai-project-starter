@@ -3040,4 +3040,18 @@ section "preflight counts an accepted blocker as the user's go"
 assert_ok "preflight says an accepted blocker counts as go" \
   _says skills/preflight.md 'An accepted blocker counts as go'
 
+section "every preflight blocker, and its acceptance, is in the ledger"
+# A no-go audit of a live project named four blockers: one filed at P2, three
+# only as needs-you lines, and all four accepted in status prose. Nothing that
+# gates read any of it - a P2 holds no merge, a needs-you line has no ID for
+# the preflight: line to name, and the ledger never said accepted.
+assert_ok "preflight says a blocker is P0 or P1 whatever review would call it" \
+  _says skills/preflight.md 'Every blocker is a ledger entry at P0 or P1, whatever'
+assert_ok "and a person's blocker still goes in the ledger" \
+  _says skills/preflight.md 'still goes in the ledger'
+assert_ok "and an acceptance is set in the ledger, not only in status prose" \
+  _says skills/preflight.md 'Set it `accepted` in the ledger'
+assert_ok "and its rules say where the acceptance is recorded" \
+  _says skills/preflight.md 'the acceptance is recorded in the ledger with a reason'
+
 finish

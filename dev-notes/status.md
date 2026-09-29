@@ -58,19 +58,21 @@ landing page, is in the repo.
 
 **Unproven:** none of the new records has run in a real project yet.
 
-**Open, not started:** `preflight` blockers can escape the ledger - one filed at
-P2, others only as `needs-you` lines, their acceptance only in status prose -
-though `preflight` says each goes in as P0 or P1. Worth an item.
+**Then `preflight`'s blockers stay in the ledger**: a live
+project's no-go named four blockers - one filed at P2, three only as
+`needs-you` lines, all accepted in status prose - so nothing that gates saw
+them. `preflight` now says every blocker is a P0/P1 entry whatever `review`
+would rank it, a person's blocker gets one naming its `needs-you` line, and
+acceptance is set `accepted` in the ledger. Tested under *every preflight
+blocker, and its acceptance, is in the ledger*, each seen failing first.
+**Unproven against an agent.**
 
-Then merging the two open branches is the user's call.
-
-**Branch: `quick-fix`, open, local only**, stacked on `review-seams-k` (the
-user's choice, 2026-09-28) and holding item 4 below and the pressure plan. **`review-seams-k` is
-itself open, local only.** It sits on `main` (=
-`origin/main`, `b2e2477`) and holds the `seams-K` review fixes, the re-run
-plan, the phase A-C records and the two fixes phase A found - `git log
---oneline main..review-seams-k`. Not merged or pushed; both are the user's
-call. Earlier branches (`retro-improvements`, `design-kit`) were merged into
+**Merged 2026-09-30, not pushed:** `main` was fast-forwarded to `quick-fix`,
+which was stacked on `review-seams-k`, so both are in - the `seams-K` review
+fixes, the re-run plan and records, `spec --quick` (item 4), the pressure
+plan and tier, and everything above. `origin/main` is still `b2e2477`;
+`git log --oneline origin/main..main` is what a push would publish, and
+pushing is the user's call. Earlier branches (`retro-improvements`, `design-kit`) were merged into
 `main` on 2026-09-25 and deleted.
 
 **`claude/admiring-meitner-w9m4vx` is on `main`**: `origin/main` was
@@ -233,9 +235,9 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
 **Verify with:**
 
-    git status --short                       # the six files above, until committed
-    git branch --show-current                # quick-fix
-    git log --oneline origin/main..main      # empty - main is pushed
+    git status --short                       # empty
+    git branch --show-current                # main
+    git log --oneline origin/main..main      # the merged work, until pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
 
