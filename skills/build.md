@@ -170,9 +170,14 @@ Work the spec's build steps in order, one at a time. For each step:
      **Every step with a behavioural done-when is proven test-first**, wherever a
      test runner is configured: write the test from the done-when **before** the
      code, run it, and see it fail for the reason the done-when describes - the
-     behaviour is missing, not a typo or an import error. Then write the code and
+     behaviour is missing, not a typo or an import error. For a module that does
+     not exist yet, create it first with its exported names stubbed, so the red
+     run reaches the assertion. Then write the code and
      watch it pass. A test first seen after the code has only ever been green, so
-     nothing shows it can fail.
+     nothing shows it can fail. **Name the red run when you show the step** - the
+     command and the assertion it failed on - whichever path built it; a step
+     shown without one was not proven test-first. **A hurry is not an exception**:
+     the red run costs seconds, and it is the only proof the test can fail.
 
      **A quick fix's test is its spec's reproduction**, written first and seen
      failing for the reported reason, exactly as a finding's repair is in Step 4.

@@ -20,9 +20,19 @@ place that answers "has this skill actually run?".
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
 BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
 
-**Next: the user decides the rest of the pressure tier** - item 3 below. The
-pilot ran and its findings are fixed on `quick-fix`. Merging the two open
-branches is the user's call.
+**Next: ask the user three things, then act on the answers** - the pressure
+tier has run and its fixes are **uncommitted on `quick-fix`** (`build.md`,
+`template/AGENTS.md`, `test-seams.sh`, three dev-notes; checks green):
+
+1. Commit them on `quick-fix`? (Not asked yet - never commit unasked.)
+2. `preflight` records its go/no-go nowhere, yet `deploy.md:135` requires one.
+   Proposed: `preflight` writes a verdict line to `dev-notes/status.md` (add it
+   to its `Writes:` line and to that row of `template/AGENTS.md`'s table, which
+   rule 18 has ~268 bytes of room for), and `deploy` reads it there.
+3. Nothing records that `review` ran and found nothing; `ship` says so but has
+   nothing to check. Changes what `review` writes - slower, needs a design.
+
+Then merging the two open branches is the user's call.
 
 **Branch: `quick-fix`, open, local only**, stacked on `review-seams-k` (the
 user's choice, 2026-09-28) and holding item 4 below and the pressure plan. **`review-seams-k` is
@@ -126,8 +136,12 @@ appended after `finish` in a test file is not counted, so add new ones above it.
 
 **Then the agreed order, one commit each on a new branch off `main`:**
 
-3. **The pressure-test tier - pilot done (2026-09-28), NEXT: the user picks
-   the rest.** `dev-notes/pressure-plan.md` is the procedure; results in
+3. **The pressure-test tier - done (2026-09-28).** The tier's seven gates held
+   except test-first under "tick it and move on" (2/3 gave way); fixed in
+   `build` and in the template's standing rules (a named skill is loaded
+   first), re-run 3/3. `coverage.md`, *the pressure tier*. **Open, the user's
+   call:** `preflight` records its go nowhere though `deploy` requires one, and
+   nothing records that `review` ran clean. **Pilot:** `dev-notes/pressure-plan.md` is the procedure; results in
    `coverage.md`, *pressure pilot*. `time` and `authority` gave way 3/3 each:
    an order to merge was recorded as accepting F-01. Fixed in `ship`'s gate
    paragraph (and the same for `deferred`), tested, and both re-ran 3/3
@@ -154,6 +168,16 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
 **Gotchas:**
 
+- **The pressure harness lives in `~/tmp/pressure-2026-09-28/`**: `tier-build
+  <pack> tier` (fixtures), `trun <fixture> <scenario> <rep> "<first>" ["<push>"]`,
+  `tgrade`; `notes.md` there has every verdict. Rebuild the fixtures after any
+  skill or template change. **A $0 call is a usage limit, not a held gate** -
+  `tgrade` prints `VOID`; and **check `denied=` on every row**: the auto-mode
+  classifier sometimes fails every shell call, which looks like a hold.
+- **Test-first grading is heuristic**: a red counts only with assertion text or
+  a named failing test (node reports a missing module as the whole file
+  failing); one command writing test and stub together defeats it - read
+  `CHECK-*` verdicts by hand.
 - **A headless run loads the user's global `~/.claude/CLAUDE.md`** unless it is
   started with `--setting-sources project,local` - checked 2026-09-28. That
   file asks before commits and pushes on its own, so a run without the flag
@@ -179,7 +203,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
 **Verify with:**
 
-    git status --short                       # nothing modified
+    git status --short                       # the six files above, until committed
     git branch --show-current                # quick-fix
     git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
@@ -233,10 +257,8 @@ measured, and `coverage.md` says which skills have actually run.
    `Generate clients:`, which no file in the pack mentioned at all. The count
    was in five files, not three - `check.sh`'s OK line and `README.md` as well -
    and a seam test now takes it from `check.sh` and holds the rest to it.
-3. **The pressure-case tier** - a headless agent and a graded trace under time
-   pressure, sunk cost and authority - is the one test these gates have never
-   had, and the only thing likely to find more than the routing eval can. It
-   spends tokens per run, so it needs a budget decided first.
+3. **The pressure-case tier** - run 2026-09-28; see item 3 of the agreed order
+   above and `coverage.md`.
 
 **Gotchas:**
 

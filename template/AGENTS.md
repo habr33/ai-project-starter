@@ -143,6 +143,8 @@ Or just ask in plain language - "spec the next item", "run the review".
 
 ## Rules that hold regardless of skill
 
+- **A skill the user names is loaded first**, however small the ask sounds -
+  "run build, just tick it" still runs `build`; its checks are the point.
 - **Never build on `main`.** Work happens on a branch.
 - **Never commit code the user has not seen and approved.**
 - **Never push, deploy, provision, or change a remote service** without a
@@ -155,8 +157,7 @@ Or just ask in plain language - "spec the next item", "run the review".
 - **Changes to a server go through `host`**, whichever skill the question came up
   in. Answer the question where it is asked; make the change in `host`, which
   checks what else the machine runs and shows what a removal takes before doing
-  it. A hosting question during `layout` once became removing an app and sixty
-  packages from a shared server, with no skill in charge.
+  it.
 - **A plan line you have found to be false gets corrected in the same change.**
   A server checked and found without the database the plan says it has, an image
   tag chosen that differs from the one the plan names: fix the line, with the

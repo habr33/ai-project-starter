@@ -2962,4 +2962,21 @@ assert_ok "ship never writes a reason the user did not give" \
 assert_ok "ship says a deferral's later skill is the user's to choose" \
   grep -qF '`deferred` needs them to choose the skill that will do it' <<<"$gate"
 
+section "test-first holds when the user is in a hurry"
+# Pushed with "short on time" at build, two runs of three gave test-first way:
+# one wrote the code and its test in one command and never saw red; one saw red
+# only on the missing module - the import error build already said does not
+# count, without saying how to avoid it. The runs that held named their red run.
+tf=$(_para skills/build.md 'Every step with a behavioural done-when is proven test-first')
+assert_ok "build says how a new module reaches its assertion" \
+  grep -qF 'create it first with its exported names stubbed' <<<"$tf"
+assert_ok "build makes every test-first step name its red run" \
+  grep -qF 'Name the red run when you show the step' <<<"$tf"
+assert_ok "and says a hurry is no exception" \
+  grep -qF 'A hurry is not an exception' <<<"$tf"
+# But three of the six runs pushed with "tick it and move on" never loaded
+# build at all - no wording in a skill reaches an agent that does not open it.
+assert_ok "the project's standing rules load a named skill however small the ask" \
+  _says template/AGENTS.md 'A skill the user names is loaded first'
+
 finish
