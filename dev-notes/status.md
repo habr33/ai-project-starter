@@ -67,6 +67,16 @@ acceptance is set `accepted` in the ledger. Tested under *every preflight
 blocker, and its acceptance, is in the ledger*, each seen failing first.
 **Unproven against an agent.**
 
+**Then item 5, optional hooks, on branch `hooks`** (`D20`, not merged):
+`install.sh --hooks` and `new-project.sh --hooks` register two Claude Code
+hooks - a `git commit` on `main` asks the person (asks, not refuses: the setup
+commits and `ship`'s squash belong there), and a session opens with a warning
+over the context budget. Tests under *the optional hooks, D20* in
+`tests/test-scripts.sh`, each seen failing first; thirteen mutations each
+caught by the assertion that names them. **Run for real, headless**: with
+`git commit` allowed, a commit on `main` was denied with the hook's reason and
+the same commit on a branch went through; the budget line reached the session.
+
 **Merged and pushed 2026-09-30:** `main` was fast-forwarded to `quick-fix`,
 which was stacked on `review-seams-k`, so both are in - the `seams-K` review
 fixes, the re-run plan and records, `spec --quick` (item 4), the pressure
@@ -188,8 +198,8 @@ appended after `finish` in a test file is not counted, so add new ones above it.
    crosses a limit, and `ship` checks them again. Tests under *the quick path,
    D19* in `tests/test-seams.sh`, every assertion seen failing under a
    mutation. **Never run against a project** - the tests prove the wording.
-5. **Optional hooks** (`.claude/settings.json`) for rules that must not depend
-   on the model remembering them - e.g. no commit on `main`, the budget check.
+5. **Optional hooks - done on `hooks` (2026-09-30), `D20`.** No commit on `main`
+   without the person's yes, and the budget warning. See above.
 6. **Living capability specs** that `ship` updates (OpenSpec-style); a Claude
    Code plugin package alongside the scripts.
 
@@ -234,7 +244,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 **Verify with:**
 
     git status --short                       # empty
-    git branch --show-current                # main
+    git branch --show-current                # hooks, until it is merged
     git log --oneline origin/main..main      # empty - main is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures

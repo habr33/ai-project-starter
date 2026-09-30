@@ -15,7 +15,7 @@ usage() {
 install.sh - add the workflow to an existing project
 
 Usage:
-  install.sh [--target DIR] [--force]
+  install.sh [--target DIR] [--force] [--hooks]
 
   --target DIR   Where to install (default: the current directory)
   --force        Accepted but no longer needed: skills are always replaced.
@@ -25,17 +25,23 @@ Usage:
                  no build loop of its own - no build-plan, no current-work.
                  Detected automatically: a directory with the board and no
                  'Part:' in its AGENTS.md is a product root, and this is implied.
+  --hooks        Also install two Claude Code hooks (D20) into .claude/settings.json:
+                 a commit on main asks the person first, and a session starts
+                 with a warning when the loaded context is over its budget.
+                 Merged into any settings already there; nothing else changes.
   --help         This
 USAGE
 }
 
 SKILLS_ONLY=0
+HOOKS=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --target) TARGET="${2:?--target needs a directory}"; shift 2 ;;
     --force)  FORCE=1; shift ;;
     --skills-only) SKILLS_ONLY=1; shift ;;
+    --hooks)  HOOKS=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -43,6 +49,19 @@ done
 
 [ -d "$TARGET" ] || { echo "No such directory: $TARGET" >&2; exit 1; }
 TARGET="$(cd "$TARGET" && pwd)"
+
+# --hooks merges into a settings.json the user may already own, so one that
+# will not parse is refused here, before anything else is written - not after
+# the skills are in and the hooks half-made.
+settings="$TARGET/.claude/settings.json"
+if [ "$HOOKS" -eq 1 ]; then
+  command -v python3 >/dev/null 2>&1 \
+    || { echo "--hooks needs python3, to merge into .claude/settings.json" >&2; exit 1; }
+  if [ -e "$settings" ] && ! python3 -c 'import json,sys; assert isinstance(json.load(open(sys.argv[1])), dict)' "$settings" 2>/dev/null; then
+    echo "$settings is not a JSON object - fix it, then run --hooks again. Nothing was written." >&2
+    exit 1
+  fi
+fi
 
 # The product root of a multi-part project takes the skills and nothing else -
 # no code is built there and there is no build loop. README documents
@@ -508,6 +527,38 @@ if [ -d "$TARGET/blueprint/.state" ]; then
   legacy="$legacy\n  - blueprint/.state/ is from an older pack. Nothing here reads it.\n    Safe to delete once you are happy nothing of yours depends on it."
 fi
 
+# --- optional Claude Code hooks (D20) ---
+#
+# The scripts are pack-owned and always replaced, like the skills. The settings
+# file is not: entries are added beside whatever is there, and an entry already
+# naming the same script is left as it is, so a second run changes nothing.
+if [ "$HOOKS" -eq 1 ]; then
+  mkdir -p "$TARGET/.claude/hooks"
+  cp "$HERE/lib/hook-main-commit.sh" "$TARGET/.claude/hooks/hook-main-commit.sh"
+  cp "$HERE/lib/hook-context-budget.sh" "$TARGET/.claude/hooks/hook-context-budget.sh"
+  chmod +x "$TARGET/.claude/hooks/hook-main-commit.sh" "$TARGET/.claude/hooks/hook-context-budget.sh"
+  python3 - "$settings" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+d = json.load(open(path)) if os.path.exists(path) else {}
+hooks = d.setdefault("hooks", {})
+def add(event, matcher, script):
+    cmd = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/' + script
+    entries = hooks.setdefault(event, [])
+    if any(h.get("command") == cmd for e in entries for h in e.get("hooks", [])):
+        return
+    entry = {"hooks": [{"type": "command", "command": cmd}]}
+    if matcher:
+        entry = {"matcher": matcher, **entry}
+    entries.append(entry)
+add("PreToolUse", "Bash", "hook-main-commit.sh")
+add("SessionStart", None, "hook-context-budget.sh")
+with open(path, "w") as f:
+    json.dump(d, f, indent=2)
+    f.write("\n")
+PY
+fi
+
 echo "Installed into $TARGET"
 echo "  $skill_count skill(s) in .agents/skills; .claude/skills $skills_shape"
 [ -n "${skills_converted:-}" ] && echo "    converted from two copies to one - commit .claude/skills as the link it now is"
@@ -525,6 +576,7 @@ echo "  $skill_count skill(s) in .agents/skills; .claude/skills $skills_shape"
 echo "  $command_count opencode command wrapper(s) in .opencode/command/"
 [ -n "$replaced_commands" ] && \
   echo "    rewritten from a different version:$replaced_commands"
+[ "$HOOKS" -eq 1 ] && echo "  2 Claude Code hooks in .claude/hooks/, registered in .claude/settings.json (D20)"
 if [ "$SKILLS_ONLY" -eq 1 ]; then
   if [ "$DETECTED_ROOT" -eq 1 ]; then
     echo "  product root detected - skills only, no build-loop files"

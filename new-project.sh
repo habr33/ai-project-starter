@@ -35,6 +35,9 @@ Usage:
               Parts are top-level directories here. A nested layout
               (apps/web) is seeded a part at a time - docs/multi-part.md.
   --no-git    Skip git init
+  --hooks     Also install the optional Claude Code hooks (D20) - see
+              install.sh --help. In a multi-part project, at the root and in
+              every part, since a session may start in any of them.
   --help      This
 
 Creates the directory, installs every skill once (.claude/skills links to it), seeds the
@@ -48,12 +51,14 @@ PARENT="$PWD"
 PARENT_SET=0
 DO_GIT=1
 PARTS=""
+HOOKS=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --in)     PARENT="${2:?--in needs a directory}"; PARENT_SET=1; shift 2 ;;
     --parts)  PARTS="${2:?--parts needs a comma-separated list}"; shift 2 ;;
     --no-git) DO_GIT=0; shift ;;
+    --hooks)  HOOKS="--hooks"; shift ;;
     --help|-h) usage; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
     *) [ -n "$NAME" ] && { echo "Only one name, please." >&2; exit 1; }; NAME="$1"; shift ;;
@@ -61,6 +66,10 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$NAME" ] || { usage >&2; exit 1; }
+# install.sh --hooks needs python3 and would refuse only after this script has
+# written the project, so ask here instead.
+[ -z "$HOOKS" ] || command -v python3 >/dev/null 2>&1 \
+  || { echo "--hooks needs python3, to write .claude/settings.json" >&2; exit 1; }
 
 # The name may be a bare name, a relative path, or an absolute path. Resolve all
 # three to one target, rather than blindly joining onto the parent - which turns
@@ -229,9 +238,10 @@ IGNORE
 
 if [ -z "$PARTS" ]; then
   # Single-session project: one loop, one state. The default.
-  # after-write: install.sh refuses only an unknown option or a missing
-  # directory, and it is given no options and the directory just created.
-  "$HERE/install.sh" --target "$TARGET" >/dev/null
+  # after-write: install.sh refuses only an unknown option, a missing
+  # directory, or --hooks without python3 or with an unreadable settings.json -
+  # it is given the directory just created, and python3 was checked above.
+  "$HERE/install.sh" --target "$TARGET" $HOOKS >/dev/null
 else
   # Multi-part: a shared product plan at the root, and a full loop inside each
   # part. Parts never share build state, which is what lets sessions run in
@@ -250,6 +260,13 @@ else
     # names in a new product cannot collide.
     "$HERE/lib/seed-part.sh" "$TARGET" "$part" --quiet
   done
+  if [ -n "$HOOKS" ]; then
+    for d in "$TARGET" ${PARTS:+"${clean_parts[@]/#/$TARGET/}"}; do
+      # after-write: the same refusals as the single-part call above, none
+      # reachable in a directory this script just created.
+      "$HERE/install.sh" --target "$d" --hooks >/dev/null
+    done
+  fi
 fi
 
 # The README's title is the one line the pack can fill correctly already: the

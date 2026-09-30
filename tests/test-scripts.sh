@@ -1163,4 +1163,65 @@ assert_eq "leaves the real index alone" "" "$(cd "$w" && git diff --cached --nam
 assert_eq "and git can say what changed between two" "new.js" \
   "$(cd "$w" && git diff --name-only "$f0" "$f1")"
 
+section "the optional hooks, D20 - what each prints, and what --hooks installs"
+# Run as Claude Code runs them: the tool call's JSON on stdin, the project
+# directory in CLAUDE_PROJECT_DIR. What Claude Code then does with the output is
+# not provable here - D20 records the one headless run that showed it.
+MC="$REPO/lib/hook-main-commit.sh"; CB="$REPO/lib/hook-context-budget.sh"
+w=$(workdir); (cd "$w" && git init -q -b main && git config user.email t@t && git config user.name t \
+  && echo a >a && git add a && git commit -qm base) >/dev/null 2>&1
+call() { printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"%s"}}' "$w" "$1"; }
+mc() { call "$1" | CLAUDE_PROJECT_DIR="$w" "$MC"; }
+assert_ok "a commit on main asks the person" grep -q '"permissionDecision": *"ask"' <<<"$(mc 'git commit -m x')"
+assert_ok "and names the rule it holds" grep -q 'Never build on' <<<"$(mc 'git add -A && git commit -qm x')"
+assert_ok "git's own options before commit still count" grep -q '"ask"' <<<"$(mc 'git -c core.editor=true commit')"
+assert_eq "a command that only mentions commit says nothing" "" "$(mc 'git log --grep commit')"
+assert_eq "nor does a merge that is not a commit" "" "$(mc 'git merge --squash item')"
+(cd "$w" && git checkout -qb item)
+assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
+assert_eq "nor does anything outside a repository" "" \
+  "$(printf '{"tool_input":{"command":"git commit"},"cwd":"/"}' | "$MC")"
+assert_eq "unreadable input fails open, silently" "" "$(printf 'not json' | "$MC")"
+
+p="$w/budget"; mkdir -p "$p/blueprint"
+printf '**Context budget: 1 KB.**\n' >"$p/AGENTS.md"
+printf '@AGENTS.md\n@blueprint/big.md\n@blueprint/gone.md\n' >"$p/CLAUDE.md"
+head -c 300 /dev/zero | tr '\0' x >"$p/blueprint/big.md"
+cb() { printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR="$p" "$CB"; }
+assert_eq "under the budget, the session start says nothing" "" "$(cb)"
+head -c 900 /dev/zero | tr '\0' x >>"$p/blueprint/big.md"
+out=$(cb)
+assert_ok "over it, it says so" grep -q 'over the 1 KB budget' <<<"$out"
+assert_ok "and names the largest loaded file first" grep -q 'largest: blueprint/big.md' <<<"$out"
+assert_ok "counting CLAUDE.md itself, as rule 18 does" \
+  grep -q "$(( $(wc -c <"$p/CLAUDE.md") + $(wc -c <"$p/AGENTS.md") + 1200 )) bytes" <<<"$out"
+rm "$p/AGENTS.md"; printf '@blueprint/big.md\n' >"$p/CLAUDE.md"
+assert_eq "no stated budget, nothing to hold it to" "" "$(cb)"
+
+t=$(workdir)
+"$IN" --target "$t" >/dev/null 2>&1
+assert_absent "a plain install writes no settings.json" "$t/.claude/settings.json"
+assert_absent "and no hooks" "$t/.claude/hooks"
+printf '{"model": "opus", "hooks": {"PreToolUse": [{"matcher": "Edit", "hooks": [{"type": "command", "command": "mine.sh"}]}]}}\n' \
+  >"$t/.claude/settings.json"
+"$IN" --target "$t" --hooks >/dev/null 2>&1
+s="$t/.claude/settings.json"
+hk() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(eval(sys.argv[2]))' "$s" "$1"; }
+assert_eq "--hooks keeps the settings already there" "opus" "$(hk 'd["model"]')"
+assert_eq "and the hooks already there" "mine.sh" "$(hk 'd["hooks"]["PreToolUse"][0]["hooks"][0]["command"]')"
+assert_ok "adds the main-commit hook on Bash" grep -q 'main-commit.sh' <<<"$(hk '[e for e in d["hooks"]["PreToolUse"] if e.get("matcher")=="Bash"]')"
+assert_ok "adds the budget hook at session start" grep -q 'context-budget.sh' <<<"$(hk 'd["hooks"]["SessionStart"]')"
+assert_ok "copies the hook scripts, runnable" test -x "$t/.claude/hooks/hook-main-commit.sh" -a -x "$t/.claude/hooks/hook-context-budget.sh"
+assert_ok "and they are the pack's current ones" cmp -s "$MC" "$t/.claude/hooks/hook-main-commit.sh"
+before=$(cat "$s"); "$IN" --target "$t" --hooks >/dev/null 2>&1
+assert_eq "a second --hooks changes nothing" "$before" "$(cat "$s")"
+t=$(workdir); mkdir -p "$t/.claude"; printf '{"model": ' >"$t/.claude/settings.json"
+assert_refuses "an unreadable settings.json is refused" "settings.json" "$IN" --target "$t" --hooks
+assert_absent "before anything is written" "$t/.agents"
+w=$(workdir); (cd "$w" && "$NP" one --hooks && "$NP" two --parts web,api --hooks) >/dev/null 2>&1
+assert_exists "new-project.sh --hooks installs them" "$w/one/.claude/hooks/hook-main-commit.sh"
+for d in two two/web two/api; do
+  assert_ok "and in a multi-part product, in $d" grep -q 'context-budget.sh' "$w/$d/.claude/settings.json"
+done
+
 finish

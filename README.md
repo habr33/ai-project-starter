@@ -234,6 +234,13 @@ If you had edited one, the report names it and git has your version. **Files you
 own are never touched**: the plans, the specs, `dev-notes/`, `AGENTS.md`.
 `--force` is still accepted, and changes nothing.
 
+**Optional, Claude Code only: `--hooks`** (on `install.sh` or `new-project.sh`)
+adds two hooks to `.claude/settings.json`, merged beside anything already there.
+A `git commit` on `main` then needs your yes in the UI however the model was
+told to proceed - setup commits and `ship`'s merge still work, they just ask -
+and a session opens with a warning when the always-loaded files are over the
+budget `AGENTS.md` states. Other tools ignore them; the rules still hold as prose.
+
 No manifest, no conflict detection, no backups. That is a deliberate trade at
 this size — the repo is the version control.
 
@@ -301,6 +308,7 @@ The scripts:
 | `lib/seed-part.sh` | seed one part; also adds a part to an existing product |
 | `lib/seed-product-root.sh` | seed a product root |
 | `lib/part-name.sh` | part-name checks shared by `new-project.sh` and `convert-to-parts.sh` |
+| `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 
 The two `lib/` scripts exist because `new-project.sh --parts` and

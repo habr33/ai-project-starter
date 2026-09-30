@@ -464,3 +464,33 @@ one commit.
 description in every session's listing, and a second copy of the rules a spec
 already holds. **Rejected: `autopilot` over a fix.** It removes the stops, not
 the work - `verify` and `review` still run, unattended.
+
+## D20 - Two rules can execute, as optional Claude Code hooks (2026-09-30)
+
+Every rule here is prose an agent has to remember, and the pressure tier showed
+prose giving way under "just do it". Two of the standing rules are mechanical
+enough to hold without the model: **no commit on `main`**, and **the
+always-loaded context within its budget**.
+
+**`install.sh --hooks`** (and `new-project.sh --hooks`, at the root and in every
+part) copies `lib/hook-main-commit.sh` and `lib/hook-context-budget.sh` to
+`.claude/hooks/` and registers them in `.claude/settings.json`, beside whatever
+is there. An unreadable settings file is refused before anything is written.
+
+- **A commit on `main` asks; it does not refuse.** `scaffold`, `ci`, `context`
+  and `prototype` commit setup work on `main` by design, and `ship` squashes
+  into it, so a block would break the loop as written. `permissionDecision:
+  ask` puts the yes in the UI, where the model cannot supply it. Checked
+  headless on 2026-09-30: with `Bash(git commit:*)` allowed, a commit on `main`
+  was denied with the hook's reason and the same commit on a branch went through.
+- **The budget is counted as rule 18 counts it**: `CLAUDE.md` plus its `@`
+  imports, against `AGENTS.md`'s stated budget. Silent under it; over it, one
+  line naming the three largest files. Also checked headless: the line reaches
+  the session.
+- **Both fail open.** Unreadable input, no python3, no repository, no stated
+  budget - they print nothing. A guard that breaks every shell call gets
+  removed, and then guards nothing.
+
+**Opt-in, not default**: only Claude Code runs them, and the settings file may
+already be the user's. The rules stay in `AGENTS.md` as prose, which every tool
+reads, so nothing may depend on a hook having run.

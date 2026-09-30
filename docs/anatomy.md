@@ -230,6 +230,11 @@ none of them execute:
    Three parts each running unattended produce three self-reviewed drafts at
    once — every gate technically satisfied and nobody has read anything.
 
+**Two rules can execute, if the project opts in** (`install.sh --hooks`, `D20`):
+Claude Code asks the person before any `git commit` on `main`, and a session
+starts with a warning when the loaded context is over its budget. Only Claude
+Code runs them, so nothing above may depend on them.
+
 ## What holds this together mechanically
 
 `check.sh` has 18 rules. Thirteen were added *after* a specific bug got through,
