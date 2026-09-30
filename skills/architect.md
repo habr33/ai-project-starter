@@ -481,6 +481,9 @@ Then **branch on whether this project has a UI**:
 
 ## Rules
 
+- **Leave what this writes uncommitted, on `main`, until `scaffold` has run** -
+  it commits the plans first, as part of its own approval. Offering a commit
+  here, or a branch for one, moves setup work off `main` before any code exists.
 - **Size it to the project.** The most common failure here is designing for a
   scale the project will never reach. Fewer boxes.
 - **Say what does not apply.** An explicit "no queue needed, this is one user"

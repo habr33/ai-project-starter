@@ -431,6 +431,9 @@ and why; that is a different question and it was answered before this skill ran.
 
 ## Rules
 
+- **Leave what this writes uncommitted, on `main`, until `scaffold` has run** -
+  it commits the plans first, as part of its own approval. Offering a commit
+  here, or a branch for one, moves setup work off `main` before any code exists.
 - **Ask before proposing.** Whether the user already has a stack in mind is a
   question, never an assumption in either direction. Ask it every time.
 - **A named choice is a decision, not an opening offer.** Use it. Raise a real

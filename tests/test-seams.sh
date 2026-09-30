@@ -2749,6 +2749,7 @@ setup_commits=(
   'ci|Ask to commit what this run wrote, on `main`, locally'
   'context|Then ask to commit what this run wrote'
   'prototype|Commit the record and the mockups on `main`'
+  'preflight|Then ask to commit what this run wrote'
 )
 for entry in "${setup_commits[@]}"; do
   s=${entry%%|*}; anchor=${entry#*|}; para=$(_para "skills/$s.md" "$anchor")
@@ -2802,14 +2803,20 @@ section "the touch block never makes a control smaller"
 # .textarea is 6rem and .btn--lg 48px; a later min-height of 44px in
 # `pointer: coarse`, same specificity, shrank both on every phone. The block
 # may only raise sizes - for a selector it names, and for that selector's BEM
-# modifiers, which always sit on the same element.
+# modifiers, which always sit on the same element. $1 overrides tokens, as
+# `prototype` re-themes a density: a roomy 48px control was shrunk to 44px on a
+# phone by a block that set the target size outright (a run, 2026-09-30).
 _touch_shrinks() {
-  python3 - template/blueprint/design-kit/tokens.css template/blueprint/design-kit/components.css <<'PYS'
+  python3 - template/blueprint/design-kit/tokens.css template/blueprint/design-kit/components.css "${1:-}" <<'PYS'
 import re, sys
-tok = open(sys.argv[1]).read()
+tok = open(sys.argv[1]).read() + sys.argv[3]
 var = dict(re.findall(r'(--[\w-]+):\s*([^;]+);', tok))
 def px(v):
     v = v.strip()
+    m = re.fullmatch(r'max\((.+),(.+)\)', v)
+    if m:
+        a, b = px(m.group(1)), px(m.group(2))
+        return None if a is None or b is None else max(a, b)
     m = re.match(r'var\((--[\w-]+)\)', v)
     if m: return px(var.get(m.group(1), 'x'))
     m = re.match(r'([\d.]+)(rem|px)$', v)
@@ -2840,6 +2847,8 @@ for s, h in base.items():
 PYS
 }
 assert_eq "no control is smaller under pointer: coarse than without it" "" "$(_touch_shrinks)"
+assert_eq "nor under a roomy density, above the touch target" "" \
+  "$(_touch_shrinks '--size-control-sm: 2.75rem; --size-control-md: 3rem; --size-control-lg: 3.5rem;')"
 
 
 # ==== the 2026-09-28 re-run, phase A ====
@@ -3081,5 +3090,34 @@ assert_ok "review puts Deferred to: under the index heading" \
 for s in deploy host; do
   assert_ok "$s reads it from the index" _says skills/$s.md '`Deferred to:` names this skill, in `blueprint/context/findings.md`'
 done
+
+
+section "the planning skills leave their files for scaffold to commit"
+# scaffold says ideate, architect, stack and layout leave their files in the
+# working tree and commits them itself, on main. None of the four said so, and
+# on a run (2026-09-30) ideate filled the silence by offering to commit on a new
+# branch - taken, the setup work left main until scaffold noticed.
+for s in ideate architect stack layout; do
+  assert_ok "$s leaves its files for scaffold to commit" \
+    _says skills/$s.md 'Leave what this writes uncommitted, on `main`'
+done
+
+
+section "the 2026-09-30 run: a verdict deploy can use, a quick fix's diff, parked work"
+# preflight wrote its ledger entries and its status line on main and committed
+# nothing, while deploy never deploys from a dirty tree: a go would have stopped
+# the release on preflight's own records. preflight is in setup_commits above.
+assert_ok "preflight says why its records are committed" \
+  _says skills/preflight.md '`deploy` refuses a dirty tree'
+# ship checked a quick fix's limits from memory of its own session and ran no
+# diff: the limit is a count, so name the command that counts.
+assert_ok "ship counts a quick fix's files with a command" \
+  _says skills/ship.md 'run `git diff --stat main` and `git status --short`'
+# ship parked the user's unrelated edit in a stash, named only in an archive;
+# no skill reads either, and progress did not report it.
+assert_ok "ship records work it sets aside where a skill will see it" \
+  _says skills/ship.md 'a stash is invisible to every skill'
+assert_ok "progress reports a stash as drift" \
+  _says skills/progress.md '`git stash list`'
 
 finish

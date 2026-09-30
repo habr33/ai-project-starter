@@ -250,6 +250,9 @@ Then:
 
 ## Rules
 
+- **Leave what this writes uncommitted, on `main`, until `scaffold` has run** -
+  it commits the plans first, as part of its own approval. Offering a commit
+  here, or a branch for one, moves setup work off `main` before any code exists.
 - **Decide what, not how.** No frameworks, no databases, no architecture. That
   is the next two skills' work, and doing it here makes them worse.
 - **Cut scope, out loud.** Say what you moved and why. A first version that is

@@ -277,12 +277,16 @@ legend { font-weight: var(--font-weight-medium); font-size: var(--font-size-sm);
  * .textarea (6rem) is already taller, and .btn--lg (48px) sits on a .btn this
  * block would otherwise pull down to 44px - same specificity, later rule. */
 @media (pointer: coarse) {
-  .nav__link, .btn, .btn--sm, .input, .select, .choice {
-    min-height: var(--size-target-min);
+  /* max(), never the target alone: a theme whose controls already exceed it
+     (a roomy density) would otherwise be shrunk on every phone. */
+  .nav__link, .btn, .input, .select {
+    min-height: max(var(--size-target-min), var(--size-control-md));
   }
-  .btn--lg { min-height: var(--size-control-lg); }
+  .btn--sm, .choice { min-height: max(var(--size-target-min), var(--size-control-sm)); }
+  .btn--lg { min-height: max(var(--size-target-min), var(--size-control-lg)); }
   .pagination a, .pagination span, .btn--icon {
-    min-width: var(--size-target-min); height: var(--size-target-min);
+    min-width: max(var(--size-target-min), var(--size-control-md));
+    height: max(var(--size-target-min), var(--size-control-md));
   }
-  .btn--icon { width: var(--size-target-min); }
+  .btn--icon { width: max(var(--size-target-min), var(--size-control-md)); }
 }

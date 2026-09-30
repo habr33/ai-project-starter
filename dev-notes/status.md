@@ -57,6 +57,7 @@ landing page, is in the repo.
   fail the assertion that names them.
 
 **Unproven:** none of the new records has run in a real project yet.
+*(Run 2026-09-30, below: they have.)*
 
 **Then `preflight`'s blockers stay in the ledger**: a live
 project's no-go named four blockers - one filed at P2, three only as
@@ -76,6 +77,15 @@ over the context budget. Tests under *the optional hooks, D20* in
 caught by the assertion that names them. **Run for real, headless**: with
 `git commit` allowed, a commit on `main` was denied with the hook's reason and
 the same commit on a branch went through; the budget line reached the session.
+
+**Then a full run of the workflow** (2026-09-30, `coverage.md`, *a full run
+against the records, the quick path and the audit*): a one-page tool from
+`ideate` to `deploy`'s gate, headless with `--setting-sources project,local`,
+about $14.60. 12 of 14 checks pass, one partial, one not reached. **The
+records `verify`, `review` and `preflight` write, the quick path and the
+ledger's end state have now run against an agent** - the *Unproven* notes
+above are closed by it. Six pack findings fixed with tests on `run-fixes`.
+The run and its notes are in `~/tmp/run-2026-09-30/`.
 
 **Merged and pushed 2026-09-30:** `main` was fast-forwarded to `quick-fix`,
 which was stacked on `review-seams-k`, so both are in - the `seams-K` review

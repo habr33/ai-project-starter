@@ -64,7 +64,10 @@ blockers**:
 - `blueprint/context/current-work.md` holds a real spec, and every build step is ticked.
 - The work is on a branch, not on `main` or `master`.
 - The changed files belong to this spec, with no unrelated work mixed in. A dirty
-  `blueprint/context/findings.md` is expected - `review` writes it.
+  `blueprint/context/findings.md` is expected - `review` writes it. Where work
+  that is not this item's goes is the user's call. **If it is set aside** - a
+  stash, another branch - add a `needs-you.md` line saying where and what it
+  is: a stash is invisible to every skill, and no skill reads an archive for it.
 - The project's verification command passed **in this session**. If none is
   declared, the build passed, and the tests passed when the project has a test
   command and this change touched logic.
@@ -73,8 +76,9 @@ blockers**:
   unverified claim. **A quick fix's evidence is its reproduction test instead**,
   seen failing before the repair and passing after - both runs named in
   `build`'s packet. A green run alone is not that evidence.
-- **A quick fix is still inside its limits**: the branch's diff against `main`
-  changes at most two files outside `blueprint/`, not counting tests, and no
+- **A quick fix is still inside its limits** - run `git diff --stat main` and
+  `git status --short` and count, rather than recalling what was built: the
+  branch's diff against `main` changes at most two files outside `blueprint/`, not counting tests, and no
   stored data, contract, dependency or environment variable. If it does more,
   it is an ordinary fix that skipped `verify` and `review` - stop and run them.
 - **No P0 or P1 finding in `blueprint/context/findings.md` is `open` or `fixed`.**

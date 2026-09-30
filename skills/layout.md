@@ -160,6 +160,9 @@ Then hand to `scaffold`, which installs the framework into this shape.
 
 ## Rules
 
+- **Leave what this writes uncommitted, on `main`, until `scaffold` has run** -
+  it commits the plans first, as part of its own approval. Offering a commit
+  here, or a branch for one, moves setup work off `main` before any code exists.
 - **Follow the framework, do not fight it.** An imposed layout costs something
   every day and buys nothing.
 - **Decide directories, not architecture.** If a question is really about whether

@@ -108,6 +108,8 @@ Report only what is actually wrong:
     archives once per sub-item, so more archives than checked items is normal and
     is not an anomaly. Counting produces a confident false finding.
   - product code changed on a branch with no spec in `blueprint/context/current-work.md`
+  - work parked in `git stash list` - no other skill looks there, so name each
+    entry and what it holds
   - an overview older than the plans it was generated from
   - **a `prototypes/` directory still present** after the look was built - `ship`
     should have deleted it, and this is exactly the drift that went unnoticed for

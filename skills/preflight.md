@@ -345,6 +345,12 @@ Then say **go** or **no-go**, plainly, in one line.
 production on it, and a verdict said only in the conversation is gone when the
 context is cleared.
 
+**Then ask to commit what this run wrote**, on `main`, as its own
+`chore: preflight` commit: `blueprint/context/findings.md`, the entries under
+`blueprint/findings/`, and the `preflight:` line in `dev-notes/status.md`.
+`deploy` refuses a dirty tree, so a verdict left uncommitted stops the very
+release it cleared.
+
 **This skill must be able to say no.** A readiness check that always passes is
 worse than none, because it converts an unexamined risk into documented false
 assurance. If the project is not ready, the entire value of this skill is saying

@@ -237,7 +237,8 @@ own are never touched**: the plans, the specs, `dev-notes/`, `AGENTS.md`.
 **Optional, Claude Code only: `--hooks`** (on `install.sh` or `new-project.sh`)
 adds two hooks to `.claude/settings.json`, merged beside anything already there.
 A `git commit` on `main` then needs your yes in the UI however the model was
-told to proceed - setup commits and `ship`'s merge still work, they just ask -
+told to proceed - setup commits and `ship`'s merge still work, they just ask;
+headless (`claude -p`) there is nobody to ask, so they are refused -
 and a session opens with a warning when the always-loaded files are over the
 budget `AGENTS.md` states. Other tools ignore them; the rules still hold as prose.
 

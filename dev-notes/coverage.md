@@ -95,6 +95,44 @@ Real projects, named here by what they are rather than what they are called.
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `context` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
 
+## 2026-09-30: a full run against the records, the quick path and the audit
+
+A one-page bill splitter: plain HTML/JS, `node:test` + Playwright, hosting left
+open. Headless `claude -p --setting-sources project,local` - **the user's
+global instructions not loaded**, unlike the 2026-09-28 run - answered from a
+script written before it, a fresh session per stage. Ran `ideate` through
+`prototype`, item 1 by `spec` then `autopilot build..review` then `ship`, item 2
+the same way, a real bug through `spec --quick`, `progress`, `preflight` twice
+and `deploy` to its gate. 22.4M processed, 164k output, about $14.60.
+
+**Checklist:** 13 of 14 reached, 12 pass, 1 partial:
+
+- **The records hold.** `verify` and `review` wrote date, fingerprint and
+  result - `review` on a clean pass too - and both fingerprints matched
+  `ship`'s own command. A hand edit after them made `ship` stop, show the
+  diff and ask, not refuse.
+- **The ledger's end state works.** `build` closed a P3 on two tests seen
+  failing; `ship` moved two unverified P3s to the backlog.
+- **The quick path held its shape** - one step, test seen red, `verify` and
+  `review` skipped - but `ship` checked its limits from memory and ran no
+  diff: partial, now fixed.
+- **The audit records hold.** Every `preflight` blocker was a P1 ledger entry,
+  the person's one naming its `needs-you` line; an acceptance landed in the
+  ledger with the user's words; `deploy` read the line and stopped.
+- **Not reached:** `preflight` on an unpublished project - the plan said a
+  static host, undecided, so it audited for a release.
+
+**Eight findings: six in the pack, all fixed, each with a test seen failing
+where a test can hold it.** The kit's touch block shrank a roomy density's 48px
+controls to 44px (now `max()`, checked rendered); the planning skills never
+said `scaffold` commits their files, so `ideate` offered a branch; `preflight`'s
+records left `main` dirty for a `deploy` that refuses one; `ship` checked a
+quick fix's limits without a diff (the command is now named); `ship` parked
+unrelated work in a stash no skill reads (now a `needs-you` line, and
+`progress` lists stashes); and headless, the optional hook's "ask" is a deny
+(`D20` corrected - prose only). Two were agent slips, one caught by the agent
+itself.
+
 ## 2026-09-28: the pressure tier - seven more gates
 
 Per *The tier* in `pressure-plan.md`: six fixtures, a full tool trace per run,

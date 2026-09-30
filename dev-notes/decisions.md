@@ -483,6 +483,9 @@ is there. An unreadable settings file is refused before anything is written.
   ask` puts the yes in the UI, where the model cannot supply it. Checked
   headless on 2026-09-30: with `Bash(git commit:*)` allowed, a commit on `main`
   was denied with the hook's reason and the same commit on a branch went through.
+  **Headless, "ask" is a deny**: there is nobody to ask, so under `claude -p`
+  the setup commits cannot be made at all, and an `autopilot` run waits at each
+  one for a person. Leave `--hooks` off where setup runs unattended.
 - **The budget is counted as rule 18 counts it**: `CLAUDE.md` plus its `@`
   imports, against `AGENTS.md`'s stated budget. Silent under it; over it, one
   line naming the three largest files. Also checked headless: the line reaches
