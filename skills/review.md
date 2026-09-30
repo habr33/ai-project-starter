@@ -175,6 +175,11 @@ The lenses:
   authentication or authorization, ownership taken from
   client-supplied input, injection, unsafe parsing, exposed sensitive data,
   secret handling, insecure defaults, trust-boundary mistakes.
+  **A redirect target built from the request URL** - to send someone back
+  after signing in - must drop the framework's data-request forms (`.data`,
+  `_data`, `_rsc`, `index`): on a client-side navigation the request URL is
+  one, and the user signs in to a 404 or raw data. A target taken from input
+  must be a local path, or it is an open redirect.
 - **Performance** - repeated queries in a loop, redundant network work,
   unnecessary re-rendering, blocking work on a hot path, unbounded collections,
   missing pagination, oversized payloads. Mark anything without runtime evidence

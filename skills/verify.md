@@ -185,6 +185,14 @@ Drive the app to each claim and capture evidence as you go:
   claims.
 - **Watch the console and the network.** A clean-looking screen with errors in the
   console is not a pass.
+- **Where sign-in guards a page, walk the redirect both ways.** For each
+  protected page this work adds or touches, and each action that ends or changes a
+  session - signing out, a password or role change: start signed out, reach it
+  by a full page load and through the app's own link or form, sign in, and check
+  the final URL is where you started. A 404, or a URL still carrying the
+  framework's data-request form (`.data`, `_data`, `_rsc`), fails. The full
+  page load alone passes while the click fails: a client-side navigation's
+  request URL is that form, and a redirect built from it sends the user there.
 
 ## Step 4 - report
 

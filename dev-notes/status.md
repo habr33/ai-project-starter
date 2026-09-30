@@ -458,9 +458,16 @@ payoff:
       links to `.agents/skills`, copying where a symlink will not work.
 - [x] **Design kit** - `D17`: tokens, every core component in every state,
       a UX checklist, and a `prototype` that recommends and maps navigation.
-- [ ] **P2 - Navigation across a login-state change.** *Partly addressed by
-      `D17`: the checklist names the journeys and `spec` makes each a
-      done-when; the `verify` sweep and the `review` check are still open.* No skill asks for a
+- [x] **P2 - Navigation across a login-state change.** *Closed 2026-09-30:
+      reproduced on React Router 8.4.0 in headless Chromium - with a redirect
+      built from `request.url`, a full page load signed in to the right page
+      while the app's own link, and a client-side password change, signed in
+      to `/protected.data` and `/settings.data`, both 404s. `verify` now walks
+      a guarded page both ways and each action that ends or changes a session;
+      `review` checks a redirect target built from the request URL, and an
+      open redirect. With that fix applied, all four journeys landed right.
+      Tested under* a sign-in redirect is walked both ways *in
+      `tests/test-seams.sh`. Unproven against an agent. The original note:* No skill asks for a
       done-when that follows the whole redirect chain when an action changes
       the session - a password change, a role change, logging in to return to
       a page - for the user affected *and* for yourself, through a full-page

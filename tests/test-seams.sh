@@ -3054,4 +3054,21 @@ assert_ok "and an acceptance is set in the ledger, not only in status prose" \
 assert_ok "and its rules say where the acceptance is recorded" \
   _says skills/preflight.md 'the acceptance is recorded in the ledger with a reason'
 
+section "a sign-in redirect is walked both ways, and its target reviewed"
+# Reproduced 2026-09-30 on React Router 8.4.0 with the redirect tutorials write
+# (to request.url): a full page load of a protected page, sign in, lands there;
+# the same through the app's own link lands on /protected.data, a 404, and so
+# does changing your own password by a client-side submit. A check that only
+# loads pages directly passes.
+assert_ok "verify walks a guarded page by full page load and by the app's own navigation" \
+  _says skills/verify.md 'by a full page load and through the app'"'"'s own link or form'
+assert_ok "and names the data-request forms a wrong landing carries" \
+  _says skills/verify.md '`.data`, `_data`, `_rsc`'
+assert_ok "and includes the actions that end or change a session" \
+  _says skills/verify.md 'each action that ends or changes a session'
+assert_ok "review checks a redirect target built from the request URL" \
+  _says skills/review.md 'A redirect target built from the request URL'
+assert_ok "and names the same forms" \
+  _says skills/review.md '`.data`, `_data`, `_rsc`'
+
 finish
