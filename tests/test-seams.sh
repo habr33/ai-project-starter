@@ -3120,4 +3120,39 @@ assert_ok "ship records work it sets aside where a skill will see it" \
 assert_ok "progress reports a stash as drift" \
   _says skills/progress.md '`git stash list`'
 
+section "behaviour travels from spec to capabilities, D21"
+# What the product does now was only a pile of archives: spec never read what held,
+# and verify --all re-judged supersession on every run. Each link is a sentence in a
+# different skill, so each is asserted where it is said.
+assert_ok "the spec template has the section" \
+  _says skills/spec.md '## Behaviour changes'
+assert_ok "spec reads the capability files before writing it" \
+  _says skills/spec.md 'list `blueprint/capabilities/` and open the files for the areas the item touches'
+assert_ok "spec says seeding does not block" \
+  _says skills/spec.md '`verify --all` would seed them, write the section for this item alone, and do not block'
+assert_ok "spec's red-team asks the undeclared-contradiction question" \
+  _says skills/spec.md 'contradict a claim in `blueprint/capabilities/` that its Behaviour changes did not declare'
+assert_ok "a quick fix may only add a claim" \
+  _says skills/spec.md 'add a claim and nothing more'
+assert_ok "ship names the section and the script" \
+  _says skills/ship.md 'lib/merge-capabilities.sh blueprint/context/current-work.md <archive name>'
+assert_ok "ship treats a missing section as missing evidence" \
+  _says skills/ship.md 'A missing one is missing evidence'
+assert_ok "abandoning merges nothing" \
+  _says skills/ship.md 'Its Behaviour changes merge nothing'
+assert_ok "rollback writes the inverse section" \
+  _says skills/rollback.md 'the inverse of the target'"'"'s'
+assert_ok "rollback writes the old text back" \
+  _says skills/rollback.md 'Write the old text back exactly as the target'"'"'s archive recorded it'
+assert_ok "rollback names later items that changed the claims" \
+  _says skills/rollback.md 'later items that changed or removed this feature'"'"'s claims'
+assert_ok "verify --all proves the capability files" \
+  _says skills/verify.md 'Where `blueprint/capabilities/` exists, it is the checklist'
+assert_ok "verify --all states the per-archive seeding rule" \
+  _says skills/verify.md 'An archive with no `## Behaviour changes` section is walked claim by claim'
+assert_ok "verify names the merge script" \
+  _says skills/verify.md 'lib/merge-capabilities.sh <archive> <archive name>'
+assert_ok "seeding shows every line before writing" \
+  _says skills/verify.md 'Show every line first'
+
 finish

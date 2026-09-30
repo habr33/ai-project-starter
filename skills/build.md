@@ -318,7 +318,7 @@ Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still
 **A quick fix stays quick only inside its limits.** Before the packet, compare
 the diff against the list in `spec`'s quick path: at most two files outside
 `blueprint/`, not counting tests, and no stored data, contract, dependency,
-environment variable or anything `blueprint/context/quality-bar.md` names. **If
+environment variable, a changed or removed behaviour claim, or anything `blueprint/context/quality-bar.md` names. **If
 the diff went past any of them, remove the `**Quick:**` line from the spec and
 say which limit it crossed** - it is an ordinary fix now, and `verify` and
 `review` apply. A repair that needed a third file is exactly the one whose

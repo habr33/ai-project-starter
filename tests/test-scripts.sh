@@ -1308,4 +1308,77 @@ assert_ok "install.sh names the script when it finds an old ledger" \
 assert_lacks_out() { _name="$1"; if grep -q "$2" <<<"$3"; then _no "'$2' in output"; else _ok; fi; }
 assert_lacks_out "and stops once it is split" 'migrate-findings.sh' "$("$IN" --target "$t" 2>&1)"
 
+section "the capability merge, D21 - a spec's behaviour changes land in capability files"
+# ship carries a spec's ## Behaviour changes into blueprint/capabilities/, one
+# file per capability. The script keeps the arithmetic (next ID past a
+# tombstone, old text matching) that two agents by hand would get wrong.
+MC="$REPO/lib/merge-capabilities.sh"
+cap_spec() {  # cap_spec FILE <behaviour-change lines...>; steps 1-2 ticked, 3 not
+  local f="$1"; shift
+  { printf '# Feature: x\n\n## Build steps\n- [x] **Step 1 - a** - a. *Done when:* a.\n- [x] **Step 2 - b** - b. *Done when:* b.\n- [ ] **Step 3 - c** - c. *Done when:* c.\n\n## Behaviour changes\n'
+    printf '%s\n' "$@"; printf '\n## Notes\nnone\n'; } >"$f"
+}
+cap_tree() { (cd "$1" && find blueprint/capabilities -type f 2>/dev/null | sort | xargs -r cksum); }
+w=$(workdir)
+cap_spec "$w/s1.md" '- New capability `accounts`: A signed-out visit to /settings lands on /login - Step 1' \
+  '- Adds to `accounts`: Changing the password signs out other devices - Step 2'
+out="$("$MC" "$w/s1.md" features/03-auth --target "$w" 2>&1)"
+assert_eq "a new capability is created and its claims numbered" \
+  "- **accounts.1** - A signed-out visit to /settings lands on /login *Since:* features/03-auth" \
+  "$(sed -n '3p' "$w/blueprint/capabilities/accounts.md")"
+assert_eq "a second claim takes the next ID" "accounts.2" \
+  "$(sed -n '4p' "$w/blueprint/capabilities/accounts.md" | sed 's/^- \*\*\([^*]*\)\*\*.*/\1/')"
+assert_eq "the file opens with its capability name" "# Capability: accounts" "$(head -1 "$w/blueprint/capabilities/accounts.md")"
+assert_eq "it prints the IDs it assigned" "accounts.1
+accounts.2" "$out"
+cap_spec "$w/s2.md" '- Changes `accounts.2` from "Changing the password signs out other devices" to "Changing the password signs out every device" - Step 1' \
+  '- Removes `accounts.1`: superseded by SSO'
+"$MC" "$w/s2.md" features/07-roles --target "$w" >/dev/null 2>&1
+assert_ok "a change replaces the text and records where" grep -qxF -- '- **accounts.2** - Changing the password signs out every device *Since:* features/03-auth · *Changed:* features/07-roles' "$w/blueprint/capabilities/accounts.md"
+assert_ok "a removal leaves a tombstone" grep -qxF -- '- accounts.1 - removed by features/07-roles' "$w/blueprint/capabilities/accounts.md"
+assert_lacks "and the claim is gone from the list" "$w/blueprint/capabilities/accounts.md" 'accounts\.1\*\*'
+cap_spec "$w/s3.md" '- Adds to `accounts`: Sessions expire after 30 days - Step 2'
+"$MC" "$w/s3.md" fixes/expiry --target "$w" >/dev/null 2>&1
+assert_ok "an ID is never reused - the next is past the tombstone" grep -qF -- '**accounts.3** - Sessions expire' "$w/blueprint/capabilities/accounts.md"
+cap_spec "$w/s4.md" '- Removes `accounts.3`: dropped'
+"$MC" "$w/s4.md" fixes/drop --target "$w" >/dev/null 2>&1
+cap_spec "$w/s5.md" '- Adds to `accounts`: Sessions expire after 14 days - Step 2'
+assert_eq "a removed highest ID is not handed out again" "accounts.4" "$("$MC" "$w/s5.md" fixes/expiry-2 --target "$w" 2>&1)"
+cap_spec "$w/none.md" 'None'
+before="$(cap_tree "$w")"
+assert_ok "'None' is an answer and merges nothing" "$MC" "$w/none.md" fixes/none --target "$w"
+assert_eq "and changes nothing" "$before" "$(cap_tree "$w")"
+# A refusal leaves every file as it was.
+for c in \
+  'unknown ID|accounts.9|- Changes `accounts.9` from "x" to "y" - Step 1' \
+  'a tombstone ID|accounts.1|- Removes `accounts.1`: again' \
+  'stale old text|accounts.2|- Changes `accounts.2` from "an older wording" to "y" - Step 1' \
+  'a step not ticked|Step 3|- Adds to `accounts`: A new claim - Step 3' \
+  'an unknown capability|nosuch|- Adds to `nosuch`: A claim - Step 1' \
+  'a new capability that exists|accounts|- New capability `accounts`: A claim - Step 1' \
+  'an add with no step|Step|- Adds to `accounts`: A claim with no step'; do
+  IFS='|' read -r label needle line <<<"$c"
+  cap_spec "$w/bad.md" '- Adds to `accounts`: A good claim that must not land alone - Step 1' "$line"
+  before="$(cap_tree "$w")"
+  assert_refuses "refuses $label" "$needle" "$MC" "$w/bad.md" fixes/bad --target "$w"
+  assert_eq "and leaves every file byte-identical ($label)" "$before" "$(cap_tree "$w")"
+done
+printf '# Feature: x\n\n## Build steps\n- [x] **Step 1 - a** - a.\n' >"$w/nosection.md"
+assert_refuses "a missing section is missing evidence, not None" "Behaviour changes" "$MC" "$w/nosection.md" fixes/m --target "$w"
+# A rollback's inverse takes the claims back to their prior text.
+r=$(workdir)
+cap_spec "$r/f.md" '- New capability `lists`: Lists can be shared - Step 1' '- New capability `lists`: Lists can be archived - Step 2'
+"$MC" "$r/f.md" features/01-lists --target "$r" >/dev/null 2>&1
+cap_spec "$r/g.md" '- Changes `lists.1` from "Lists can be shared" to "Lists can be shared by link" - Step 1' '- Removes `lists.2`: obsolete'
+"$MC" "$r/g.md" features/02-link --target "$r" >/dev/null 2>&1
+cap_spec "$r/rb.md" '- Changes `lists.1` from "Lists can be shared by link" to "Lists can be shared" - Step 1' \
+  '- Adds to `lists`: Lists can be archived - Step 2'
+"$MC" "$r/rb.md" rollbacks/2026-10-01-01-link --target "$r" >/dev/null 2>&1
+assert_eq "a rollback's inverse restores the changed claim's text" \
+  "- **lists.1** - Lists can be shared *Since:* features/01-lists · *Changed:* rollbacks/2026-10-01-01-link" \
+  "$(sed -n '3p' "$r/blueprint/capabilities/lists.md")"
+assert_ok "and re-adds the removed claim under a new ID; the tombstone stays" \
+  grep -qxF -- '- **lists.3** - Lists can be archived *Since:* rollbacks/2026-10-01-01-link' "$r/blueprint/capabilities/lists.md"
+assert_ok "the tombstone is kept" grep -qxF -- '- lists.2 - removed by features/02-link' "$r/blueprint/capabilities/lists.md"
+
 finish

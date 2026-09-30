@@ -5,7 +5,7 @@ description: "Prove the current work does what its spec says by running the real
 
 # verify - prove it against the running app
 
-**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/context/current-work.md`
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/context/current-work.md` · `blueprint/capabilities/` · `blueprint/history/`
 
 Where this sits:
 
@@ -87,23 +87,39 @@ done-whens describe behaviour removed on purpose; proving them reports the
 rollback as a regression. Name each one skipped, with its rollback archive. A
 feature shipped again after its rollback is checked again, and counts.
 
-**These claims were proved once, when the item
-shipped, and nothing in this workflow has looked at them since** - which is the
-whole reason for this mode.
+**Where `blueprint/capabilities/` exists, it is the checklist.** Each file there
+says what holds now - superseded, cut and rolled-back claims are already gone or
+tombstoned - so prove its claims, grouped by capability, and do not judge
+supersession again. (In a multi-part product the directory is the part's, like
+the findings.) **An archive that has a `## Behaviour changes` section is covered
+by it**; walk only the archives that lack one, as below.
 
-Three things make an archived claim different from a current one, and each needs
-saying rather than quietly resolving:
+**Those claims were proved once, when the item
+shipped, and nothing in this workflow has looked at them since** - which is the
+whole reason for this mode. Two judgments remain, and each needs saying rather
+than quietly resolving:
 
 - **A claim about a feature that has since been cut** is not a regression. If the
-  item no longer exists in `blueprint/build-plan.md` - after an
-  `ideate --rescope`, say - report it as **no longer applicable** and name the
-  item, rather than failing it or silently skipping it.
-- **A claim that has been superseded** by later work. Item 2 said the list is
-  newest-first; item 6 made the order configurable. The old claim is not wrong,
-  it is stale. Say so and say which item changed it.
+  `*Since:*` item, or an archive's item, no longer exists in
+  `blueprint/build-plan.md` - after an `ideate --rescope`, say - report it as
+  **no longer applicable** and name the item, rather than failing it or silently
+  skipping it.
 - **A claim that was never observable** - "the code is clean", anything without a
   concrete behavior. Those were weak done-whens when written; report them as
   **could not verify** and say why, which is more useful than a pass.
+
+**An archive with no `## Behaviour changes` section is walked claim by claim**,
+judging for each whether later work superseded it (item 2 said the list is
+newest-first; item 6 made the order configurable - the old claim is not wrong,
+it is stale; say which item changed it). **Then offer to seed.** Show every line
+first - the claims that held, each as an `Adds to` or `New capability` line
+ending `- seeded`, and each claim left out as a `Left out: <claim> - <why>`
+line (superseded, cut, never observable) - and stop for a yes. On a yes, append
+the section to that archive and run
+`lib/merge-capabilities.sh <archive> <archive name>` (`features/03-auth`); show
+the IDs it assigns. **Seeding is per archive and never blocks** - on a no, the
+archive is walked again next time. A seeded claim has no recorded old text, so a
+later `rollback` cannot restore it; say so when offering.
 
 ## Step 2 - get the app running
 

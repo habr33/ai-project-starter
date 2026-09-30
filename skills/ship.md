@@ -5,7 +5,7 @@ description: "Close out finished work: run a final safety pass, archive the spec
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/capabilities/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/`
 
 Where this sits:
 
@@ -79,8 +79,9 @@ blockers**:
 - **A quick fix is still inside its limits** - run `git diff --stat main` and
   `git status --short` and count, rather than recalling what was built: the
   branch's diff against `main` changes at most two files outside `blueprint/`, not counting tests, and no
-  stored data, contract, dependency or environment variable. If it does more,
+  stored data, contract, dependency or environment variable, and its Behaviour changes only add. If it does more,
   it is an ordinary fix that skipped `verify` and `review` - stop and run them.
+- The spec has a `## Behaviour changes` section, even if it says `None`. A missing one is missing evidence: nothing declared what this item changed.
 - **No P0 or P1 finding in `blueprint/context/findings.md` is `open` or `fixed`.**
 
 That last one is the gate. `fixed` still blocks on purpose: the repair exists but
@@ -130,6 +131,19 @@ accordingly:
   feature's archive**. Uncheck the target item in `blueprint/build-plan.md` and append
   a short note to its line with the date and the rollback's archive path. Keep
   the item's number stable.
+
+**Merge the spec's `## Behaviour changes` into `blueprint/capabilities/`** -
+before any other write in this step, because the script refuses whole when a
+claim does not match and a refusal must leave nothing half-made. Run
+`lib/merge-capabilities.sh blueprint/context/current-work.md <archive name>`,
+the archive name being the one the findings take (`features/12-checkout`). It
+adds claims under the next free ID, replaces changed text, turns removed claims
+into tombstones and prints the IDs it assigned - **show them with the rest of
+this step's changes**. A spec with no such section has no evidence of what it
+changed: that is missing evidence at Step 1, not a `None`. In a multi-part
+product the directory is the part's, like the findings. A rollback's section is
+the inverse `rollback` wrote, merged the same way. A refusal names the line;
+fix the spec and run it again.
 
 **Record the item's decisions in `dev-notes/decisions.md`** before the spec is
 archived. Every entry under the spec's `## Decisions`, and every rule a repair
@@ -385,7 +399,8 @@ aside because a skill found it inconvenient.
 3. **Archive the spec** to `blueprint/history/abandoned/YYYY-MM-DD-name.md`, read
    from the branch (`git show <branch>:<path to current-work.md>`) exactly as it
    stands, ticks included, followed by `**Abandoned:** <date> - <reason>` and
-   `**Branch:** <name> at <commit>`. **Read this item's findings from the branch
+   `**Branch:** <name> at <commit>`. **Its Behaviour changes merge nothing** - the work is not on `main`, so
+   no claim about it holds; do not run `lib/merge-capabilities.sh`. **Read this item's findings from the branch
    as well** (`git show <branch>:<path to findings.md>`, and each entry file the
    same way, `git show <branch>:blueprint/findings/<ID>.md`): Step 2 has just moved
    you to `main`, where the ledger is its stub, while the entries live on the

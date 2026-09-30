@@ -497,3 +497,30 @@ is there. An unreadable settings file is refused before anything is written.
 **Opt-in, not default**: only Claude Code runs them, and the settings file may
 already be the user's. The rules stay in `AGENTS.md` as prose, which every tool
 reads, so nothing may depend on a hook having run.
+
+## D21 - What the product does now is a file, merged at ship (2026-10-01)
+
+What a project does now existed only as a pile of archives. `spec` never read
+what already held, so a new item could contradict a shipped behaviour unasked,
+and `verify --all` re-judged supersession claim by claim on every run and
+recorded the answer nowhere.
+
+**`blueprint/capabilities/<name>.md`** holds one claim per observable behaviour,
+with provenance (`Since`, `Changed`) and tombstones for removed claims. IDs are
+never reused. A spec declares its deltas in **`## Behaviour changes`**; `ship`
+merges them with `lib/merge-capabilities.sh`; `rollback` writes the inverse;
+`verify --all` proves the files and seeds them per archive from old ones.
+
+- **Every added or changed claim names the step that proves it**, so nothing
+  enters a file that `verify` has not seen hold.
+- **A change carries old and new text** - the file keeps only the current text,
+  and without the old one a rollback has nothing to restore.
+- **The script checks everything before writing anything**, so a refusal
+  leaves every file byte-identical (rule 16).
+- **A quick fix may add a claim, nothing more.**
+- **Seeded claims have no recorded old text**, so a rollback cannot restore them
+  and says so rather than inventing one.
+
+**Unproven against an agent.** The tests cover the script and the wording; no
+agent has yet written the section, merged it through `ship` or seeded a project.
+

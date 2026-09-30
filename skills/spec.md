@@ -124,6 +124,9 @@ against the code in Step 1, not against how the bug was described:
 - **It changes no stored data, no contract, no dependency and no environment
   variable** - so the spec's Data and contracts, Decisions and Production needs
   are all "none".
+- **Its Behaviour changes add a claim and nothing more** - the regression's
+  claim, or "None". Changing or removing a claim is a decision about what the
+  product does, and that is not a quick fix.
 - **It touches nothing `blueprint/context/quality-bar.md` names** - a hot path,
   authentication, personal data - and no security boundary. Those always get
   `review`, however small the diff.
@@ -328,6 +331,10 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
     variables by name, migrations, external accounts or services, a changed
     host setting. `ship` carries it to blueprint/production-pending.md. "None"
     is an answer.
+    ## Behaviour changes
+    What this item adds to, changes in, or removes from what the product does
+    now, against `blueprint/capabilities/` - one line each, below. `ship` merges
+    it. "None" is an answer.
     ## Notes
     Conventions and constraints to respect.
 
@@ -414,6 +421,28 @@ stylesheet on web, a theme object in React Native, `ThemeData` in Flutter - the
 
 This is a draft. Do not present it yet.
 
+**Behaviour changes are how what holds now stays written down.** Before writing
+the section, list `blueprint/capabilities/` and open the files for the areas the
+item touches; write the section against their current claims, not from memory.
+
+    ## Behaviour changes
+    - Adds to `accounts`: <claim> - Step 2
+    - Changes `accounts.2` from "<old text>" to "<new text>" - Step 3
+    - Removes `lists.4`: <why>
+    - New capability `billing`: <claim> - Step 1
+
+- **A claim is one observable behaviour** - the done-when standard.
+- **Every added or changed claim names the build step whose done-when proves
+  it**, so nothing enters a capability file that `verify` has not seen hold.
+- **A change carries the old text and the new.** The capability file keeps only
+  the current text; without the old one, `rollback` has nothing to restore.
+- **By type:** a feature adds, changes and removes. A fix usually adds the
+  regression's claim, and changes one only when the intended behaviour itself
+  was wrong. A quick fix may add one, nothing more.
+- **No capability files but existing archives in `blueprint/history/`:** say
+  that `verify --all` would seed them, write the section for this item alone,
+  and do not block.
+
 ## Step 4 - red-team your own draft
 
 **A quick fix skips this step.** Check the draft against the quick path's list
@@ -438,6 +467,9 @@ step. Run the draft against each of these:
 - **Done-whens.** Is each one observable and checkable by `verify`, or is
   it a vague "it works"? Make it concrete. Where does the test behind it run?
   Can the command that checks it actually run there?
+- **Contradiction.** Does this item contradict a claim in
+  `blueprint/capabilities/` that its Behaviour changes did not declare as
+  changed or removed? Declare it, or change the item.
 - **Visual fidelity.** If this is visual work, is a reference actually linked, or
   are we about to build a design blind from prose?
 

@@ -1,14 +1,11 @@
 # AGENTS.md
 
 Instructions for AI coding agents working in this project, and the entry point
-every tool reads. Claude Code reads `CLAUDE.md`, which imports this file, so
-there is one source of truth.
+every tool reads. Claude Code reads `CLAUDE.md`, which imports this file.
 
 ## Starting fresh?
 
-**Assume you remember nothing, because you probably don't.** Every piece of state
-in this project is a file, so a cold session is the normal case, not a degraded
-one.
+**Assume you remember nothing.** Every piece of state in this project is a file.
 
 These are already loaded, before you read anything else:
 
@@ -21,8 +18,7 @@ These are already loaded, before you read anything else:
 | `blueprint/context/findings.md` | the findings index - one heading per live finding, status only | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `ship` |
 
-**Context budget: 48 KB.** Everything above is paid for by every session before
-the user types a word, so the files `CLAUDE.md` imports share that budget, this
+**Context budget: 48 KB.** Everything above is paid for by every session, so the files `CLAUDE.md` imports share that budget, this
 file included. `progress` reports when they exceed it and names the largest.
 Keep loaded files to what a session must know now: a line per open item, not
 its history - closed items move out, detail lives in files read on demand.
@@ -39,7 +35,8 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `context`, `host` |
 | `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `context` |
 | `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
-| `blueprint/history/` | every completed item, archived | `ship` |
+| `blueprint/capabilities/` | what the product does now, one file per capability, claim by claim; read on demand | `ship`, `verify` |
+| `blueprint/history/` | every completed item, archived | `ship`, `verify` |
 | `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
 | `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight` |

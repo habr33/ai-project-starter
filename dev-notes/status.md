@@ -15,6 +15,21 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
+## Where work stopped (2026-10-01)
+
+**Item 6, first half: living capability specs, on `capabilities`, not committed**
+(`D21`; design and plan in `capabilities-design.md` and `capabilities-plan.md`).
+A spec declares `## Behaviour changes`; `ship` merges them into
+`blueprint/capabilities/` with `lib/merge-capabilities.sh`; `rollback` writes
+the inverse; `verify --all` proves the files and seeds them per archive from
+old ones. `template/AGENTS.md` got a row and was trimmed by the same bytes
+(rule 18 headroom 239). Tests: *the capability merge, D21* in
+`tests/test-scripts.sh`; *behaviour travels from spec to capabilities, D21* in
+`tests/test-seams.sh`, four assertions checked under real mutations.
+**Unproven against an agent**: no agent has written the section, merged it
+through `ship` or seeded a project. **Not done:** the plugin package (item 6's
+second half).
+
 ## Where work stopped (2026-09-30)
 
 **Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
@@ -210,8 +225,8 @@ appended after `finish` in a test file is not counted, so add new ones above it.
    mutation. **Never run against a project** - the tests prove the wording.
 5. **Optional hooks - done (2026-09-30), `D20`.** No commit on `main`
    without the person's yes, and the budget warning. See above.
-6. **Living capability specs** that `ship` updates (OpenSpec-style); a Claude
-   Code plugin package alongside the scripts.
+6. **Living capability specs - done (2026-10-01), `D21`, unproven against an
+   agent.** Still open: a Claude Code plugin package alongside the scripts.
 
 Also open: the `verify` redirect sweep and `review` redirect-target check
 (see *Can be done here*), and a ledger migration script.
