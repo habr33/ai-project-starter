@@ -254,7 +254,9 @@ can introduce a defect no existing entry points at.
 
 Each finding is two pieces. **The index heading** goes in
 `blueprint/context/findings.md`, which every session loads - so it is the
-heading and one `File:` line, nothing more. The heading is a machine-readable
+heading and one `File:` line, nothing more - except that on a `deferred`
+finding its `Deferred to:` line goes under the heading too, since `deploy` and
+`host` read it there. The heading is a machine-readable
 contract and keeps this exact shape, and **status lives only here**:
 
     ### F-03 [P0] open - Session cookie is readable from JavaScript

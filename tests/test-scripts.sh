@@ -1224,4 +1224,88 @@ for d in two two/web two/api; do
   assert_ok "and in a multi-part product, in $d" grep -q 'context-budget.sh' "$w/$d/.claude/settings.json"
 done
 
+section "a findings ledger from before D15 is split, and nothing is lost"
+# Before D15 every finding's whole entry sat in the loaded file. The split was
+# done by hand once; this runs the script instead and checks what the hand
+# check did: every entry intact, every ID exactly once, no status changed.
+MF="$REPO/lib/migrate-findings.sh"
+old_ledger() {
+  mkdir -p "$1/blueprint/context"
+  cat >"$1/blueprint/context/findings.md" <<'OLD'
+# Findings
+
+> **Generated file.** The findings ledger: review findings raised by the `review`
+> skill against the work in progress.
+
+### F-01 [P1] fixed - Session cookie is readable from JavaScript
+
+**File:** src/auth/session.ts:41
+**Found:** 2026-08-31 by review (scope: current; lens: security)
+**Why it matters:** any script on the page can read it.
+**Suggested fix:**
+
+```ts
+### F-09 [P2] open - quoted inside a fence, not a finding
+cookie.httpOnly = true;
+```
+
+**Resolution:** set httpOnly; test seen failing first.
+
+### F-02 [P3] open - Duplicated date formatting
+
+**File:** src/lib/date.ts:3
+**Found:** 2026-09-01 by review (scope: current; lens: quality)
+**Why it matters:** two formats drift.
+**Suggested fix:** one helper.
+**Resolution:**
+
+### F-04 [P0] deferred - No backups of the database
+
+**File:** (none - the server)
+**Found:** 2026-09-02 by preflight
+**Deferred to:** host
+**Why it matters:** one disk failure loses everything.
+**Suggested fix:** nightly dump, restored once.
+**Resolution:**
+OLD
+}
+w=$(workdir); old_ledger "$w"; cp "$w/blueprint/context/findings.md" "$w/before.md"
+assert_ok "migrates an old ledger" "$MF" --target "$w"
+idx="$w/blueprint/context/findings.md"
+assert_eq "the index keeps every heading, statuses unchanged" \
+  "$(grep '^### F-' "$w/before.md" | grep -v "quoted inside a fence")" "$(grep '^### F-' "$idx")"
+assert_eq "with its File: line under each" "3" "$(grep -c '^File: ' "$idx")"
+assert_ok "a deferred finding's target stays in the index, where deploy and host read it" \
+  grep -qx 'Deferred to: host' "$idx"
+assert_lacks "and nothing else of an entry stays loaded" "$idx" 'Why it matters|Suggested fix|Found:'
+assert_ok "the header is the current template's" \
+  grep -q 'moves unresolved P3s to' "$idx"
+for id in F-01 F-02 F-04; do assert_exists "writes the entry $id" "$w/blueprint/findings/$id.md"; done
+assert_ok "an entry is headed by its ID and title" \
+  grep -qx '# F-01 - Session cookie is readable from JavaScript' "$w/blueprint/findings/F-01.md"
+assert_ok "and keeps its body intact, fence and all" \
+  grep -qxF "### F-09 [P2] open - quoted inside a fence, not a finding" "$w/blueprint/findings/F-01.md"
+assert_eq "every line of the old ledger is somewhere after" "" \
+  "$(cd "$w" && grep -v '^### F-\|^# Findings\|^>\|^$' before.md | sed 's/^\*\*\(File\|Deferred to\):\*\* /\1: /' \
+     | while IFS= read -r l; do grep -qxF -- "$l" blueprint/context/findings.md blueprint/findings/*.md || echo "lost: $l"; done)"
+assert_refuses "a second run refuses - already split" "already" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; mkdir -p "$w/blueprint/findings"; echo keep >"$w/blueprint/findings/F-02.md"
+assert_refuses "an entry file already there is refused" "F-02" "$MF" --target "$w"
+assert_eq "before anything is written" "keep" "$(cat "$w/blueprint/findings/F-02.md")"
+assert_absent "not even another entry" "$w/blueprint/findings/F-01.md"
+w=$(workdir); old_ledger "$w"; printf '### F-02 [P2] open - Again\n\n**File:** x\n' >>"$w/blueprint/context/findings.md"
+assert_refuses "an ID used twice is refused" "F-02" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; mkdir -p "$w/blueprint/findings"
+printf '# Findings backlog\n\n### F-04 [P3] open - Old\nFile: y\n' >"$w/blueprint/findings/backlog.md"
+assert_refuses "an ID the backlog already holds is refused" "F-04" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; printf '### F-05 [P2] open\n\n**File:** x\n' >>"$w/blueprint/context/findings.md"
+assert_refuses "a heading it cannot read is refused, not guessed at" "F-05" "$MF" --target "$w"
+assert_absent "and nothing is written" "$w/blueprint/findings"
+t=$(workdir); "$IN" --target "$t" >/dev/null 2>&1; old_ledger "$t"
+assert_ok "install.sh names the script when it finds an old ledger" \
+  grep -q 'migrate-findings.sh' <<<"$("$IN" --target "$t" 2>&1)"
+"$MF" --target "$t" >/dev/null 2>&1
+assert_lacks_out() { _name="$1"; if grep -q "$2" <<<"$3"; then _no "'$2' in output"; else _ok; fi; }
+assert_lacks_out "and stops once it is split" 'migrate-findings.sh' "$("$IN" --target "$t" 2>&1)"
+
 finish

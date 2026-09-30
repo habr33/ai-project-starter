@@ -523,6 +523,16 @@ if [ -f "$TARGET/CLAUDE.md" ] && [ -f "$HERE/template/AGENTS.md" ]; then
   fi
 fi
 
+# A ledger from before D15 keeps every finding whole in a file every session
+# loads, and the skills now read entries from blueprint/findings/. It is the
+# project's state, so this names the script rather than running it.
+if grep -qE '^\*\*(File|Found):\*\*' "$TARGET/blueprint/context/findings.md" 2>/dev/null; then
+  legacy="$legacy\n  - blueprint/context/findings.md holds whole findings, from before the ledger was split."
+  legacy="$legacy\n    Every session loads all of it. Split it - nothing is lost, no status changes:"
+  # after-write: named for the user to run, never called here.
+  legacy="$legacy\n        $HERE/lib/migrate-findings.sh --target $TARGET"
+fi
+
 if [ -d "$TARGET/blueprint/.state" ]; then
   legacy="$legacy\n  - blueprint/.state/ is from an older pack. Nothing here reads it.\n    Safe to delete once you are happy nothing of yours depends on it."
 fi

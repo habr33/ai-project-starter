@@ -477,9 +477,15 @@ payoff:
       redirect target built from the request URL cannot carry the framework's
       internal URL forms. **Not started - reproduce a real case with `debug`
       first.**
-- [ ] **P3 - A ledger migration for projects installed before `D15`.** Done
-      by hand once; a script would need the same checks - every entry intact,
-      every ID exactly once across index and backlog.
+- [x] **P3 - A ledger migration for projects installed before `D15`.**
+      *Done 2026-09-30:* `lib/migrate-findings.sh`, named by `install.sh`'s
+      legacy report. Checks everything before writing - every heading
+      readable, no ID twice or already in the backlog or on disk, every old
+      line present after. Writing it found a seam: `deploy` and `host` read
+      `Deferred to:` from the index, but `review` said an index heading has
+      only a `File:` line; `review` now puts it under the heading. Tested,
+      ten mutations each caught. No real pre-`D15` ledger was on this machine
+      to run it against - the fixture is built from `review`'s old format.
 - [ ] **P3 - Trim the longest descriptions** (`verify`, `stack`, `spec`,
       `architect`). `disable-model-invocation` on hand-run skills was
       **declined**: a small saving, the approval gates already exist, it stops

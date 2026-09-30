@@ -308,6 +308,7 @@ The scripts:
 | `lib/seed-part.sh` | seed one part; also adds a part to an existing product |
 | `lib/seed-product-root.sh` | seed a product root |
 | `lib/part-name.sh` | part-name checks shared by `new-project.sh` and `convert-to-parts.sh` |
+| `lib/migrate-findings.sh` | split a findings ledger from before `D15` - `install.sh` names it when it finds one |
 | `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 

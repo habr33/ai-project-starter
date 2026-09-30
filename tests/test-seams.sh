@@ -3071,4 +3071,15 @@ assert_ok "review checks a redirect target built from the request URL" \
 assert_ok "and names the same forms" \
   _says skills/review.md '`.data`, `_data`, `_rsc`'
 
+section "a deferred finding's target is in the index, where deploy and host read it"
+# deploy and host read `Deferred to:` in blueprint/context/findings.md, but
+# review's index format was "the heading and one File: line, nothing more" - so
+# a review following it to the letter put the target in the entry file, where
+# neither looks. Found writing the ledger migration, which had to choose.
+assert_ok "review puts Deferred to: under the index heading" \
+  _says skills/review.md 'its `Deferred to:` line goes under the heading too'
+for s in deploy host; do
+  assert_ok "$s reads it from the index" _says skills/$s.md '`Deferred to:` names this skill, in `blueprint/context/findings.md`'
+done
+
 finish
