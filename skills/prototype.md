@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: "Settle how the app or website looks and works before building it. Classifies the product, recommends a visual direction and a navigation structure, then mocks it from the pack's design kit - tokens, every core component in every state, and the UX checklist - as throwaway static HTML, and records the decisions in design.md. The first UI item ports the tokens and components into the real app, and `ship` deletes the mockups. Required before the first `spec` in any project with a UI; for an app that already has a look, records the existing one instead of mocking a new one. Use when the user runs `prototype`, wants to see the screens and how they look before any code is written, wants to explore the look and feel or the navigation, asks for UI or UX recommendations, or is unsure what the interface should be."
+description: "Settle how the app or website looks and works before building it. Recommends a visual direction and a navigation structure, mocks it from the pack's design kit as throwaway static HTML, and records the decisions in design.md; for an app that already has a look, records the existing one instead. Required before the first `spec` in any project with a UI. Use when the user runs `prototype`, wants to see the screens and how they look before any code is written, wants to explore the look and feel or the navigation, asks for UI or UX recommendations, or is unsure what the interface should be."
 ---
 
 # prototype - settle the look and the navigation before you build them

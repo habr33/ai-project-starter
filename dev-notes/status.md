@@ -486,13 +486,20 @@ payoff:
       only a `File:` line; `review` now puts it under the heading. Tested,
       ten mutations each caught. No real pre-`D15` ledger was on this machine
       to run it against - the fixture is built from `review`'s old format.
-- [ ] **P3 - Trim the longest descriptions** (`verify`, `stack`, `spec`,
-      `architect`). `disable-model-invocation` on hand-run skills was
+- [x] **P3 - Trim the longest descriptions** (`verify`, `stack`, `spec`,
+      `architect`, and `ideate` and `prototype`). *Done 2026-09-30:* the 27
+      descriptions went from 16,769 to 15,693 bytes - rationale and mechanics
+      moved out, trigger words and every declared mode kept; `test-routing.sh`
+      still 34/34. `disable-model-invocation` on hand-run skills was
       **declined**: a small saving, the approval gates already exist, it stops
       "merge it" and `autopilot` reaching `ship`, and only Claude Code honours
       it.
-- [ ] **P3 - Cap archive size.** `ship` archives the spec, the outcome and
-      links to evidence, not every narrative.
+- [x] **P3 - Cap archive size.** *Declined on evidence, 2026-09-30:* the
+      four archives of the re-run project are 6-16 KB, about half of it the
+      spec's build steps - whose done-whens `verify --all` and `rollback` read
+      back - then decisions and findings. No narrative accumulates, and
+      archives are not loaded, so a cap would cost what they are for and save
+      no session anything. Reopen on an archive that is mostly prose.
 - [ ] **P3 - A shorter house style in the skills themselves** - about 400 KB
       of skill prose sets the tone agents copy. (A finding's "Why it matters"
       is already capped at three lines, `D15`.)

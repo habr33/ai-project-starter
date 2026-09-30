@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "Turn the problem, users, features and constraints already in `blueprint/project-plan.md` into a concrete structure, before any technology is chosen: routes and pages for a web app or PWA, screens and navigation for a mobile app, or a page list for a website - plus the data model, where logic lives, the auth boundary, and any third-party service a feature actually needs. Sized to the project's real scope. In a product with parts, also splits the build plan into each part. Proposes exact edits to the plan's Architecture section and stops for approval before writing. Use when the user runs `architect`, has a plan and needs structure before choosing a stack, or asks how to structure a new project."
+description: "Turn the problem, users and features in `blueprint/project-plan.md` into a concrete structure before any technology is chosen: routes and pages for a web app, screens and navigation for a mobile app, or a page list for a website - plus the data model, where logic lives, the auth boundary, and any third-party service a feature needs. In a product with parts, also splits the build plan into each part. Proposes edits to the plan's Architecture section and stops for approval. Use when the user runs `architect`, has a plan and needs structure before choosing a stack, or asks how to structure a new project."
 ---
 
 # architect - design the structure before you build
