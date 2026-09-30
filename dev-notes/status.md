@@ -67,7 +67,7 @@ acceptance is set `accepted` in the ledger. Tested under *every preflight
 blocker, and its acceptance, is in the ledger*, each seen failing first.
 **Unproven against an agent.**
 
-**Then item 5, optional hooks, on branch `hooks`** (`D20`, not merged):
+**Then item 5, optional hooks, merged to `main` as `1a8424b`, not pushed** (`D20`):
 `install.sh --hooks` and `new-project.sh --hooks` register two Claude Code
 hooks - a `git commit` on `main` asks the person (asks, not refuses: the setup
 commits and `ship`'s squash belong there), and a session opens with a warning
@@ -198,7 +198,7 @@ appended after `finish` in a test file is not counted, so add new ones above it.
    crosses a limit, and `ship` checks them again. Tests under *the quick path,
    D19* in `tests/test-seams.sh`, every assertion seen failing under a
    mutation. **Never run against a project** - the tests prove the wording.
-5. **Optional hooks - done on `hooks` (2026-09-30), `D20`.** No commit on `main`
+5. **Optional hooks - done (2026-09-30), `D20`.** No commit on `main`
    without the person's yes, and the budget warning. See above.
 6. **Living capability specs** that `ship` updates (OpenSpec-style); a Claude
    Code plugin package alongside the scripts.
@@ -244,8 +244,8 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 **Verify with:**
 
     git status --short                       # empty
-    git branch --show-current                # hooks, until it is merged
-    git log --oneline origin/main..main      # empty - main is pushed
+    git branch --show-current                # main
+    git log --oneline origin/main..main      # the hooks commit, until it is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
 
