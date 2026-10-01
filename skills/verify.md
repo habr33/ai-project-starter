@@ -116,7 +116,7 @@ first - the claims that held, each as an `Adds to` or `New capability` line
 ending `- seeded`, and each claim left out as a `Left out: <claim> - <why>`
 line (superseded, cut, never observable) - and stop for a yes. On a yes, append
 the section to that archive and run
-`lib/merge-capabilities.sh <archive> <archive name>` (`features/03-auth`); show
+`.agents/bin/merge-capabilities.sh <archive> <archive name>` (`features/03-auth`); show
 the IDs it assigns. **Seeding is per archive and never blocks** - on a no, the
 archive is walked again next time. A seeded claim has no recorded old text, so a
 later `rollback` cannot restore it; say so when offering.

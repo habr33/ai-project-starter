@@ -135,7 +135,7 @@ accordingly:
 **Merge the spec's `## Behaviour changes` into `blueprint/capabilities/`** -
 before any other write in this step, because the script refuses whole when a
 claim does not match and a refusal must leave nothing half-made. Run
-`lib/merge-capabilities.sh blueprint/context/current-work.md <archive name>`,
+`.agents/bin/merge-capabilities.sh blueprint/context/current-work.md <archive name>`,
 the archive name being the one the findings take (`features/12-checkout`). It
 adds claims under the next free ID, replaces changed text, turns removed claims
 into tombstones and prints the IDs it assigned - **show them with the rest of
@@ -400,7 +400,7 @@ aside because a skill found it inconvenient.
    from the branch (`git show <branch>:<path to current-work.md>`) exactly as it
    stands, ticks included, followed by `**Abandoned:** <date> - <reason>` and
    `**Branch:** <name> at <commit>`. **Its Behaviour changes merge nothing** - the work is not on `main`, so
-   no claim about it holds; do not run `lib/merge-capabilities.sh`. **Read this item's findings from the branch
+   no claim about it holds; do not run `.agents/bin/merge-capabilities.sh`. **Read this item's findings from the branch
    as well** (`git show <branch>:<path to findings.md>`, and each entry file the
    same way, `git show <branch>:blueprint/findings/<ID>.md`): Step 2 has just moved
    you to `main`, where the ledger is its stub, while the entries live on the

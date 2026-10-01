@@ -1381,4 +1381,20 @@ assert_ok "and re-adds the removed claim under a new ID; the tombstone stays" \
   grep -qxF -- '- **lists.3** - Lists can be archived *Since:* rollbacks/2026-10-01-01-link' "$r/blueprint/capabilities/lists.md"
 assert_ok "the tombstone is kept" grep -qxF -- '- lists.2 - removed by features/02-link' "$r/blueprint/capabilities/lists.md"
 
+section "the capability merge reaches a project - a skill's script must exist where it runs"
+# ship and verify run the merge inside a project, which has no lib/. A fresh
+# project once had none of it: every test above ran the pack's copy by path.
+w=$(workdir); (cd "$w" && "$NP" cm >/dev/null 2>&1); p="$w/cm"
+assert_ok "a new project holds an executable copy" test -x "$p/.agents/bin/merge-capabilities.sh"
+assert_ok "identical to the pack's" cmp -s "$MC" "$p/.agents/bin/merge-capabilities.sh"
+cap_spec "$p/s.md" '- New capability `count`: Prints the total - Step 1'
+out="$(cd "$p" && .agents/bin/merge-capabilities.sh s.md features/01-count 2>&1)"
+assert_eq "and runs from the project, by the path the skills give" "count.1" "$out"
+echo '# stale' >"$p/.agents/bin/merge-capabilities.sh"
+"$IN" --target "$p" >/dev/null 2>&1
+assert_ok "a re-install replaces a stale copy" cmp -s "$MC" "$p/.agents/bin/merge-capabilities.sh"
+w=$(workdir); (cd "$w" && "$NP" mp --parts api,web >/dev/null 2>&1)
+assert_ok "a part of a multi-part project has it" test -x "$w/mp/api/.agents/bin/merge-capabilities.sh"
+assert_ok "and so does the product root" test -x "$w/mp/.agents/bin/merge-capabilities.sh"
+
 finish

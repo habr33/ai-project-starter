@@ -158,6 +158,15 @@ for adapter in $adapters; do
   done
 done
 
+# Skills name a script they run inside the project - ship and verify merge a
+# spec's behaviour changes with it - and a project has no lib/ of the pack's. So
+# it is installed beside the skills, pack-owned and always replaced like them.
+mkdir -p "$TARGET/.agents/bin"
+# after-write: this only copies the script, never runs it - its refusals are a
+# spec's, at ship time.
+cp "$HERE/lib/merge-capabilities.sh" "$TARGET/.agents/bin/merge-capabilities.sh"
+chmod +x "$TARGET/.agents/bin/merge-capabilities.sh"
+
 # A pack skill in a real .claude/skills directory is about to be overwritten (the
 # copy shape) or removed (the conversion), and the report above compared only
 # .agents/skills. An edit made in the copy Claude Code actually reads would go

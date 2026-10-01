@@ -17,7 +17,7 @@ place that answers "has this skill actually run?".
 
 ## Where work stopped (2026-10-01)
 
-**Item 6, first half: living capability specs, on `capabilities`, not committed**
+**Item 6, first half: living capability specs, committed on `main` (`5eaec86`)**
 (`D21`; design and plan in `capabilities-design.md` and `capabilities-plan.md`).
 A spec declares `## Behaviour changes`; `ship` merges them into
 `blueprint/capabilities/` with `lib/merge-capabilities.sh`; `rollback` writes

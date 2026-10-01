@@ -3135,7 +3135,7 @@ assert_ok "spec's red-team asks the undeclared-contradiction question" \
 assert_ok "a quick fix may only add a claim" \
   _says skills/spec.md 'add a claim and nothing more'
 assert_ok "ship names the section and the script" \
-  _says skills/ship.md 'lib/merge-capabilities.sh blueprint/context/current-work.md <archive name>'
+  _says skills/ship.md '.agents/bin/merge-capabilities.sh blueprint/context/current-work.md <archive name>'
 assert_ok "ship treats a missing section as missing evidence" \
   _says skills/ship.md 'A missing one is missing evidence'
 assert_ok "abandoning merges nothing" \
@@ -3151,8 +3151,18 @@ assert_ok "verify --all proves the capability files" \
 assert_ok "verify --all states the per-archive seeding rule" \
   _says skills/verify.md 'An archive with no `## Behaviour changes` section is walked claim by claim'
 assert_ok "verify names the merge script" \
-  _says skills/verify.md 'lib/merge-capabilities.sh <archive> <archive name>'
+  _says skills/verify.md '.agents/bin/merge-capabilities.sh <archive> <archive name>'
 assert_ok "seeding shows every line before writing" \
   _says skills/verify.md 'Show every line first'
+
+# A skill that tells an agent to run a script in the project is only right if
+# install puts it there - the merge script was named for months and never shipped.
+section "every script a skill runs inside a project is installed there"
+w=$(workdir); (cd "$w" && "$REPO/new-project.sh" sk >/dev/null 2>&1)
+for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); do
+  assert_ok "$f exists in a fresh project" test -x "$w/sk/$f"
+done
+assert_ok "and at least one is named, so the loop above is not empty" \
+  grep -q '\.agents/bin/' skills/ship.md
 
 finish
