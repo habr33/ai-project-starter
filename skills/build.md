@@ -68,7 +68,7 @@ drop the marker and build the step normally.
 ## Step 2 - get on a branch
 
 Create and check out a branch named from the spec: `feature/<name>` for a feature,
-`fix/<name>` for a fix. If the project is not a git repository yet, stop and ask
+`fix/<name>` for a fix, `rollback/<name>` for a rollback. If the project is not a git repository yet, stop and ask
 the user to run `git init` - the loop depends on branches and on being able to
 show diffs.
 

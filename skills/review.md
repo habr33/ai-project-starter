@@ -320,7 +320,12 @@ done when something other than what made it has looked at the result.
 
 Then:
 
-- Append each new confirmed finding as `open`, with the next sequential ID.
+- Append each new confirmed finding as `open`, with the next sequential ID:
+  **one past the highest `F-` number in the index, in
+  `blueprint/findings/backlog.md`, and among the entry files in
+  `blueprint/findings/`.** The index alone is not enough - `ship` empties it
+  between items while a backlogged P3 keeps its entry file, and an ID counted
+  from the index alone overwrites that file.
 - Record a risk worth tracking but unproven as `unverified`. It is a lead, and
   never gates a merge.
 - Update entries this pass re-examined, noting the evidence in **Resolution**.

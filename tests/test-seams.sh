@@ -3161,8 +3161,50 @@ section "every script a skill runs inside a project is installed there"
 w=$(workdir); (cd "$w" && "$REPO/new-project.sh" sk >/dev/null 2>&1)
 for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); do
   assert_ok "$f exists in a fresh project" test -x "$w/sk/$f"
+  # On disk is not in the repository: the generated .gitignore's bin/ matched
+  # .agents/bin/, so the script existed here and was missing from every clone.
+  assert_fails "$f is not gitignored, so a clone has it too" \
+    git -C "$w/sk" check-ignore -q "$f"
 done
 assert_ok "and at least one is named, so the loop above is not empty" \
   grep -q '\.agents/bin/' skills/ship.md
+# A project with its own .gitignore keeps it - install.sh never edits one - so
+# the ignore it already has must at least be named.
+w=$(workdir); git -C "$w" init -q; printf 'bin/\n' > "$w/.gitignore"
+bin_out=$("$REPO/install.sh" --target "$w" 2>&1)
+assert_ok "install names an existing .gitignore that hides .agents/bin/" \
+  grep -qF '.agents/bin/ is gitignored' <<< "$bin_out"
+assert_ok "and leaves that .gitignore as it was" \
+  bash -c 'test "$(cat "$1")" = "bin/"' _ "$w/.gitignore"
+
+# deploy refuses a dirty tree, and build carries anything uncommitted onto the
+# next item's branch - so a skill that records into dev-notes/status.md and then
+# leaves it uncommitted stops the release it was part of. host, deploy, migrate,
+# monitor and docs all did. Declared by the Writes: line, so a new skill that
+# records there is held to it without anyone remembering this list.
+section "a skill that records in dev-notes/status.md asks to commit it"
+_says_i() { grep -qiF -- "$2" <<<"$(tr '\n' ' ' < "$1" | tr -s ' ')"; }
+_status_writers=""
+for f in skills/*.md; do
+  _w="$(grep -m1 '^\*\*Writes:\*\*' "$f" || true)"
+  grep -qF '`dev-notes/status.md`' <<<"$_w" || continue
+  _status_writers="$_status_writers ${f#skills/}"
+  assert_ok "${f#skills/} asks to commit what it wrote" _says_i "$f" 'ask to commit what this run wrote'
+done
+assert_ok "and the list is not empty, so the loop above checked something" \
+  test -n "$_status_writers"
+
+# A fix has no plan number, so fixes/name.md let a second fix of the same name
+# overwrite the first archive - and its findings' prefixed IDs with it.
+section "every archive name is unique, and every spec type has a branch"
+assert_ok "ship dates a fix's archive" _says skills/ship.md 'blueprint/history/fixes/YYYY-MM-DD-name.md'
+assert_ok "verify reads that name" _says skills/verify.md '`YYYY-MM-DD-title.md` for a fix'
+assert_ok "and the directory's README states it" \
+  _says template/blueprint/history/fixes/README.md 'named YYYY-MM-DD-title.md'
+assert_ok "build names a rollback's branch" _says skills/build.md '`rollback/<name>` for a rollback'
+# ship empties the index between items while a backlogged P3 keeps its entry
+# file, so an ID counted from the index alone overwrote that file.
+assert_ok "review counts the next finding ID past the backlog and the entry files" \
+  _says skills/review.md 'in `blueprint/findings/backlog.md`, and among the entry files in `blueprint/findings/`'
 
 finish

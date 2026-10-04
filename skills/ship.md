@@ -124,8 +124,11 @@ accordingly:
   number, and
   check it off in blueprint/build-plan.md. Check the parent item too, but only once
   every sub-item under it is checked.
-- **Fix** - archive to `blueprint/history/fixes/name.md`. A fix is not a plan
-  item, so nothing gets checked off.
+- **Fix** - archive to `blueprint/history/fixes/YYYY-MM-DD-name.md`. A fix is
+  not a plan item, so nothing gets checked off. **The date is not decoration**:
+  a fix has no plan number, so without it a second fix with the same name
+  overwrites the first archive, and its findings' `name/F-03` IDs collide with
+  the first's.
 - **Rollback** - archive to
   `blueprint/history/rollbacks/YYYY-MM-DD-NN-name.md`, **preserving the original
   feature's archive**. Uncheck the target item in `blueprint/build-plan.md` and append
@@ -408,8 +411,8 @@ aside because a skill found it inconvenient.
    standing archives an empty section and reports it as done. Append them under
    `## Findings` at their current status - they are about code that never reached
    `main` - **each ID prefixed with the archive name**, so `F-01` becomes
-   `2026-09-22-submit-a-link/F-01`: the entries are leaving the ledger, the next
-   item's first finding will be `F-01` again, and the reason recorded above cites
+   `2026-09-22-submit-a-link/F-01`: the entries are leaving the ledger, a later
+   item's finding can take `F-01` again, and the reason recorded above cites
    these by ID. **Leave the branch's own ledger as it is** - it is what `spec`'s
    resume brings back with the branch - and remove these entries from `main`'s
    ledger only where they are actually in it.

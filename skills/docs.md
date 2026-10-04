@@ -191,6 +191,12 @@ default and it is usually wrong.
 What you wrote, what you moved, and what is still missing. Documentation gaps are
 worth naming even when you did not fill them.
 
+**Then ask to commit what this run wrote**, as one `docs: ...` commit naming its
+files - **between items that is `main`**, mid-item it is the item's branch.
+Nothing to commit in `--check` mode, which writes nothing. Left uncommitted,
+`deploy` refuses the dirty tree and the next `build` carries the docs onto an
+item's branch as someone else's work. Committing is not pushing.
+
 **When this skill repairs a finding** - a `preflight` blocker such as a scaffold-default README or absent dev-notes - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the README now says how to run the project, checked by following it. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
 
 ## Rules

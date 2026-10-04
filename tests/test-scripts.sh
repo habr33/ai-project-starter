@@ -1380,6 +1380,25 @@ assert_eq "a rollback's inverse restores the changed claim's text" \
 assert_ok "and re-adds the removed claim under a new ID; the tombstone stays" \
   grep -qxF -- '- **lists.3** - Lists can be archived *Since:* rollbacks/2026-10-01-01-link' "$r/blueprint/capabilities/lists.md"
 assert_ok "the tombstone is kept" grep -qxF -- '- lists.2 - removed by features/02-link' "$r/blueprint/capabilities/lists.md"
+# The file is rebuilt from what was parsed out of it, and only claims and
+# tombstones were parsed - a note a person wrote there vanished on the next merge.
+n=$(workdir)
+cap_spec "$n/a.md" '- New capability `auth`: A user can sign in - Step 1'
+"$MC" "$n/a.md" features/01-auth --target "$n" >/dev/null 2>&1
+printf '\nSign-in is email only until item 9.\n' >>"$n/blueprint/capabilities/auth.md"
+cap_spec "$n/b.md" '- Adds to `auth`: A user can sign out - Step 1'
+"$MC" "$n/b.md" features/02-out --target "$n" >/dev/null 2>&1
+assert_ok "a note a person wrote in a capability file survives the next merge" \
+  grep -qxF 'Sign-in is email only until item 9.' "$n/blueprint/capabilities/auth.md"
+assert_ok "and the merge still landed beside it" \
+  grep -qF -- '**auth.2** - A user can sign out' "$n/blueprint/capabilities/auth.md"
+# ...but a broken claim line is not a note: kept as prose, its ID is reused.
+printf -- '- **auth.3** - A claim with its provenance lost\n' >>"$n/blueprint/capabilities/auth.md"
+cap_spec "$n/c.md" '- Adds to `auth`: Sessions expire - Step 1'
+before="$(cap_tree "$n")"
+assert_refuses "a claim line it cannot read is refused, not kept as a note" "cannot read" \
+  "$MC" "$n/c.md" features/03-expiry --target "$n"
+assert_eq "and leaves every file byte-identical (broken claim)" "$before" "$(cap_tree "$n")"
 
 section "the capability merge reaches a project - a skill's script must exist where it runs"
 # ship and verify run the merge inside a project, which has no lib/. A fresh

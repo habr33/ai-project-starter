@@ -434,6 +434,14 @@ cs="$TARGET/blueprint/context/coding-standards.md"
 if [ -f "$cs" ] && grep -qE '^#+ Part 1' "$cs"; then
   legacy="$legacy\n  - blueprint/context/coding-standards.md still has its own \"Part 1\".\n    The fundamentals now live in fundamentals.md, which the pack refreshes.\n    Run 'setup' to reconcile: it keeps what this project genuinely does\n    differently and drops what is now duplicated."
 fi
+
+# A project's own .gitignore commonly ignores bin/ - new-project.sh wrote one
+# that did until 2026-10-04 - and that silently drops .agents/bin/ from every
+# clone, so ship's merge script exists only on the machine that installed it.
+# The .gitignore is the project's, so this reports the lines and writes none.
+if git -C "$TARGET" check-ignore -q .agents/bin/merge-capabilities.sh 2>/dev/null; then
+  legacy="$legacy\n  - .agents/bin/ is gitignored, so ship's merge script is missing from every clone\n    and ship fails there. Add these two lines to .gitignore, then commit the script:\n      !.agents/bin/\n      !.agents/bin/**"
+fi
 # AGENTS.md is project-owned - it holds Commands and Environments, which are this
 # project's - so it is never overwritten, and a section added to the template
 # later never reaches a project that already exists. One had no Environments
