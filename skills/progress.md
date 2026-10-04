@@ -100,7 +100,10 @@ Report only what is actually wrong:
   next action is `prototype`, not `spec` - naming `spec` sends the user
   straight into a stop.
 - **Drift from the loop.** The signals worth naming:
-  - work committed directly to `main`
+  - **product code committed to `main` by anything but `ship`'s merge** or a
+    setup skill that commits it there by design (`scaffold`, `prototype`, `ci`,
+    `monitor`'s wiring). The records `context`, `preflight`, `host`, `deploy`,
+    `docs` and `ship --abandon` commit to `main` are not drift
   - a spec with every step ticked that was never shipped
   - a branch whose spec was already archived
   - checked-off plan items with no archive under `blueprint/history` - **compare

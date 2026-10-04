@@ -3207,4 +3207,40 @@ assert_ok "build names a rollback's branch" _says skills/build.md '`rollback/<na
 assert_ok "review counts the next finding ID past the backlog and the entry files" \
   _says skills/review.md 'in `blueprint/findings/backlog.md`, and among the entry files in `blueprint/findings/`'
 
+# AGENTS.md is every tool's entry point, and it went stale against check.sh:
+# `ideate` lost its exemption when it gained --rescope while AGENTS.md still
+# listed it, and `integrate` was never named at all.
+section "AGENTS.md agrees with the skills it introduces"
+_exempt_cs=$(sed -n 's/^exempt_preconditions="\(.*\)"$/\1/p' check.sh | tr ' ' '\n' | sort | tr '\n' ' ')
+_exempt_ag=$(grep -m1 'have none by design' template/AGENTS.md | grep -oE '`[a-z-]+`' | tr -d '`' | sort | tr '\n' ' ')
+assert_eq "AGENTS.md's no-preconditions list is check.sh's exempt list" "$_exempt_cs" "$_exempt_ag"
+_unnamed=""
+for f in skills/*.md; do
+  n=$(basename "$f" .md)
+  grep -qF "\`$n\`" template/AGENTS.md || _unnamed="$_unnamed $n"
+done
+assert_eq "every skill is named in AGENTS.md" "" "$_unnamed"
+assert_ok "and it counts the state-checking skills it lists" \
+  _says template/AGENTS.md 'four skills, different questions'
+
+# Each pair below once gave an agent two instructions for the same case.
+section "no skill contradicts another, or itself"
+assert_lacks "ci no longer forbids the caching its Rules ask for" skills/ci.md 'or caching layers just'
+assert_ok "ci's one rule: the dependency cache" _says skills/ci.md 'caching beyond the dependency cache the Rules ask for'
+assert_lacks "autopilot does not hand closing to a person" skills/autopilot.md 'a person closes them'
+assert_ok "a review outside the run closes autopilot's repairs" \
+  _says skills/autopilot.md 'until a `review` run outside this one closes them'
+assert_ok "AGENTS.md names autopilot's checkpoints as the exception to its commit rule" \
+  _says template/AGENTS.md "except \`autopilot\`'s checkpoints"
+assert_ok "and so does ai-interaction.md" \
+  _says template/blueprint/context/ai-interaction.md 'seen and approved, `autopilot` aside'
+assert_lacks "progress does not call every commit on main drift" skills/progress.md '^  - work committed directly to `main`$'
+assert_ok "only product code that bypassed ship's merge" \
+  _says skills/progress.md "product code committed to \`main\` by anything but \`ship\`'s merge"
+assert_lacks "verify does not claim to write only the ledger" skills/verify.md 'only the ledger and `needs-you.md`'
+assert_lacks "preflight does not claim a single file" skills/preflight.md 'one file it writes is'
+assert_lacks "nor in its Rules" skills/preflight.md 'the only file this writes'
+assert_ok "rollback writes the Type line the spec template uses" _says skills/rollback.md 'marked `**Type:** Rollback`'
+assert_ok "architect points at the step that asked" _says skills/architect.md 'Step 2 asked whether this project has real load'
+
 finish

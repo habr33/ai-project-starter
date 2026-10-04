@@ -176,7 +176,7 @@ that was taken and never opened proves nothing that the HTML did not.
 
 **Do not add one from this skill.** It is a dependency and a few hundred
 megabytes of browser binaries; this skill never edits the product - it writes
-only the ledger and `needs-you.md` - and installing mid-verification is the wrong
+only workflow state, the files its Writes line names - and installing mid-verification is the wrong
 moment. If a project that renders has no harness, say
 so, name `stack` as where that gets decided, and carry on with what can be
 observed.

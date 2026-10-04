@@ -26,7 +26,8 @@ just that it exists. So:
 
 ## Approval
 
-- Nothing is committed that you have not seen and approved.
+- Nothing is committed that you have not seen and approved, `autopilot`
+  aside.
 - Merging is a separate yes from building. Pushing is a separate yes from
   merging. Deploying is a separate yes again.
 - "Looks good" on a diff is not permission to push.

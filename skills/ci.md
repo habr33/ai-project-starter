@@ -151,8 +151,8 @@ to cover the defects that matter most, and a suite CI never runs gates nothing.
   runtime version the plan says it must support - that is the one place a matrix
   earns its keep.
 
-Do not add matrices, coverage gates, security scanners, or caching layers just
-because they exist. Each one is a thing that can break and needs maintaining.
+Do not add matrices, coverage gates, security scanners, or caching beyond the
+dependency cache the Rules ask for, just because they exist. Each one is a thing that can break and needs maintaining.
 Start with one job that works.
 
 ## Step 3 - show the config, then write it

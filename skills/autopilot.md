@@ -7,6 +7,10 @@ description: "Explicit opt-in only. Runs a named range of the workflow unattende
 
 **Writes:** `blueprint/status/`
 
+That is its own write. Everything else a run changes - code, the spec's ticks
+and markers, the ledger, checkpoint commits - is written by the skill it is
+running at the time, under that skill's rules.
+
 Where this sits:
 
     `progress` -> autopilot -> human review -> `ship`
@@ -147,7 +151,8 @@ Non-negotiable, regardless of what is asked mid-run:
   never built.
 - **Never mark its own repairs `closed`.** Only a later `review` does that, and
   in a single run that review is itself - so findings it repaired stay `fixed`
-  and a person closes them.
+  until a `review` run outside this one closes them, after a person has read
+  the packet.
 
 ## Step 1 - preflight
 

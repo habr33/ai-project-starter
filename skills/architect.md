@@ -354,7 +354,7 @@ unconsidered.
 
 ## Step 4 - record the quality bar
 
-Step 3 asked whether this project has real load or a hard latency target. **Write
+Step 2 asked whether this project has real load or a hard latency target. **Write
 the answer down as a number, including when the answer is "no".** Asking the
 question and discarding the answer is why `review`'s performance lens can only
 report generic smells - `N+1`, unbounded collection - and can never say *this

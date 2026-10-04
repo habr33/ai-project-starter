@@ -202,7 +202,7 @@ The skills a person reaches for between, beside or instead of the loop's steps.
 | `prepare` | needs-you, the plan, quality-bar, the Environments table | nothing — read-only | *(no gate)* | the skill that owns each line |
 | `debug` | the failure, current-work, the code | nothing — never product code | *(no gate)* | `spec` for a fix, or back to `build` |
 | `docs` | README, dev-notes, plan, history, the code | README and API docs, decisions, status, CHANGELOG, findings→`fixed`; with `--check`, nothing | *(no gate)* | whatever the audit found |
-| `rollback` | history archive, capabilities, git history, current-work | current-work — a guarded `Type: Rollback` spec, with the inverse `Behaviour changes` | the feature is not shipped; another item is in flight; it is a bad release (`deploy`) | `build`, then `ship` |
+| `rollback` | history archive, capabilities, git history, current-work | current-work — a guarded `**Type:** Rollback` spec, with the inverse `Behaviour changes` | the feature is not shipped; another item is in flight; it is a bad release (`deploy`) | `build`, then `ship` |
 | `autopilot` | the range's own inputs, the board, the review queue | code on a branch through the skills in its range, the part's status | not explicitly asked; any preflight miss; unfrozen contract for a consumer; two packets waiting | a review packet, then `ship` |
 | `orchestrate` | the board, every status file, each part's plan, current-work and findings | the contract line, committed on its own | no board; not run from the product root; placeholder `Owner:` | the next skill per part |
 

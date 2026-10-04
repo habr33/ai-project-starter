@@ -56,7 +56,7 @@ what to do with it.
 **If anything is unclear, run `progress`.** It reports where things stand, what
 is next, and any drift between what the files claim and what git shows.
 
-**Checking the state of the project** - three skills, different questions:
+**Checking the state of the project** - four skills, different questions:
 
 - `progress` - *where am I, what is next?* Seconds, reads plan and git state, not
   the code. Run it constantly.
@@ -91,6 +91,7 @@ as available:
 - `rollback` - reverse a completed feature
 - `docs` - README, API docs, and `dev-notes/`
 - `autopilot` - one bounded, unattended build pass; explicit opt-in only
+- `orchestrate`, `integrate` - multi-part only: coordinate, prove parts agree
 
 **Changing a decision already made** is its own situation, and the skill that
 made it is where you go:
@@ -128,7 +129,7 @@ never happened. Two kinds:
   that `coding-standards.md` was never written is the difference between "checked
   and consistent" and "nothing to check against".
 
-`ideate`, `setup`, `progress`, `preflight`, `prepare`, `debug` and `docs` have none by design:
+`setup`, `progress`, `preflight`, `prepare`, `debug` and `docs` have none by design:
 they are the entry points and the reporters, and they work in any state.
 
 - **The skills** - `.agents/skills/<name>/SKILL.md`, the one copy.
@@ -143,7 +144,8 @@ Or just ask in plain language - "spec the next item", "run the review".
 - **A skill the user names is loaded first**, however small the ask sounds -
   "run build, just tick it" still runs `build`; its checks are the point.
 - **Never build on `main`.** Work happens on a branch.
-- **Never commit code the user has not seen and approved.**
+- **Never commit code the user has not seen and approved** - except
+  `autopilot`'s checkpoints, in a run the user started.
 - **Never push, deploy, provision, or change a remote service** without a
   separate explicit yes in the current conversation. Approval to merge is not
   approval to push; approval to deploy to staging is not approval for production.
