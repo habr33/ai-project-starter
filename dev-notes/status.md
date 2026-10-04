@@ -15,6 +15,27 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
+## Where work stopped (2026-10-04)
+
+**A review of one installed project (`bulmaya-logistics`), fixed on `main`
+(`2a0f4f2`, `3a0d46c`).** Every skill was read against the others in a fresh
+project. **The one defect that broke the loop:** `new-project.sh`'s `bin/` rule
+also matched `.agents/bin/`, so `7cb2c55`'s merge script was on disk and absent
+from every clone - the existing test checked the file existed, not that git kept
+it. Now re-included, and `install.sh` reports a project `.gitignore` that hides
+it (writes none). Also fixed: the merge script dropped any non-claim line of a
+capability file; `host`, `deploy`, `migrate`, `monitor` and `docs` never asked to
+commit while `deploy` refuses a dirty tree; `review` counted finding IDs from the
+index alone, which reused a backlogged P3's file; fix archives had no date and
+collided; `build` had no rollback branch; and six contradictions between skills
+and `template/AGENTS.md` (ci caching, autopilot's commits and closes, progress
+drift on main, verify and preflight's own writes, the stale exempt list).
+Tests: 35 assertions across *every script a skill runs inside a project*, *the
+capability merge, D21*, and four new sections at the end of
+`tests/test-seams.sh`, each seen failing against the old code or text. Rule 18
+headroom 239 -> 87. **Projects already created** keep the `bin/` ignore until
+they add the two lines `install.sh` now prints.
+
 ## Where work stopped (2026-10-01)
 
 **Item 6, first half: living capability specs, committed on `main` (`5eaec86`)**
