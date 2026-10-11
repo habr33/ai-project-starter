@@ -29,3 +29,6 @@ try
 doctor
 status
 idea
+
+# renamed from context - collided with the /context built-in
+context

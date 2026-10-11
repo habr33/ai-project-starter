@@ -47,7 +47,7 @@ stack       | what should i build this with
 layout      | where should the source files actually sit in this repo
 scaffold    | create the actual app now that we know the framework
 ci          | i want the checks to run automatically on every pull request
-context     | regenerate the overview, i just edited both planning docs
+distill     | regenerate the overview, i just edited both planning docs
 prototype   | can i see roughly how the screens will look before we write any code
 spec        | break down the next thing on the build plan into steps i can build
 build       | implement the current spec, one step at a time

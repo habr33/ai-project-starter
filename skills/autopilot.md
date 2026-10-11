@@ -56,14 +56,14 @@ runs `spec..review` on the current spec - the original bounded pass.
 
 **A range resolves against the workflow's order**, which is:
 
-    architect -> stack -> layout -> scaffold -> ci -> context -> prototype -> spec
+    architect -> stack -> layout -> scaffold -> ci -> distill -> prototype -> spec
           -> build -> verify -> review -> ship
 
-So `stack..context` runs five skills, and `architect` comes **before** `stack`
+So `stack..distill` runs five skills, and `architect` comes **before** `stack`
 because a technology is chosen against a shape, not the other way round.
 
 **Where the range may start:** `architect`, `stack`, `layout`, `scaffold`,
-`context`, `prototype`, `spec`, or **`build`**.
+`distill`, `prototype`, `spec`, or **`build`**.
 
 **`build` is a legal start, and it is the one people actually reach for.** It is
 what a half-built item needs: `spec` has run, some steps are ticked, and the
@@ -158,7 +158,7 @@ Non-negotiable, regardless of what is asked mid-run:
 
 **Check only what the run needs but will not produce itself.** This is the rule
 that makes a long range possible at all: an `architect..review` run has no overview
-and no verification command when it starts, because `context` and `scaffold` are
+and no verification command when it starts, because `distill` and `scaffold` are
 the steps that create them. Demanding them up front blocks the exact range the
 input syntax exists to allow.
 
@@ -235,7 +235,7 @@ the coordinator no way to know - it sees a part that simply went quiet.
 **If the range starts at or before `spec`:**
 
 - the plan has at least one unchecked item, or a specific one was named
-- the overview exists and is newer than the plans - **only when `context` is not
+- the overview exists and is newer than the plans - **only when `distill` is not
   in the range.** If it is, the run regenerates it, and requiring it first is
   circular.
 - **a project with a UI has `blueprint/context/design.md`** - **only when

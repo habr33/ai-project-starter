@@ -369,7 +369,7 @@ Then point at what is next:
 - **`deploy`** if this project is already live. Merging put the work on `main`;
   it did not put it in front of anyone. **This is the step most easily forgotten**,
   because the loop feels finished at the merge and the branch is gone.
-- **`context`** whenever the overview's *Current state* is now wrong - which is
+- **`distill`** whenever the overview's *Current state* is now wrong - which is
   **after every ship**, because this skill just ticked an item off
   `blueprint/build-plan.md` and reset the spec. The overview is the file every
   cold session loads, so a stale one starts the next session on a false picture:

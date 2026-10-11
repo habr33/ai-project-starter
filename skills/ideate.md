@@ -9,7 +9,7 @@ description: "Turn a rough idea into a project plan by interviewing about what y
 
 Where this sits:
 
-    ideate -> `architect` -> `stack` -> `layout` -> `scaffold` -> `ci` -> `context`
+    ideate -> `architect` -> `stack` -> `layout` -> `scaffold` -> `ci` -> `distill`
 
 This is the very start. It normally runs in a project that has the workflow but
 no code, no stack, and empty planning docs. **It decides what to build; `stack`
@@ -240,10 +240,10 @@ Then:
   written.** Leaving it alone is about not re-opening a settled commitment, not
   about declining to record a first one. "None" is still a real answer and
   still gets written as one.
-- **Hand off to `setup` and `context`, not `stack` and `scaffold`.** There is
+- **Hand off to `setup` and `distill`, not `stack` and `scaffold`.** There is
   code here already: `stack` refuses a project that has any, and `scaffold`
   installs a decision made long ago. `setup` re-reads what the repo actually is;
-  `context` regenerates the overview from the changed plan.
+  `distill` regenerates the overview from the changed plan.
 - **If the stack itself no longer fits the new scope, say so and stop.** That is
   a rewrite rather than a rescope, and it is the user's call to make deliberately
   rather than something to discover halfway through.

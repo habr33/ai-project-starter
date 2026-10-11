@@ -297,7 +297,7 @@ loaded set has to be argued for.
 - **Closed needs-you lines leave the loaded file.** `ship` - already the skill
   that archives - moves Done lines to `blueprint/history/needs-you-done.md`.
   Deleting them was rejected: when something was settled is worth keeping.
-- **The overview is capped at 8 KB**, and `context` links to each record
+- **The overview is capped at 8 KB**, and `distill` links to each record
   instead of restating it.
 
 **Rejected: a byte cap enforced by the project's own tooling.** The pack ships
@@ -410,7 +410,7 @@ changes `theme.css`, not the JSON.
 ## D18 - Design is required wherever there is a UI (2026-09-25)
 
 `prototype` was optional: `architect` called skipping it "a legitimate choice",
-and `context` named it only when the first item was a screen with no visual
+and `distill` named it only when the first item was a screen with no visual
 reference. So a project with a UI could reach `spec` with no `design.md`, and
 then every item answered the same questions itself - the empty state, the error
 message, the navigation on a phone - and the first screen built became the look
@@ -477,7 +477,7 @@ part) copies `lib/hook-main-commit.sh` and `lib/hook-context-budget.sh` to
 `.claude/hooks/` and registers them in `.claude/settings.json`, beside whatever
 is there. An unreadable settings file is refused before anything is written.
 
-- **A commit on `main` asks; it does not refuse.** `scaffold`, `ci`, `context`
+- **A commit on `main` asks; it does not refuse.** `scaffold`, `ci`, `distill`
   and `prototype` commit setup work on `main` by design, and `ship` squashes
   into it, so a block would break the loop as written. `permissionDecision:
   ask` puts the yes in the UI, where the model cannot supply it. Checked

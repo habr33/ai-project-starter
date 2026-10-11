@@ -5,7 +5,7 @@
 # A `git commit` on `main` or `master` makes Claude Code ask the person, rather
 # than trusting the model to remember "Never build on `main`". It asks instead of
 # refusing because some commits on `main` are the workflow's own: the setup
-# commits `scaffold`, `ci`, `context` and `prototype` make, and `ship`'s squash.
+# commits `scaffold`, `ci`, `distill` and `prototype` make, and `ship`'s squash.
 #
 # It fails open: input it cannot read, no python3, or no repository, and it
 # prints nothing - a guard that breaks every shell call is worse than none.

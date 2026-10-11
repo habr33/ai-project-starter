@@ -11,7 +11,7 @@ These are already loaded, before you read anything else:
 
 | File | What it holds | Written by |
 |---|---|---|
-| `blueprint/context/project-overview.md` | what this project is - at most 8 KB; it links, never restates | `context` |
+| `blueprint/context/project-overview.md` | what this project is - at most 8 KB; it links, never restates | `distill` |
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
 | `blueprint/context/current-work.md` | the one item in flight, with its steps ticked | `spec`, `build`, `ship`, `verify`, `review`, `rollback` |
@@ -32,8 +32,8 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/design-kit/` | tokens, components and the UX checklist `prototype` starts from | the pack - refreshed on every install |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
-| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `context`, `host` |
-| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `context` |
+| `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `distill`, `host` |
+| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `distill` |
 | `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
 | `blueprint/capabilities/` | what the product does now, one file per capability, claim by claim; read on demand | `ship`, `verify` |
 | `blueprint/history/` | every completed item, archived | `ship`, `verify` |
@@ -73,12 +73,12 @@ fails `preflight`.
 
 ## What this is
 
-<!-- `context` fills this in from the plans, in two or three sentences, and
+<!-- `distill` fills this in from the plans, in two or three sentences, and
      leaves it alone once there is prose here. Or write it yourself. -->
 
 ## The loop
 
-    ideate -> architect -> stack -> layout -> scaffold -> ci -> context (plan it)
+    ideate -> architect -> stack -> layout -> scaffold -> ci -> distill (plan it)
          -> prototype                                      (with a UI)
          -> spec -> build -> verify -> review -> ship      (build it)
          -> preflight -> host -> deploy -> monitor         (run it)
@@ -160,7 +160,7 @@ Or just ask in plain language - "spec the next item", "run the review".
 - **A plan line you have found to be false gets corrected in the same change.**
   A server checked and found without the database the plan says it has, an image
   tag chosen that differs from the one the plan names: fix the line, with the
-  user's yes, when you learn it. Left for later, `context` meets a plan that
+  user's yes, when you learn it. Left for later, `distill` meets a plan that
   disagrees with the repository and nobody remembers which is right.
 
 ## Stack and versions

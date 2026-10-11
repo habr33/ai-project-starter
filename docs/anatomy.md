@@ -45,9 +45,9 @@ by mentioning it.
 
 | File | Holds | Written by | Read by |
 |---|---|---|---|
-| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` `scaffold` `spec` `context` | 9 skills |
-| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` `context` | `context` `progress` `monitor` `preflight` |
-| `blueprint/context/project-overview.md` | the source of truth, generated | `context` | `spec` `build` `review` `progress` |
+| `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` `scaffold` `spec` `distill` | 9 skills |
+| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` `distill` | `distill` `progress` `monitor` `preflight` |
+| `blueprint/context/project-overview.md` | the source of truth, generated | `distill` | `spec` `build` `review` `progress` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack — **not loaded every session**; the three skills that need it read it | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
@@ -78,13 +78,13 @@ rows.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan, **principles** | plan already filled and no `--rescope` | `architect`, or `setup` + `context` after a rescope |
+| `ideate` | nothing when the plan is empty; with `--rescope`, both plans, `history/` and current-work | project-plan, build-plan, **principles** | plan already filled and no `--rescope` | `architect`, or `setup` + `distill` after a rescope |
 | `architect` | project-plan, build-plan, **principles** | project-plan Architecture, **quality-bar**, decisions, each part's build-plan and needs-you | plan absent, or problem/features still placeholder | `stack` |
 | `stack` | project-plan Architecture + **quality-bar** | project-plan Tech, decisions | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
-| `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `context` |
-| `context` | both plans | project-overview | either plan missing | `prototype` or `spec` |
+| `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `distill` |
+| `distill` | both plans | project-overview | either plan missing | `prototype` or `spec` |
 | `prototype` | project-plan UI/UX, project-overview; or the built UI, for an app that already has a look | `prototypes/`, **design.md** | project-overview absent; design.md already exists | `spec` |
 
 **Why `architect` precedes `stack`.** Architecture is the design of the system;
@@ -112,7 +112,7 @@ later without moving an installed framework and its lockfile instead of markdown
 **`architect` decides how many deployable parts and why; `layout` decides what the
 directories are called.** Those look like one question and are not.
 
-`prototype` sits after `context` because it reads `project-overview.md` for what
+`prototype` sits after `distill` because it reads `project-overview.md` for what
 the screens must show. **It is required wherever there is a UI** - `spec` stops
 without `design.md` - because without the record every item answers the same
 design questions again, differently. A CLI, a library or an API skips it, and
@@ -197,7 +197,7 @@ The skills a person reaches for between, beside or instead of the loop's steps.
 
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
-| `setup` | the existing repo, its config and conventions | AGENTS.md stack and commands, standards, quality-bar (discovered), needs-you; for a project with shipped features, **both plans**, after approval | *(no gate — it adopts any repo)* | `ci`, then `context` |
+| `setup` | the existing repo, its config and conventions | AGENTS.md stack and commands, standards, quality-bar (discovered), needs-you; for a project with shipped features, **both plans**, after approval | *(no gate — it adopts any repo)* | `ci`, then `distill` |
 | `progress` | both plans, overview, current-work, findings, needs-you, history, git | nothing — read-only | *(no gate)* | the one next action |
 | `prepare` | needs-you, the plan, quality-bar, the Environments table | nothing — read-only | *(no gate)* | the skill that owns each line |
 | `debug` | the failure, current-work, the code | nothing — never product code | *(no gate)* | `spec` for a fix, or back to `build` |
@@ -386,7 +386,7 @@ Being honest about this is part of the design, not a caveat on it.
 - **All 27 skills have now been run against real code**, three of them only
   partly - `host`, `deploy` and `orchestrate`, where the untested half needs a
   managed account or two sessions at once rather than more work here. **`layout` ran for the first time on 2026-09-08** against a
-  Next.js project taken from `ideate` to `context`, and the whole reordered
+  Next.js project taken from `ideate` to `distill`, and the whole reordered
   plan phase ran with it. **The pattern on first contact is roughly three real defects per
   skill**, and none of them were visible to any structural check: the last three
   skills to be run for the first time produced thirteen defects between them in

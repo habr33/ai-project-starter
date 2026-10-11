@@ -3,7 +3,7 @@
 > The other planning doc you own. Write it yourself or with the AI's help.
 
 The items that make up this project, high level and in rough build order, one
-line each, no detail. Rough is fine at first, but before the `context` skill runs
+line each, no detail. Rough is fine at first, but before the `distill` skill runs
 this should be a checkbox list the loop can track.
 
 Run the `spec` skill with no argument to spec the **next unchecked** item, or

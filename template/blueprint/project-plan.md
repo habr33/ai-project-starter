@@ -3,7 +3,7 @@
 > One of the two planning docs you own. Answer each section in a line or two -
 > a worksheet, not an essay. Draft it yourself, or let the AI help you sharpen
 > it; either way the content is yours to direct. When it is filled in, run the
-> `context` skill to generate the project overview from this plus
+> `distill` skill to generate the project overview from this plus
 > blueprint/build-plan.md.
 
 ## 1. Problem - what are we solving?

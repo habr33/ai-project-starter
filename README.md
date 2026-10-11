@@ -72,7 +72,7 @@ own conventions rather than one imposed here.
 ## The loop
 
 ```
-ideate → architect → stack → layout → scaffold → ci → context  plan it
+ideate → architect → stack → layout → scaffold → ci → distill  plan it
      → prototype                                    settle the look and navigation (any UI)
      → spec → build → verify → review → ship        build it
      → preflight → host → deploy → monitor          run it
@@ -80,7 +80,7 @@ ideate → architect → stack → layout → scaffold → ci → context  plan 
 
 | | |
 |---|---|
-| **Plan** | `ideate` `architect` `stack` `layout` `scaffold` `ci` `context` |
+| **Plan** | `ideate` `architect` `stack` `layout` `scaffold` `ci` `distill` |
 | **Design** | `prototype` |
 | **Build** | `spec` `build` `verify` `review` `ship` |
 | **Operate** | `preflight` `host` `deploy` `monitor` `migrate` `integrate` |

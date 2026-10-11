@@ -56,7 +56,7 @@ one: it stops on a plan that is already filled, unless you ask for `--rescope`.
 | `layout` | Takes the framework's own shape — directory names, where config lives, where tests go — and checks the ecosystem's traps | Approve it. It is markdown now and an installed framework with a lockfile after `scaffold`. |
 | `scaffold` | Installs the whole stack into the layout just approved, then audits itself against the plan | Approve the command list. **Read the audit** — it reports anything missing rather than quietly succeeding. |
 | `ci` | Writes one workflow file using the project's own verify command, runs it locally, **stops before pushing** | **Do this before the first item, not after the last.** One test and a typecheck is enough — the point is that the pipeline exists before the code does. |
-| `context` | Generates the overview every session loads | Re-run it whenever a plan changes. |
+| `distill` | Generates the overview every session loads | Re-run it whenever a plan changes. |
 | `prototype` | *Required when there is a UI* — `spec` stops without `design.md`. Throwaway mockups that settle the look, plus that durable record; on an app that already has a look, it records the existing one | Pick the direction. Redoing HTML is free; redoing components is not. A CLI, library or API skips this. |
 
 **The mockups are throwaway; the decisions are not.** `prototype` also writes
@@ -181,14 +181,14 @@ build plan and approving one erases the `- [x]` marks that are the entire resume
 mechanism. The rescope mode runs the same interview but carries completed items
 and their history across, names every item leaving the plan, and routes a checked
 one to `rollback` — a shipped feature leaves code behind, and cutting the plan
-line does not remove it. It hands off to `setup` and `context`, not `stack` and
+line does not remove it. It hands off to `setup` and `distill`, not `stack` and
 `scaffold`, because there is already code here.
 
 **Changing the stack after there is code:** there is no skill that does this, and
 that is deliberate — it is a rewrite. `stack` refuses a project that has code and
 sends you to `setup`, which *records* a stack rather than choosing one. So the
 order is: make the change, then `setup` to re-read what the repo now is, then
-`context` to regenerate the overview, and a `dev-notes/decisions.md` entry marking
+`distill` to regenerate the overview, and a `dev-notes/decisions.md` entry marking
 the original choice superseded. **The cost of this is why `stack` asks what it
 asks** — every question there is cheap before `scaffold` and expensive after.
 

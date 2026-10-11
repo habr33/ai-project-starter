@@ -29,7 +29,7 @@ in `coverage.md`, with a checklist fixed before it starts.
 
 | phase | skills | covers | budget |
 |---|---|---|---|
-| A | `new-project.sh` → `ideate` … `scaffold` → `ci` → `context` → `spec` → `prototype` → `spec` → `build` → `verify`/`review` → `ship` (item 1) | checks 1-9 | 100M processed, 600k output |
+| A | `new-project.sh` → `ideate` … `scaffold` → `ci` → `distill` → `spec` → `prototype` → `spec` → `build` → `verify`/`review` → `ship` (item 1) | checks 1-9 | 100M processed, 600k output |
 | B | items 2 and 3, `progress` after each `ship` | checks 10-11 | 70M, 400k |
 | C | `preflight` (not published); plan changed to publish; `preflight` again; `ship` item-sized fix; `host` and `deploy` up to their first stop | checks 12-15 | 50M, 300k |
 
@@ -55,7 +55,7 @@ under test, before any target or cost.
    README commands filled; test output ignored.
 4. After `ci`: it **asked** before committing; tree clean, with the `AGENTS.md`
    row and `status.md` line in the commit; nothing pushed.
-5. After `context`: it **asked**; tree clean; README description filled.
+5. After `distill`: it **asked**; tree clean; README description filled.
 6. After `prototype`: `design.md` and `prototypes/` committed on `main`.
 7. `build`'s git status check found nothing foreign, and called `spec`'s own
    files the item's.

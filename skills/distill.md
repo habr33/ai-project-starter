@@ -1,15 +1,15 @@
 ---
-name: context
-description: "Validate the two planning docs and generate `blueprint/context/project-overview.md` from them - the AI-facing source of truth loaded every session. Checks the plans for shape problems first (placeholder text, a build plan that is not a checklist, features that contradict the stack) and proposes fixes before generating. Use when the user runs `context`, has just finished writing or editing the plans, asks to regenerate the overview, or after any plan change that affects direction, data, or stack."
+name: distill
+description: "Validate the two planning docs and generate `blueprint/context/project-overview.md` from them - the AI-facing source of truth loaded every session. Checks the plans for shape problems first (placeholder text, a build plan that is not a checklist, features that contradict the stack) and proposes fixes before generating. Use when the user runs `distill`, has just finished writing or editing the plans, asks to regenerate the overview, or after any plan change that affects direction, data, or stack."
 ---
 
-# context - generate the source of truth from the plans
+# distill - generate the source of truth from the plans
 
 **Writes:** `blueprint/context/project-overview.md` · `blueprint/project-plan.md` · `blueprint/build-plan.md`
 
 Where this sits:
 
-    `blueprint/project-plan.md` + `blueprint/build-plan.md` -> context -> `blueprint/context/project-overview.md`
+    `blueprint/project-plan.md` + `blueprint/build-plan.md` -> distill -> `blueprint/context/project-overview.md`
 
 You own the two planning docs. This distills them into one file the agent loads
 every session. The direction is one-way on purpose: **edit the plans and
@@ -35,7 +35,7 @@ seeded instruction text, because Step 3 generates directly from them:**
 - **6. Architecture** - filled by `architect`, which now runs first
 - **5. Tech** - filled by `stack`, against that architecture
 
-The loop is `ideate -> architect -> stack -> layout -> scaffold -> ci -> context`, so by the
+The loop is `ideate -> architect -> stack -> layout -> scaffold -> ci -> distill`, so by the
 time this runs legitimately both have happened. Checking it here costs nothing and
 **a gap is not a contradiction** - Step 2 stops only on plans that disagree with
 themselves, so without this a plan that is merely *unfinished* passes straight

@@ -79,7 +79,7 @@ reports all three - plus the git branch, working-tree state, and recent log.
   planning doc? If not, it is stale and everything reading it is working from
   old information. **A timestamp cannot tell "regenerated" from "touched"** - a
   hand edit to the overview makes it look fresh while its content still predates
-  the plans, and an overview `context` has never generated at all looks freshest
+  the plans, and an overview `distill` has never generated at all looks freshest
   of the three. So check the content agrees with the plans, not only the order of
   the dates, and where they disagree say the overview is stale regardless of what
   the timestamps claim.
@@ -102,7 +102,7 @@ Report only what is actually wrong:
 - **Drift from the loop.** The signals worth naming:
   - **product code committed to `main` by anything but `ship`'s merge** or a
     setup skill that commits it there by design (`scaffold`, `prototype`, `ci`,
-    `monitor`'s wiring). The records `context`, `preflight`, `host`, `deploy`,
+    `monitor`'s wiring). The records `distill`, `preflight`, `host`, `deploy`,
     `docs` and `ship --abandon` commit to `main` are not drift
   - a spec with every step ticked that was never shipped
   - a branch whose spec was already archived

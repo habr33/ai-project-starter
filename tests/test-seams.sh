@@ -13,14 +13,14 @@ section "the loop order agrees everywhere it is declared"
 # matching rule excludes the case it exists to find.
 chains=$(grep -rhoE '[`a-z]+ *(->|→)[ `a-z→>-]+' --include='*.md' skills/ template/ docs/ README.md 2>/dev/null \
          | tr -d '`' | sed 's/  */ /g')
-assert_eq "nothing declares scaffold -> context (ci is between them)" "0" \
-  "$(printf '%s\n' "$chains" | grep -c 'scaffold -> context' || true)"
+assert_eq "nothing declares scaffold -> distill (ci is between them)" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'scaffold -> distill' || true)"
 assert_eq "nothing declares ship -> ci (ci moved before the build loop)" "0" \
   "$(printf '%s\n' "$chains" | grep -c 'ship -> ci' || true)"
 assert_eq "nothing declares ci -> preflight" "0" \
   "$(printf '%s\n' "$chains" | grep -c 'ci -> preflight' || true)"
 assert_eq "every ideate chain is the same one" "1" \
-  "$(printf '%s\n' "$chains" | grep -oE 'ideate -> architect -> stack -> layout -> scaffold -> ci -> context' | sort -u | wc -l | tr -d ' ')"
+  "$(printf '%s\n' "$chains" | grep -oE 'ideate -> architect -> stack -> layout -> scaffold -> ci -> distill' | sort -u | wc -l | tr -d ' ')"
 # The order changed: architecture before technology. Nothing may still declare
 # the old direction, in any file - a stale chain in one skill is how a reader
 # learns the wrong loop and never finds out.
@@ -287,7 +287,7 @@ requires_count() {
   echo "$n"
 }
 checked=0
-for s_ in architect stack layout scaffold context; do
+for s_ in architect stack layout scaffold distill; do
   requires=$(requires_count "$s_")
   if [ "${requires:-0}" -gt 0 ]; then
     checked=$((checked+1))
@@ -341,7 +341,7 @@ assert_ok "and says what to do when the file is missing" \
 section "architect writes the system design inside the numbered section"
 # Step 3 produces a block long enough to feel like a section of its own. Written
 # as `## System design` it lands between plan sections 6 and 7 and silently
-# changes where section 6 ends - and `context` addresses those sections by
+# changes where section 6 ends - and `distill` addresses those sections by
 # heading. Found by doing exactly that on a real project.
 assert_ok "architect says sub-headings, not a new numbered section" \
   bash -c "tr '\n' ' ' < skills/architect.md | tr -s ' ' | grep -qF 'section 6, under'"
@@ -373,12 +373,12 @@ assert_ok "stack names auth as the usual case" \
   grep -q 'Auth is the usual one' skills/stack.md
 assert_ok "stack says not to leave both descriptions standing" \
   grep -q 'Do not quietly leave both descriptions standing' skills/stack.md
-assert_ok "context checks stack actually did it" \
-  grep -q 'A data model the stack already owns' skills/context.md
+assert_ok "distill checks stack actually did it" \
+  grep -q 'A data model the stack already owns' skills/distill.md
 
 section "every declared transition is a real handoff, not just a declaration"
 # Four transitions were broken at once: `stack`->`architect`, `scaffold`->`ci`,
-# `ci`->`context` and `review`->`ship`. Every chain in every file agreed, and
+# `ci`->`distill` and `review`->`ship`. Every chain in every file agreed, and
 # following the loop the way a user does dead-ended at scaffold and again at ci.
 #
 # Cause: when `ci` moved from after `ship` to after `scaffold`, the sweep
@@ -452,9 +452,9 @@ architect stack
 stack layout
 layout scaffold
 scaffold ci
-ci context
-context prototype
-context spec
+ci distill
+distill prototype
+distill spec
 prototype spec
 spec build
 build verify
@@ -474,8 +474,8 @@ assert_eq "every loop transition hands off in prose" "" "$broken"
 
 # The pair check above is satisfied by a mention anywhere in the file, and
 # setup.md named `ci` in Step 5 - so `setup ci` passed while Step 7, the step that
-# actually names the next action, said "running `context`" and never named `ci`.
-# The file declared `setup -> ... -> ci -> context` at the top and told the
+# actually names the next action, said "running `distill`" and never named `ci`.
+# The file declared `setup -> ... -> ci -> distill` at the top and told the
 # reader the opposite at the end. A real adoption on 2026-09-11 followed Step 7;
 # `progress` found three days later that neither had run. So the report step
 # itself must name what the chain names, in the chain's order.
@@ -485,7 +485,7 @@ _step7=$(awk '/^## Step 7/{f=1; next} f && /^## /{exit} f' skills/setup.md | tr 
          | grep -oE '`[a-z-]+`' | tr -d '`' | awk '!seen[$0]++' \
          | while read -r n; do case " $_chain " in *" $n "*) echo "$n" ;; esac; done \
          | tr '\n' ' ' | sed 's/ *$//')
-assert_eq "setup's chain still names what follows it" "ci context prototype" "$_chain"
+assert_eq "setup's chain still names what follows it" "ci distill prototype" "$_chain"
 assert_eq "setup's report names the chain's next skills, in the chain's order" "$_chain" "$_step7"
 
 section "no skill refers to state without naming a path"
@@ -856,16 +856,16 @@ assert_ok "stack says where a needs-you line goes in a split product" \
 assert_ok "and names who would otherwise never see it" \
   bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'only ever read the part they are run in'"
 
-section "an existing project can be adopted all the way to context"
+section "an existing project can be adopted all the way to distill"
 # `setup` proposes both plans for a project with shipped features, then says to
-# run `context` - which stops while plan sections 5 (Tech) and 6 (Architecture)
+# run `distill` - which stops while plan sections 5 (Tech) and 6 (Architecture)
 # still hold their seeded instruction text. On that route `stack` and `architect`
 # never run, so nothing filled them: the adoption route could not reach its own
 # next step. And `setup` wrote both plans without being declared their writer.
 _setup=$(tr '\n' ' ' < skills/setup.md | tr -s ' ')
 assert_ok "setup's proposal fills section 5, Tech" grep -qF '5. Tech' <<< "$_setup"
 assert_ok "and section 6, Architecture" grep -qF '6. Architecture' <<< "$_setup"
-assert_ok "and replaces the seeded instruction text context checks for" grep -qi 'seeded instruction' <<< "$_setup"
+assert_ok "and replaces the seeded instruction text distill checks for" grep -qi 'seeded instruction' <<< "$_setup"
 
 section "verify --all does not re-prove a feature that was rolled back"
 # ship keeps a rolled-back feature's archive under history/features and unchecks
@@ -1139,7 +1139,7 @@ assert_eq "anatomy names exactly the table's partly-run skills" "$cov_names" "$_
 section "autopilot never requires what its own range produces"
 # A precondition satisfied by a skill inside the range is circular: it blocks the
 # run at a state the run itself would fix. autopilot had carved this out twice -
-# the overview that `context` regenerates, the verification command that only
+# the overview that `distill` regenerates, the verification command that only
 # exists once `scaffold` has run - and missed the third. `build` Step 2 creates
 # the feature branch, and `ship` deletes it on merge, so the normal state between
 # items is a clean `main`. The unconditional "on a branch, not `main`" gate made
@@ -1150,7 +1150,7 @@ section "autopilot never requires what its own range produces"
 # skill broken when the pattern was.
 flat=$(tr '\n' ' ' < skills/autopilot.md | tr -s ' ')
 uncarved=""
-for producer in context scaffold build; do
+for producer in distill scaffold build; do
   case "$flat" in
     *"only when \`$producer\` is not in the range"*) ;;
     *) uncarved="$uncarved $producer" ;;
@@ -1252,15 +1252,15 @@ assert_ok "and there are placeholders to check" \
   test "$(cat template/AGENTS.md template/product/AGENTS.md | grep -c '<!--')" -ge 4
 
 # The specific one this rule was written for. Matched on the instruction itself,
-# flattened - "AGENTS.md" and "What this is" both occur elsewhere in context.md
+# flattened - "AGENTS.md" and "What this is" both occur elsewhere in distill.md
 # (a Product root read, and a bullet of project-overview.md), so looser patterns
 # pass with the fix removed. A weak assertion here is the same defect one level up.
-ctx_flat=$(tr '\n' ' ' < skills/context.md | tr -s ' ')
+ctx_flat=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
 case "$ctx_flat" in
   *"Then fill \`AGENTS.md\`'s \`## What this is\`"*)
-    _name="context declares itself the writer of 'What this is'"; _ok ;;
-  *) _name="context declares itself the writer of 'What this is'"
-     _no "context.md never says it fills AGENTS.md's What this is section" ;;
+    _name="distill declares itself the writer of 'What this is'"; _ok ;;
+  *) _name="distill declares itself the writer of 'What this is'"
+     _no "distill.md never says it fills AGENTS.md's What this is section" ;;
 esac
 case "$ctx_flat" in
   *"leave it alone if someone has already written prose"*)
@@ -1269,14 +1269,14 @@ case "$ctx_flat" in
      _no "no rule protecting a hand-written description in a user-owned file" ;;
 esac
 
-section "context will not generate from sections that are still template"
+section "distill will not generate from sections that are still template"
 # Its own preamble called Step 2 "the real gate", but Step 2 stops only on a
 # CONTRADICTION - and an unfinished plan is a gap, not a contradiction. So
 # placeholder Tech and Architecture were reported and then generated from
 # anyway, producing exactly the "authoritative-looking file full of nothing"
 # the step opens by warning about. Found by running it against plans written by
 # someone else, which is the only way this shows up.
-ctx=$(tr '\n' ' ' < skills/context.md | tr -s ' ')
+ctx=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
 _has() { case "$ctx" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
 
 _has "Tech is a precondition filled by stack"          "**5. Tech** - filled by \`stack\`"
@@ -1300,7 +1300,7 @@ _has "in loop order"                                  "in loop order"
 _has "the stop still carries Step 2's findings" "alongside the stop"
 
 # The rule detects "unfilled" by the seeded sentence surviving - so the template
-# has to HAVE a recognisable seeded sentence in exactly the sections context
+# has to HAVE a recognisable seeded sentence in exactly the sections distill
 # gates on, and it has to name the skill that fills it. Reword the template and
 # the gate silently stops detecting, with every file still valid on its own.
 plan=template/blueprint/project-plan.md
@@ -1330,7 +1330,7 @@ _ideate "work in flight is not silently dropped"           "never silently dropp
 _ideate "cutting a SHIPPED item routes to rollback"        "is \`rollback\`'s question"
 
 # The hand-off was the dead end: a live project sent to a skill that refuses it.
-_ideate "rescope hands off to setup and context" "Hand off to \`setup\` and \`context\`"
+_ideate "rescope hands off to setup and distill" "Hand off to \`setup\` and \`distill\`"
 _ideate "and says explicitly not stack and scaffold" "not \`stack\` and \`scaffold\`"
 
 # ideate was exempt from stating preconditions as a greenfield entry point. That
@@ -1523,17 +1523,17 @@ section "the overview is refreshed by whatever makes it stale"
 # `ship` ticks an item off build-plan.md and resets the spec on EVERY item, so
 # the overview's Current state is wrong the moment it finishes - wrong item
 # count, wrong next item. Its handoff named integrate, preflight, deploy and
-# spec, never context; and context's re-run list named `spec` as an editor and
+# spec, never distill; and distill's re-run list named `spec` as an editor and
 # not `ship`. Both halves missing, so the file every cold session loads went
 # stale once per item. Caught by autopilot's precondition on a real project -
 # a check most people never reach.
 sp=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
-cx=$(tr '\n' ' ' < skills/context.md | tr -s ' ')
+cx=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
 _pair() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
 
-_pair "ship routes to context after a merge"      "after every ship" "$sp"
+_pair "ship routes to distill after a merge"      "after every ship" "$sp"
 _pair "and says why a stale overview matters"     "starts the next session on a false picture" "$sp"
-_pair "context lists ship as a reason to re-run"  "After every \`ship\`" "$cx"
+_pair "distill lists ship as a reason to re-run"  "After every \`ship\`" "$cx"
 _pair "and names it the most frequent one"        "most frequent reason to re-run" "$cx"
 
 section "the lessons a real deployment taught"
@@ -1928,15 +1928,15 @@ assert_ok "host asks what else already runs on a managed server" \
 assert_ok "and simulates a package change before making it" \
   _says skills/host.md 'simulate the package change first'
 
-section "context reports the plan against the repository, and never fixes the overview first"
+section "distill reports the plan against the repository, and never fixes the overview first"
 # The plan said PostgreSQL was installed on the server (stack had found it was
-# not) and named an image tag scaffold did not use. context reported "no
+# not) and named an image tag scaffold did not use. distill reported "no
 # contradictions", then generated the overview with the corrections while the
 # plan edits waited for approval - so the overview disagreed with its source.
-assert_ok "context checks the plan against the repository" \
-  _says skills/context.md 'The plan against the repository.'
-assert_ok "context never writes a correction into the overview before the plan" \
-  _says skills/context.md 'Never write a correction into the overview before it is in the plan'
+assert_ok "distill checks the plan against the repository" \
+  _says skills/distill.md 'The plan against the repository.'
+assert_ok "distill never writes a correction into the overview before the plan" \
+  _says skills/distill.md 'Never write a correction into the overview before it is in the plan'
 assert_ok "and the standing rules say a false plan line is corrected when found" \
   _says template/AGENTS.md 'A plan line you have found to be false gets corrected in the same change'
 
@@ -2141,10 +2141,10 @@ assert_ok "layout keeps the listing line's text before deleting it" \
 assert_ok "and writes the description back after seeding the new path" \
   _says skills/layout.md "write the part's description back onto its new listing line"
 
-section "an adopted plan has no seeded text left for context to stop on"
+section "an adopted plan has no seeded text left for distill to stop on"
 # Sections 5 and 6 each carry a second seeded paragraph below the obvious one -
 # the note that 5 is filled after 6, and the note that `layout` adds the tree.
-# Replacing only "the seeded instruction sentence" leaves them, `context` reads
+# Replacing only "the seeded instruction sentence" leaves them, `distill` reads
 # seeded text as unfilled "whatever has been added around it", and it routes to
 # `architect` and `stack` - the two skills this route says never run.
 assert_ok "setup replaces every seeded paragraph, not just the first" \
@@ -2259,11 +2259,11 @@ section "the overview orients, it does not restate"
 # An overview that restates the ledger and needs-you.md goes stale whenever
 # either changes. "This file replaces reading everything else" was the
 # instruction that made it restate them.
-assert_ok "context caps the overview" _says skills/context.md 'at most 8 KB'
-assert_ok "and says to link rather than restate" _says skills/context.md 'Link, never restate.'
-assert_ok "and measures before reporting" _says skills/context.md 'Measure it before reporting'
+assert_ok "distill caps the overview" _says skills/distill.md 'at most 8 KB'
+assert_ok "and says to link rather than restate" _says skills/distill.md 'Link, never restate.'
+assert_ok "and measures before reporting" _says skills/distill.md 'Measure it before reporting'
 assert_fails "the instruction that grew it is gone" \
-  _says skills/context.md 'this file replaces reading everything else'
+  _says skills/distill.md 'this file replaces reading everything else'
 assert_ok "AGENTS.md states the cap where the file is listed" \
   _says template/AGENTS.md 'at most 8 KB; it links, never restates'
 
@@ -2537,8 +2537,8 @@ assert_lacks "and no longer stops on a shipped look alone" skills/prototype.md '
 assert_ok "prototype's description says it is required" \
   _says skills/prototype.md 'Required before the first `spec` in any project with a UI'
 assert_lacks "architect no longer calls skipping it legitimate" skills/architect.md 'Skipping it is'
-assert_ok "context names prototype when the record is missing" \
-  _says skills/context.md '`prototype` if the project has a UI and `blueprint/context/design.md` does not exist'
+assert_ok "distill names prototype when the record is missing" \
+  _says skills/distill.md '`prototype` if the project has a UI and `blueprint/context/design.md` does not exist'
 assert_ok "setup's report names it for an adopted UI" \
   _says skills/setup.md '**And `prototype`, if the project has a UI'
 assert_ok "progress names prototype rather than sending the user into spec's stop" \
@@ -2642,7 +2642,7 @@ section "the setup work is committed before the first item branches"
 assert_ok "scaffold commits what landed" _says skills/scaffold.md 'Commit what landed, before handing on'
 assert_ok "ci commits its workflow locally, and does not push" \
   _says skills/ci.md 'Ask to commit what this run wrote, on `main`, locally'
-assert_ok "context commits what it wrote" _says skills/context.md 'Then ask to commit what this run wrote'
+assert_ok "distill commits what it wrote" _says skills/distill.md 'Then ask to commit what this run wrote'
 assert_ok "prototype commits the record and the mockups" \
   _says skills/prototype.md 'Commit the record and the mockups on `main`'
 assert_ok "and build looks at git status before it branches" \
@@ -2653,9 +2653,9 @@ section "the README is filled as the loop runs, not at preflight"
 # preflight's README blocker was the first thing to notice.
 assert_ok "scaffold fills the README's command placeholders" \
   _says skills/scaffold.md "Fill the README's placeholders with what you just proved"
-assert_ok "context fills its one-sentence description" \
-  _says skills/context.md "And the README's opening line, the same way."
-assert_ok "and the placeholder context replaces is the one the template ships" \
+assert_ok "distill fills its one-sentence description" \
+  _says skills/distill.md "And the README's opening line, the same way."
+assert_ok "and the placeholder distill replaces is the one the template ships" \
   grep -qF 'One or two sentences: what this is, and who it is for.' template/README.md
 
 section "a project that is not published has no release to block on"
@@ -2747,7 +2747,7 @@ section "a setup skill's commit names everything the skill wrote"
 setup_commits=(
   'scaffold|Commit what landed, before handing on'
   'ci|Ask to commit what this run wrote, on `main`, locally'
-  'context|Then ask to commit what this run wrote'
+  'distill|Then ask to commit what this run wrote'
   'prototype|Commit the record and the mockups on `main`'
   'preflight|Then ask to commit what this run wrote'
 )
@@ -2764,11 +2764,11 @@ _name="ci's commit names AGENTS.md, whose Environments row it adds"
 case "$(_para skills/ci.md 'Ask to commit what this run wrote')" in *AGENTS.md*) _ok ;; *) _no "not named" ;; esac
 
 section "a commit asks for its own yes rather than citing one that was never asked"
-# ci Step 3 shows the config and writes it - no stop. context Step 2 asks only
+# ci Step 3 shows the config and writes it - no stop. distill Step 2 asks only
 # when it proposes a plan change. Both commits cited that approval anyway, and
 # the template's rule is "never commit code the user has not seen and approved".
 assert_lacks "ci no longer cites a yes Step 3 never asked" skills/ci.md "the yes Step 3"
-assert_lacks "context no longer cites an approval Step 2 may not ask" skills/context.md "approval Step 2 already asked for"
+assert_lacks "distill no longer cites an approval Step 2 may not ask" skills/distill.md "approval Step 2 already asked for"
 
 section "build treats what spec wrote as this item's, all of it"
 # spec may update design.md "as part of that item", and declares it; build's
@@ -2856,7 +2856,7 @@ assert_eq "nor under a roomy density, above the touch target" "" \
 section "a claim layout could not probe is settled by the step it waits for"
 # layout records such a claim as "unverified until `scaffold`", "so the step that
 # can check it knows to" - and scaffold never named the mark. On the re-run
-# scaffold proved both claims and left the plan saying they were open; context
+# scaffold proved both claims and left the plan saying they were open; distill
 # found the stale line. The mark is read out of layout, so renaming it there
 # breaks this rather than leaving scaffold looking for the old words.
 mark=$(tr '\n' ' ' < skills/layout.md | tr -s ' ' | grep -oE '\*\*unverified until `[a-z]+`\*\*' | head -1 | tr -d '*')

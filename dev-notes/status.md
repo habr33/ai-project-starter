@@ -148,7 +148,7 @@ exists. It held a read of all 27 skills end to end (`seams-G`) and `D18`:
   asking its six questions twice, steps that did not exist (`build` "Step 6",
   `autopilot` "Step 1b" - now a check across every skill), `verify`'s needs-you
   rule reachable only under `--manual`, and six miscounts.
-- **Undeclared writes declared**: `scaffold`, `context` and `spec` write the
+- **Undeclared writes declared**: `scaffold`, `distill` and `spec` write the
   plans, `spec` writes `design.md`. Paid for under rule 18 by cutting a
   duplicated paragraph from the template's `coding-standards.md`.
 - **Then three follow-ups:** `autopilot` stops at `prototype` when there is no
@@ -174,7 +174,7 @@ exists. It held a read of all 27 skills end to end (`seams-G`) and `D18`:
   commits setup work on `main` goes there, and its commit must name every file
   in its `Writes:` line.
 - **Proposed, not done - the user's call:** fold `prepare` into `progress`,
-  `layout` into `stack`, drop the overview's *Current state* so `context` is not
+  `layout` into `stack`, drop the overview's *Current state* so `distill` is not
   needed after every `ship`, and install a core set of skills by default.
 
 **Done, with evidence:** `./check.sh` OK and `./tests/run.sh` all four files
@@ -378,7 +378,7 @@ diary exists, no public file may contain a name it lists.
 
 **The loop was reordered on 2026-09-08**, the largest change the pack has taken
 since it was written: `ideate -> architect -> stack -> layout -> scaffold -> ci
--> context`. `architect` moved ahead of `stack` so a technology is chosen against
+-> distill`. `architect` moved ahead of `stack` so a technology is chosen against
 a shape and a quality bar rather than deciding them, and **`layout` is the 27th
 skill**, carrying the one decision that genuinely needed the framework - where
 the files physically sit. `decisions.md` D8 has the reasoning and the rejected
@@ -409,7 +409,7 @@ not cite this as evidence the reorder works.
 **The reorder is also not strictly better.** It closed one class of seam and
 opened another: the data model is now written before the stack, so a library
 chosen later can own tables the plan already described. `stack` now reconciles
-the data model against any library that owns part of it, and `context` checks
+the data model against any library that owns part of it, and `distill` checks
 that it did. **Better seams, not fewer.**
 
 **The reordered loop has run end to end on a real project** - a Next.js and
@@ -489,7 +489,7 @@ payoff:
 - [x] **P1 - Give findings an end state.** `D15`: `build` closes a P2 or P3 on
       a test seen failing; `ship` moves unresolved P3s to a backlog that is
       not loaded; `spec` offers a tidy item.
-- [x] **P1 - Cap `project-overview.md`** at 8 KB - `context` links, never
+- [x] **P1 - Cap `project-overview.md`** at 8 KB - `distill` links, never
       restates.
 - [x] **P2 - Split opening from closing.** Any `needs-you.md` writer may close
       a line with evidence, recording which; findings close by severity.
@@ -567,7 +567,7 @@ that an agent follows it:
 - `ship` moving P3s to the backlog, Done lines out of `needs-you.md`, and
   production needs into `production-pending.md`
 - `deploy` blocking on and ticking off `production-pending.md`
-- `context` holding the overview under 8 KB on a project whose overview is over
+- `distill` holding the overview under 8 KB on a project whose overview is over
 - `verify`'s `Widened: N` counter, and `ci` adding the browser tests by default
 - the skills symlink on macOS, and the copy fallback on real Windows - Linux
   and a failing `ln` are tested

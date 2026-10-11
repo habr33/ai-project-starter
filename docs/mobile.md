@@ -37,7 +37,7 @@ directory yet** — `scaffold` creates it once `layout` says where it goes.
 ## The sequence
 
 ```
-ideate → architect → stack → layout → scaffold → ci → context
+ideate → architect → stack → layout → scaffold → ci → distill
      → prototype → spec → build → verify → review → ship
 ```
 
@@ -74,7 +74,7 @@ ideate → architect → stack → layout → scaffold → ci → context
    mobile the pipeline is a typecheck and tests: a store build needs signing
    credentials, which belong in `deploy`, not here.
 
-7. **`context`** — generates the overview every session loads. Re-run it whenever
+7. **`distill`** — generates the overview every session loads. Re-run it whenever
    a plan changes.
 
 8. **`prototype`** *(required — `spec` stops without `design.md`)* — settles the look in
