@@ -366,9 +366,14 @@ remaining risk or missing signal - "no test command declared", "the browser flow
 was not exercised".
 
 **When an item is in flight, record the pass in the spec's `**Reviewed:**` line**,
-replacing what is there: the date, the work fingerprint, the scope and lens, and
-how many P0 or P1 findings are left `open` or `fixed` -
-`**Reviewed:** 2026-03-02, 6f06b62b2f2c, current, every lens - 0 blocking`.
+replacing what is there: the date, the work fingerprint, the scope and lens,
+what was read, and how many P0 or P1 findings are left `open` or `fixed` -
+`**Reviewed:** 2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking`.
+**What was read is `read whole`, `PARTLY READ: <what was not>`, or `NOT READ: <why>`**:
+a file skipped for size or context, a base that could not be resolved, a Step 1
+input that was missing. Say `read whole` only when every
+file in scope was opened; a pass that stopped early otherwise records "0
+blocking" exactly as a complete one does.
 **Including when nothing was found**: an empty ledger because nothing looked
 reads exactly like one because nothing was wrong, and this line is the only
 difference `ship` can see. The fingerprint is the tree of every file outside

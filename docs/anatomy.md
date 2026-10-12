@@ -129,7 +129,7 @@ against *this project's* recorded values rather than a generic standard.
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight; a UI with no design.md | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every claim in `capabilities/`** (archives without a `Behaviour changes` section are walked and offered for seeding) | findings (a regression), needs-you (a could-not-verify), the spec's `Verified:` line, and with `--all` the seeded capability claims — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
-| `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
+| `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line, naming what it did not read — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
 | `ship` | current-work, findings, build-plan | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1 | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the

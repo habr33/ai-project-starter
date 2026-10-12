@@ -3023,6 +3023,15 @@ assert_ok "including a pass that found nothing" \
   _says skills/review.md 'Including when nothing was found'
 assert_ok "ship reads both records" \
   _says skills/ship.md 'Read the spec'"'"'s `**Verified:**` and `**Reviewed:**` lines'
+# A review that ran out of context recorded "0 blocking" exactly as a complete
+# one did, so ship could not tell a clean pass from a half-read one.
+assert_ok "review's record example says what was read" \
+  grep -qF '**Reviewed:** 2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking' skills/review.md
+for w in 'PARTLY READ' 'NOT READ'; do
+  assert_ok "review names $w as a record" _says skills/review.md "\`$w: <"
+done
+assert_ok "ship does not take a partly read review as clean" \
+  _says skills/ship.md 'reading `PARTLY READ` or `NOT READ` is not a clean pass'
 # One fingerprint, written three times: a copy that drifts makes every record
 # it writes look stale, or worse, makes a stale one match.
 fps=$(for n in verify review ship; do grep -h 'git write-tree' skills/$n.md | sed 's/^ *//'; done)

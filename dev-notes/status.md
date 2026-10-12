@@ -15,6 +15,25 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
+## Where work stopped (2026-10-12)
+
+**Working list: `dev-notes/todos-2026-10-12.md`** (not committed yet - commit
+or delete it once the list is worked through). Done this session, all on `main`:
+`context` renamed to `distill` (e809791) and two ordering/reference fixes in it
+(b9a027c); D22 records why `distill` (e62fa21); `install.sh` now reports a
+loaded context over budget without `--hooks` (97746a3). `./check.sh` clean,
+`./tests/run.sh` zero failures after 97746a3.
+
+**D3 done:** `review`'s `Reviewed:` line records what it read (`read whole`,
+`PARTLY READ`, `NOT READ`) and `ship` treats a partial one as not clean;
+`verify`'s line already counted what it could not verify. **Next: B5** (shorten
+the longest skill descriptions, gate `./tests/run.sh routing`), then B2-B4.
+
+**Gotcha seen this session:** a negative assertion written as
+`sh -c '! grep ... <<EOF $out EOF'` can never fail - `$out` is single-quoted,
+so the inner shell sees it empty. Use `assert_eq "" "$(grep ... <<<"$out")"`,
+and mutate the code to check every new assertion fails.
+
 ## Where work stopped (2026-10-04)
 
 **A review of one installed project (`bulmaya-logistics`), fixed on `main`

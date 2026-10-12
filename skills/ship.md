@@ -50,7 +50,9 @@ A line still reading `not yet` means that check has not run. **A fingerprint tha
 differs means it ran on other code** - usually a repair made after it. Show
 what changed since with `git diff --stat <recorded> <current>`, and ask whether
 to run that check again; a line naming one lens or one path is that much of a
-review, and say so.
+review, and say so. **A `Reviewed:` line reading `PARTLY READ` or `NOT READ`
+is not a clean pass** whatever its blocking count: name what it did not read
+and ask whether to review that before the merge.
 
 **A quick fix skips both by design** - a spec with a `**Quick:**` line, from
 `spec --quick`. Name that instead of the two above, and let Step 1 check that
