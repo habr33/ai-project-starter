@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Turn one work item into a buildable spec in blueprint/context/current-work.md. With no argument, specs the next unchecked item in `blueprint/build-plan.md`; with a number or name, that one; with a bug or small change described in prose, an ad-hoc fix; with --quick and a bug, a one- or two-file fix as a single test-first step; with --preview, explains an upcoming item without writing anything. Splits anything too big, writes small build steps with observable done-when criteria, red-teams its own draft, and stops at a review gate. Use when the user runs `spec`, names or numbers a feature, reports a bug to fix, asks to break down or start the next thing, or asks what an upcoming feature involves."
+description: "Turn one work item into a buildable spec in blueprint/context/current-work.md. With no argument, specs the next unchecked item in `blueprint/build-plan.md`; with a number or name, that one; with a bug or small change described in prose, an ad-hoc fix; with --quick and a bug, a one- or two-file fix as a single test-first step; with --preview, explains an upcoming item without writing anything. Writes small build steps with observable done-when criteria and stops at a review gate. Use when the user runs `spec`, names or numbers a feature, reports a bug to fix, asks to break down or start the next thing, or asks what an upcoming feature involves."
 ---
 
 # spec - turn one item into something buildable

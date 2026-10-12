@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Close out finished work: run a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, make one work-level commit, then squash-merge the branch with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed in blueprint/context/findings.md. Asks separately before pushing. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked, so it is parked or dropped deliberately. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
+description: "Close out finished work: a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, one work-level commit, then a squash-merge with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed. Asks separately before pushing. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
 ---
 
 # ship - log it, commit it, merge it

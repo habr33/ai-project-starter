@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: "Turn a rough idea into a project plan by interviewing about what you are building, who it is for, and what the first version must do, then writing `blueprint/project-plan.md`, a starting build-plan.md checklist, and the project's non-negotiable commitments in `blueprint/context/principles.md`. Pushes back on scope too big for a first version, and says plainly when an idea is not ready to build. With --rescope, changes the scope of a project that has already built things, carrying completed items across. Use when the user runs `ideate`, is starting something new and has only a rough notion of it, asks whether an idea is worth building, asks how to plan a project, or needs to change what an existing project is for."
+description: "Turn a rough idea into a project plan: interviews about what you are building, who it is for, and what the first version must do, then writes `blueprint/project-plan.md`, a starting build-plan.md checklist, and the project's non-negotiable commitments in `blueprint/context/principles.md`. Pushes back on scope too big for a first version, and says plainly when an idea is not ready. With --rescope, changes the scope of a project that has already built things. Use when the user runs `ideate`, is starting something new and has only a rough notion of it, asks whether an idea is worth building or how to plan a project, or needs to change what an existing project is for."
 ---
 
 # ideate - turn a rough notion into a plan you can build from

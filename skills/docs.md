@@ -1,6 +1,6 @@
 ---
 name: docs
-description: "Write and maintain the documentation a project actually needs: a real README, API docs where there is an API, and dev-notes - the decision record explaining why the project is shaped this way, the status file for picking it up cold, and the hand-run equivalent of every automated command. With --check, audits what is already written against what is actually true and reports the rot read-only, changing nothing - a question nothing else in this workflow asks. Use when the user runs `docs`, wants to know whether the documentation is still accurate, when the README is still boilerplate, after a decision worth recording, or when preflight flags documentation as a blocker."
+description: "Write and maintain the documentation a project needs: a real README, API docs where there is an API, and dev-notes - the decision record, the status file for picking it up cold, and the hand-run equivalent of every automated command. With --check, audits what is written against what is true and reports the rot, read-only. Use when the user runs `docs`, wants to know whether the documentation is still accurate, when the README is still boilerplate, after a decision worth recording, or when preflight flags documentation as a blocker."
 ---
 
 # docs - write down what the code cannot say

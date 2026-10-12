@@ -26,8 +26,10 @@ loaded context over budget without `--hooks` (97746a3). `./check.sh` clean,
 
 **D3 done:** `review`'s `Reviewed:` line records what it read (`read whole`,
 `PARTLY READ`, `NOT READ`) and `ship` treats a partial one as not clean;
-`verify`'s line already counted what it could not verify. **Next: B5** (shorten
-the longest skill descriptions, gate `./tests/run.sh routing`), then B2-B4.
+`verify`'s line already counted what it could not verify. **B5 done:** five
+longest descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34. **Next:
+B2-B4** (overview over its cap, a CLAUDE.md that does not import AGENTS.md,
+state files that only grow).
 
 **Gotcha seen this session:** a negative assertion written as
 `sh -c '! grep ... <<EOF $out EOF'` can never fail - `$out` is single-quoted,
