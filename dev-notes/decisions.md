@@ -524,3 +524,22 @@ merges them with `lib/merge-capabilities.sh`; `rollback` writes the inverse;
 **Unproven against an agent.** The tests cover the script and the wording; no
 agent has yet written the section, merged it through `ship` or seeded a project.
 
+
+## D22 - The overview skill is `distill`, and a retired name stays retired (2026-10-12)
+
+The skill that generates `project-overview.md` was called `context`, which is
+also the name of a built-in Claude Code command, which shows what fills the
+context window. One name meant two different things in the same tool.
+
+**`distill`** says what it does: it distills the two plans into one file.
+
+- **`overview` and `brief` were the obvious names, and both were ruled out**
+  because they are already in `lib/retired-names`. Rule 5 fails any skill that
+  names a retired skill in backticks, so reusing one means taking it off the
+  list - and then a stale reference to the old skill reads exactly like a
+  reference to the new one, which is the confusion the list exists to catch.
+- **`context` joins that list**, so upgrading removes the old skill from
+  installed projects instead of leaving two copies that disagree.
+
+**When renaming a skill, check `lib/retired-names` before picking the new
+name.** A name that has been retired is not free to use again.
