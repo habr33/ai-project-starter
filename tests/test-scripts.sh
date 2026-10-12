@@ -591,6 +591,16 @@ assert_ok "install names a file CLAUDE.md loads that is now read on demand" \
 assert_fails "and a fresh project does not trip it" \
   grep -q 'read on demand' <<< "$fresh_out"
 
+# A hand-written CLAUDE.md that never imports AGENTS.md: Claude Code loads its
+# own architecture text and none of the pack's, and the two drift apart.
+sed -i '/^@AGENTS.md$/d' "$w2/fresh/CLAUDE.md"
+noimp_out=$("$IN" --target "$w2/fresh" 2>&1)
+assert_ok "install names a CLAUDE.md that does not import AGENTS.md" \
+  grep -q 'CLAUDE.md does not import AGENTS.md' <<< "$noimp_out"
+assert_eq "and leaves that CLAUDE.md alone" 0 "$(grep -c '^@AGENTS.md$' "$w2/fresh/CLAUDE.md")"
+assert_eq "and a fresh project does not trip it" "" \
+  "$(grep 'does not import AGENTS.md' <<< "$fresh_out")"
+
 section "opencode wrappers carry the modes the skill declares"
 # Rule 15 makes sure a mode is named in the skill's own description, which is
 # what Claude Code matches on. The opencode wrapper keeps only the FIRST

@@ -538,6 +538,14 @@ if [ -f "$TARGET/CLAUDE.md" ] && [ -f "$HERE/template/AGENTS.md" ]; then
     legacy="$legacy\n    Every session pays for them before a word is typed. Remove the line for each:"
     for m in $overloaded; do legacy="$legacy\n        @blueprint/context/$m"; done
   fi
+  # A hand-written CLAUDE.md that never imports AGENTS.md keeps its own copy of
+  # the instructions, which drifts from the plan while Claude Code loads it.
+  if [ -f "$TARGET/AGENTS.md" ] && ! grep -qxF '@AGENTS.md' "$TARGET/CLAUDE.md"; then
+    legacy="$legacy\n  - CLAUDE.md does not import AGENTS.md, so Claude Code never loads this pack's"
+    legacy="$legacy\n    instructions and any it holds itself drift from them. Add the line, and move"
+    legacy="$legacy\n    anything it restates into AGENTS.md or blueprint/:"
+    legacy="$legacy\n        @AGENTS.md"
+  fi
 fi
 
 # A ledger from before D15 keeps every finding whole in a file every session

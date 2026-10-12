@@ -3038,6 +3038,16 @@ fps=$(for n in verify review ship; do grep -h 'git write-tree' skills/$n.md | se
 assert_eq "verify, review and ship each give the fingerprint once" 3 "$(grep -c . <<<"$fps")"
 assert_eq "and it is the same command in all three" 1 "$(sort -u <<<"$fps" | grep -c .)"
 
+section "an overview over its cap is reported, not only prevented"
+# distill holds the overview to its cap only when it runs, so one written before
+# the cap, or edited by hand since, stayed over it with nothing reading its size.
+cap=$(grep -F '`blueprint/context/project-overview.md`' template/AGENTS.md | grep -oE 'at most [0-9]+ KB' | grep -oE '[0-9]+ KB')
+assert_ok "the template declares the overview's cap" test -n "$cap"
+assert_ok "progress checks the overview against that cap" \
+  _says skills/progress.md "\`blueprint/context/project-overview.md\` over $cap"
+assert_ok "and routes it to distill" \
+  _says skills/progress.md 'route to `distill`, which cuts it'
+
 section "every field in spec's header has a reader"
 # **Status:** was written into every spec and read by nothing. A field with a
 # writer and no reader is filled in by whoever passes, in whatever words, and

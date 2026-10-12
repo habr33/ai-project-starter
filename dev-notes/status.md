@@ -27,9 +27,12 @@ loaded context over budget without `--hooks` (97746a3). `./check.sh` clean,
 **D3 done:** `review`'s `Reviewed:` line records what it read (`read whole`,
 `PARTLY READ`, `NOT READ`) and `ship` treats a partial one as not clean;
 `verify`'s line already counted what it could not verify. **B5 done:** five
-longest descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34. **Next:
-B2-B4** (overview over its cap, a CLAUDE.md that does not import AGENTS.md,
-state files that only grow).
+longest descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34. **B2-B4 done:** `progress` reports an
+overview over its 8 KB cap; `install.sh` reports a CLAUDE.md that does not
+import AGENTS.md (report only); B4 closed as already covered by D15. Sections
+A, B and D3 of the todo list are done; C (mods) and the rest of D (role agents)
+are deferred by decision. **The pack stays standalone**: no skill names an
+outside agent team, path or skill.
 
 **Gotcha seen this session:** a negative assertion written as
 `sh -c '! grep ... <<EOF $out EOF'` can never fail - `$out` is single-quoted,
