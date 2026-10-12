@@ -623,6 +623,11 @@ fi
 # never reach it.
 [ -n "$legacy" ] && { echo; echo "From an older version of this pack:"; printf '%b\n' "$legacy"; }
 
+# The same count the --hooks budget hook makes at session start. Without
+# --hooks nothing else reports it, and a project over budget upgraded silently.
+over_budget=$(CLAUDE_PROJECT_DIR="$TARGET" bash "$HERE/lib/hook-context-budget.sh")
+[ -n "$over_budget" ] && { echo; echo "$over_budget"; }
+
 echo
 # "Run setup" is right for a first install and wrong for an upgrade: a project
 # already part-way through the loop has been tuned, and `setup` would re-tune

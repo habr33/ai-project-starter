@@ -1198,6 +1198,17 @@ assert_ok "counting CLAUDE.md itself, as rule 18 does" \
 rm "$p/AGENTS.md"; printf '@blueprint/big.md\n' >"$p/CLAUDE.md"
 assert_eq "no stated budget, nothing to hold it to" "" "$(cb)"
 
+# The hook only runs where --hooks put it. An upgrade is the other moment a
+# project's loaded size is worth reporting, so install runs the same count.
+t=$(workdir)
+out=$("$IN" --target "$t" 2>&1)
+assert_eq "a fresh install says nothing about the budget" "" "$(grep 'KB budget' <<<"$out")"
+head -c 80000 /dev/zero | tr '\0' x >"$t/blueprint/big.md"
+printf '@blueprint/big.md\n' >>"$t/CLAUDE.md"
+out=$("$IN" --target "$t" 2>&1)
+assert_ok "an upgrade over the budget says so, without --hooks" grep -q 'over the [0-9]* KB budget' <<<"$out"
+assert_ok "naming the file that put it over" grep -q 'largest: blueprint/big.md' <<<"$out"
+
 t=$(workdir)
 "$IN" --target "$t" >/dev/null 2>&1
 assert_absent "a plain install writes no settings.json" "$t/.claude/settings.json"

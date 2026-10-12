@@ -6,6 +6,8 @@
 # 18 counts it - against the `**Context budget: N KB.**` line in AGENTS.md. Over
 # it, one line goes into the session; under it, nothing. `progress` reports the
 # same, but only when someone runs it, and loaded files grow by accretion.
+# install.sh also runs it once at the end of every install, with or without
+# --hooks, so an upgrade over budget says so.
 #
 # It fails open: no CLAUDE.md, no stated budget, and it prints nothing.
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
