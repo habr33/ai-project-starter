@@ -17,27 +17,59 @@ place that answers "has this skill actually run?".
 
 ## Where work stopped (2026-10-12)
 
-**Working list: `dev-notes/todos-2026-10-12.md`** (not committed yet - commit
-or delete it once the list is worked through). Done this session, all on `main`:
-`context` renamed to `distill` (e809791) and two ordering/reference fixes in it
-(b9a027c); D22 records why `distill` (e62fa21); `install.sh` now reports a
-loaded context over budget without `--hooks` (97746a3). `./check.sh` clean,
-`./tests/run.sh` zero failures after 97746a3.
+**Goal:** work through `dev-notes/todos-2026-10-12.md` (what an installed
+project loads, and what a run did not read). **Its workable items are done**;
+C (mods) is parked on "not yet", and D's role team is not in the pack.
 
-**D3 done:** `review`'s `Reviewed:` line records what it read (`read whole`,
-`PARTLY READ`, `NOT READ`) and `ship` treats a partial one as not clean;
-`verify`'s line already counted what it could not verify. **B5 done:** five
-longest descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34. **B2-B4 done:** `progress` reports an
-overview over its 8 KB cap; `install.sh` reports a CLAUDE.md that does not
-import AGENTS.md (report only); B4 closed as already covered by D15. Sections
-A, B and D3 of the todo list are done; C (mods) and the rest of D (role agents)
-are deferred by decision. **The pack stays standalone**: no skill names an
-outside agent team, path or skill.
+**Done, all on `main` and pushed** (`origin/main` = `45088f6`): `context`
+renamed `distill` (e809791, b9a027c, D22 e62fa21); `install.sh` reports a
+loaded context over budget without `--hooks` (97746a3); `review`'s
+`Reviewed:` line says `read whole`, `PARTLY READ: <what>` or `NOT READ: <why>`
+and `ship` does not take a partial one as clean (9c2ffec); five longest
+descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34 (9dfe762);
+`progress` reports an overview over its 8 KB cap and `install.sh` a CLAUDE.md
+without `@AGENTS.md`, report only (45088f6). B4 (state files that only grow)
+closed as covered by D15. Evidence: `./check.sh` OK and `./tests/run.sh` 0
+failed after 45088f6; every new assertion seen failing under a real mutation.
 
-**Gotcha seen this session:** a negative assertion written as
-`sh -c '! grep ... <<EOF $out EOF'` can never fail - `$out` is single-quoted,
-so the inner shell sees it empty. Use `assert_eq "" "$(grep ... <<<"$out")"`,
-and mutate the code to check every new assertion fails.
+**In progress:** nothing in this repo. Projects installed earlier still run the
+old skills until re-installed - do it only between items, never mid-item.
+
+**Next:**
+
+1. The user's call: add a compliance step to `preflight` - ask where the
+   product is sold and what data it handles, then list which legal documents
+   apply (privacy policy, terms, licence notices, cookie consent, DPAs,
+   accessibility statement, AI disclosure, CRA/SBOM) and file the missing ones
+   as `needs-you` lines. Today it checks only a licence and a privacy policy.
+2. Update an installed project, once it is back on a clean `main`:
+   `install.sh --target <dir>`, read its report, commit there, restart that
+   session (descriptions load at session start).
+
+**Review, 2026-10-14:** `./check.sh` OK (18 rules, 27 skills),
+`./tests/run.sh` 1284 passed, 0 failed, nothing unpushed. Open after the two
+items above, all waiting on a decision rather than work:
+
+- The user's call: fold `prepare` into `progress`, `layout` into `stack`, drop
+  the overview's *Current state*, install a core skill set by default (from
+  2026-09-30, below).
+- P3: a shorter house style in the skills (*Can be done here*, below).
+- C (mods) in `todos-2026-10-12.md`: four unchecked boxes, parked on "not
+  yet". The rest of that file is done - keep it or delete it.
+- `cms-rr` re-install and its two findings: needs the directory's path.
+- Resource-bound (*Needs a person*, below): device, managed host, two live
+  sessions, macOS/BSD, a new user, Flutter.
+
+**Gotchas:**
+
+- **The pack is standalone.** No skill, doc or note names an outside agent
+  team, a `~/para` path, or a personal skill. A team routes to itself.
+- Installing into a project mid-item mixes pack files into the item's diff,
+  and `ship`'s first check is that every changed file belongs to the spec.
+- A negative assertion written as `sh -c '! grep ... <<EOF $out EOF'` can
+  never fail - `$out` is single-quoted. Use `assert_eq "" "$(grep ... <<<"$out")"`.
+- Editing a test file while `./tests/run.sh` runs changes what that run tests;
+  re-run before trusting it.
 
 ## Where work stopped (2026-10-04)
 
@@ -273,8 +305,9 @@ appended after `finish` in a test file is not counted, so add new ones above it.
 6. **Living capability specs - done (2026-10-01), `D21`, unproven against an
    agent.** Still open: a Claude Code plugin package alongside the scripts.
 
-Also open: the `verify` redirect sweep and `review` redirect-target check
-(see *Can be done here*), and a ledger migration script.
+*(Since done: the `verify` redirect sweep, `review`'s redirect-target check,
+and the ledger migration script, `lib/migrate-findings.sh` - see *Can be done
+here*.)*
 
 **Gotchas:**
 
@@ -315,7 +348,7 @@ Also open: the `verify` redirect sweep and `review` redirect-target check
 
     git status --short                       # empty
     git branch --show-current                # main
-    git log --oneline origin/main..main      # the hooks commit, until it is pushed
+    git log --oneline origin/main..main      # empty - everything is pushed
     ./check.sh                               # OK - 27 skills ... 18 rules
     ./tests/run.sh                           # all 4 test files passed, zero failures
 
