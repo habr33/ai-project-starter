@@ -1193,6 +1193,25 @@ assert_eq "nor does anything outside a repository" "" \
   "$(printf '{"tool_input":{"command":"git commit"},"cwd":"/"}' | "$MC")"
 assert_eq "unreadable input fails open, silently" "" "$(printf 'not json' | "$MC")"
 
+# Where the git hook is active (D23), this one holds it in place: the two ways
+# an agent walks past it are a skipped hook and a moved hooksPath. Deny, not ask
+# - no skill needs either. Still on the branch `item` here.
+deny() { grep -q '"permissionDecision": *"deny"' <<<"$(mc "$1")"; }
+assert_fails "without git hooks installed, --no-verify says nothing" deny 'git commit --no-verify -m x'
+assert_fails "nor does a change to core.hooksPath" deny 'git config core.hooksPath x'
+git -C "$w" config core.hooksPath .agents/git-hooks
+for c in 'git commit --no-verify -m x' 'git commit -n -m x' 'git commit -anm x' 'git commit --no-veri -m x' \
+         'git add -A && git commit -qn' 'git config core.hooksPath .githooks' 'git config --unset core.hooksPath' \
+         'git config core.hookspath /dev/null' 'git -c core.hooksPath=/dev/null commit -m x'; do
+  assert_ok "with them installed, denied: $c" deny "$c"
+done
+assert_ok "naming the hook it would skip" grep -q 'pre-commit' <<<"$(mc 'git commit -n -m x')"
+for c in 'git log -n 3' 'git commit -m x' 'git commit -m -n' "git commit -m 'drop -n handling'" \
+         'git commit -mn' 'git config core.hooksPath' 'git config --get core.hooksPath' 'git config user.name t'; do
+  assert_fails "not denied: $c" deny "$c"
+done
+git -C "$w" config --unset core.hooksPath
+
 p="$w/budget"; mkdir -p "$p/blueprint"
 printf '**Context budget: 1 KB.**\n' >"$p/AGENTS.md"
 printf '@AGENTS.md\n@blueprint/big.md\n@blueprint/gone.md\n' >"$p/CLAUDE.md"

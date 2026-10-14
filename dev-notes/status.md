@@ -53,13 +53,18 @@ no not-a-repo refusal, exit 2 blocking) each caught by the assertion naming it.
 `new-project.sh --git-hooks` re-runs `install.sh` after `git init`, so the first
 commit already runs the hook.
 
+Task 4 - `lib/hook-main-commit.sh` denies, where `core.hooksPath` is
+`.agents/git-hooks`, a commit with `--no-verify`/`-n` (including clusters and
+unambiguous prefixes; `-m -n` is a message) and a `git config` or `git -c` that
+changes `core.hooksPath`; a read of it is allowed. Silent without git hooks.
+Tests beside *the optional hooks, D20*; three mutations each caught.
+
 **In progress:** nothing half-made.
 
 **Next:**
 
-1. `harness-plan.md` Task 4: `--hooks` denies `--no-verify` and a change to
-   `core.hooksPath` where `.agents/git-hooks/` is active.
-2. Task 5, one commit. Task 6 is a paid multi-part trial - **ask first**.
+1. `harness-plan.md` Task 5: D23 from proposed to built in `decisions.md`, and
+   the script listing here. Task 6 is a paid multi-part trial - **ask first**.
 3. Then the rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),

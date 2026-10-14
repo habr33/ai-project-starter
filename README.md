@@ -240,7 +240,9 @@ A `git commit` on `main` then needs your yes in the UI however the model was
 told to proceed - setup commits and `ship`'s merge still work, they just ask;
 headless (`claude -p`) there is nobody to ask, so they are refused -
 and a session opens with a warning when the always-loaded files are over the
-budget `AGENTS.md` states. Other tools ignore them; the rules still hold as prose.
+budget `AGENTS.md` states. With `--git-hooks` active too, a commit with
+`--no-verify` or `-n` and a change to `core.hooksPath` are refused outright.
+Other tools ignore them; the rules still hold as prose.
 
 **Optional, every tool: `--git-hooks`** (on `install.sh` or `new-project.sh`,
 at the repository's top level) installs a git pre-commit hook in

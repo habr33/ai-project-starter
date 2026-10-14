@@ -248,7 +248,7 @@ With `--git-hooks` it also runs on **every commit, from any tool**: a pre-commit
 hook in `.agents/git-hooks/`, once per repository - at a product's root, where
 one run covers every part. What it cannot do, so nothing leans on it: it cannot
 ask, so the commit-on-`main` rule stays with `D20`'s hook; it can be
-skipped with `--no-verify`; and `core.hooksPath` is per-clone config, so a fresh
+skipped with `--no-verify` (which `--hooks` denies, in Claude Code only); and `core.hooksPath` is per-clone config, so a fresh
 clone is unguarded until `progress` names it. CI is the wall.
 
 ## What holds this together mechanically

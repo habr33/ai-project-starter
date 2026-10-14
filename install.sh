@@ -28,6 +28,8 @@ Usage:
   --hooks        Also install two Claude Code hooks (D20) into .claude/settings.json:
                  a commit on main asks the person first, and a session starts
                  with a warning when the loaded context is over its budget.
+                 Where --git-hooks is active, a commit with --no-verify or -n
+                 and a change to core.hooksPath are denied.
                  Merged into any settings already there; nothing else changes.
   --git-hooks    Also install a git pre-commit hook (D23), for every tool: a
                  commit whose state files are out of form is refused, naming
