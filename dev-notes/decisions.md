@@ -544,27 +544,56 @@ context window. One name meant two different things in the same tool.
 **When renaming a skill, check `lib/retired-names` before picking the new
 name.** A name that has been retired is not free to use again.
 
-## D23 - Rules execute through git and a project checker, in every tool (2026-10-14, agreed, not built)
+## D23 - Rules execute through git and a project checker, in every tool (2026-10-14, built)
 
-**Agreed, not built.** Design and its three answers in
-`dev-notes/harness-design.md`; plan in `harness-plan.md`.
+**Built on `harness`**, Tasks 1-4 of `harness-plan.md`; design and its three
+answers in `dev-notes/harness-design.md`.
 
 D20 made two rules executable, but only in Claude Code, and the pressure tier
-showed prose giving way where nothing executed. An installed project has no
-command that says whether its state files are well-formed, so a malformed
-findings index or spec header is found only when a later skill misreads it.
+showed prose giving way where nothing executed. An installed project had no
+command that said whether its state files were well-formed, so a malformed
+findings index or spec header was found only when a later skill misread it.
 
-**Proposed: a project checker, called from a git `pre-commit` hook and from
-CI**, because git and CI are the enforcement points every tool passes through.
+**A project checker, `lib/check-project.sh`**, installed to
+`.agents/bin/check-project.sh`. It reads the findings index, `needs-you.md`,
+`current-work.md`'s header, the overview's cap, the loaded context, capability
+files, a `preflight:` line and - at a product root - anything staged under
+`blueprint/status/`. One line per problem, naming the skill that repairs it.
+Exit 0, 1, or 2 when it could not run.
 
-- **The checker checks only formats a template or skill already states**, each
-  naming its source, and a seam test holds the two together. A second reader
-  that drifts from its writer is this repo's most repeated defect.
+- **It checks only formats a template or skill already states**, each declared
+  with its source text and its repairing skill, and a seam test holds both: the
+  text must still be in the source, and the skill must be in that file's writer
+  column. A second reader that drifts from its writer is this repo's most
+  repeated defect.
+- **Its callers:** `progress` reports it (the overview-cap check moved into it,
+  so there is one copy); `ci`'s pipeline runs it; `ship`'s safety pass blocks
+  on exit 1 and reports exit 2 without blocking - every item passes `ship`, so
+  a project with no hooks is still checked once per item.
+- **`--git-hooks`** installs `lib/git-pre-commit.sh` as
+  `.agents/git-hooks/pre-commit` and sets `core.hooksPath`, once per
+  repository - a multi-part product is one repository, and the root run covers
+  every part. Refused, before any write, below a repository's top level.
 - **A git hook cannot ask, and can be skipped.** The commit-on-`main` rule
   stays with D20's hook, which asks; CI is the wall; the git hook is a tripwire.
-- **An existing hook manager wins** - `install.sh` reports the line to add and
-  leaves git config alone.
+  Where both are installed, D20's Bash hook denies `--no-verify`/`-n` and a
+  change to `core.hooksPath`.
+- **An existing hook manager wins** - husky, pre-commit, lefthook or a
+  `core.hooksPath` already set: `install.sh` prints the line to add and leaves
+  git config alone.
+- **`core.hooksPath` is per-clone.** `progress` names a clone where the hook is
+  present but not active.
 - **Opt-in and failing open, as D20.** The rules stay in `AGENTS.md` as prose.
+
+**What the tests prove:** every check fires alone and names itself and its
+skill; fresh single- and multi-part projects pass; `--staged` reads the index;
+in scratch repositories a bad staged file refuses a commit and a good one goes
+through, a part's bad file refuses a commit at the root, exit 2 passes, each
+hook manager is left alone, and the deny forms are denied while reads and
+messages are not - each assertion seen failing, under a mutation of what it
+names. **What they do not:** that an agent, in any tool, repairs a refusal with
+the skill named rather than around it, or that a real multi-part run's state
+files pass. That is Task 6, the trial, not yet run.
 
 **Rejected: a separate harness project.** The checks worth running read this
 pack's own files; a project outside it would read formats it does not own.

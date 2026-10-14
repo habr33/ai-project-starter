@@ -61,16 +61,19 @@ Tests beside *the optional hooks, D20*; three mutations each caught.
 
 **In progress:** nothing half-made.
 
+Task 5 - `D23` recorded as built, with what the tests prove and do not; the
+two scripts in the listing below.
+
 **Next:**
 
-1. `harness-plan.md` Task 5: D23 from proposed to built in `decisions.md`, and
-   the script listing here. Task 6 is a paid multi-part trial - **ask first**.
-3. Then the rest of what is open: the `preflight` compliance step and folding
+1. `harness-plan.md` Task 6 is a paid multi-part trial - **ask first**. Then
+   merging `harness` into `main` is the user's call.
+2. Then the rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),
    the pressure fixtures rebuilt, the runs owed (*Recommendations*, 2, and
    *Unverified, and worth a real run*), and *Needs a person*.
-4. Re-install installed projects between items, never mid-item:
+3. Re-install installed projects between items, never mid-item:
    `install.sh --target <dir>`, commit there, restart that session.
 
 **Gotchas:**
@@ -346,6 +349,8 @@ check.sh              lint the skill sources
 lib/seed-part.sh      seed one part; also adds a part to an existing product
 lib/seed-product-root.sh   seed a product root
 lib/part-name.sh      part-name checks, run before anything is created or moved
+lib/check-project.sh  a project's state files in the form the skills write (D23)
+lib/git-pre-commit.sh the git hook --git-hooks installs; runs that checker
 skills/               27 files, one per skill - the only source
 template/             27 files: AGENTS.md, CLAUDE.md, blueprint/ (with the
                       design kit), dev-notes/, README, and product/ for a
