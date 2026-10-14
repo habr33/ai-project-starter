@@ -1184,6 +1184,11 @@ call() { printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","
 mc() { call "$1" | CLAUDE_PROJECT_DIR="$w" "$MC"; }
 assert_ok "a commit on main asks the person" grep -q '"permissionDecision": *"ask"' <<<"$(mc 'git commit -m x')"
 assert_ok "and names the rule it holds" grep -q 'Never build on' <<<"$(mc 'git add -A && git commit -qm x')"
+# Headless, ask is a denial, and the trial's agents then moved scaffold's and
+# distill's setup commits onto a feature branch - "belongs on a branch" read as
+# the way out. A declined setup commit waits for the person instead.
+assert_ok "and says a declined setup commit is left, not moved to a branch" \
+  grep -q 'never move it to a branch' <<<"$(mc 'git commit -m x')"
 assert_ok "git's own options before commit still count" grep -q '"ask"' <<<"$(mc 'git -c core.editor=true commit')"
 assert_eq "a command that only mentions commit says nothing" "" "$(mc 'git log --grep commit')"
 assert_eq "nor does a merge that is not a commit" "" "$(mc 'git merge --squash item')"

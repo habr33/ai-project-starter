@@ -104,5 +104,7 @@ print(json.dumps({"hookSpecificOutput": {
     "permissionDecision": "ask",
     "permissionDecisionReason":
         "A commit on " + branch + ". AGENTS.md: Never build on `main`. Setup "
-        "commits and ship'"'"'s merge belong here; anything else belongs on a branch."}}))
+        "commits and ship'"'"'s merge belong here - if this is one and the person "
+        "declines, leave it uncommitted and say so; never move it to a branch. "
+        "Anything else belongs on a branch."}}))
 '
