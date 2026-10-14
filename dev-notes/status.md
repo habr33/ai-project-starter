@@ -15,69 +15,67 @@ place that answers "has this skill actually run?".
 > line it sits in - which is the defect class this file is mostly a record of.
 > Zero failures is the invariant; the total is not.
 
-## Where work stopped (2026-10-12)
+## Where work stopped (2026-10-14)
 
-**Goal:** work through `dev-notes/todos-2026-10-12.md` (what an installed
-project loads, and what a run did not read). **Its workable items are done**;
-C (mods) is parked on "not yet", and D's role team is not in the pack.
+**Goal:** build `D23` - rules that execute in every tool: a project checker run
+from a git pre-commit hook, CI, `progress` and `ship`. Design and its three
+agreed answers in `harness-design.md`; tasks in `harness-plan.md`.
 
-**Done, all on `main` and pushed** (the work ends at `45088f6`): `context`
-renamed `distill` (e809791, b9a027c, D22 e62fa21); `install.sh` reports a
-loaded context over budget without `--hooks` (97746a3); `review`'s
-`Reviewed:` line says `read whole`, `PARTLY READ: <what>` or `NOT READ: <why>`
-and `ship` does not take a partial one as clean (9c2ffec); five longest
-descriptions trimmed, 16,044 -> 15,547 bytes, routing 34/34 (9dfe762);
-`progress` reports an overview over its 8 KB cap and `install.sh` a CLAUDE.md
-without `@AGENTS.md`, report only (45088f6). B4 (state files that only grow)
-closed as covered by D15. Evidence: `./check.sh` OK and `./tests/run.sh` 0
-failed after 45088f6; every new assertion seen failing under a real mutation.
+**Branch `harness`, off `main`.** Neither is pushed: `main` is one ahead of
+`origin/main` (`04653d9`, the design, the plan and D23), `harness` one ahead of
+`main`.
 
-**In progress:** nothing in this repo. Projects installed earlier still run the
-old skills until re-installed - do it only between items, never mid-item.
+**Done:** Task 1, `23c8baf` - `lib/check-project.sh`, its tests (*the project
+checker, D23* in `tests/test-scripts.sh`) and the seam test (*the project
+checker reads formats the skills state, D23* in `tests/test-seams.sh`). Each of
+22 script mutations caught by the test naming it; the seam test caught a real
+edit to `review`'s example heading and to the writer table. Both real run
+projects under `~/tmp` pass clean. `./check.sh` OK, `./tests/run.sh` 0 failed.
+One change from the plan, recorded in it: each check names its one repairing
+skill, held to the writer column by the seam test.
+
+**In progress:** nothing half-made.
 
 **Next:**
 
-1. The user's call: add a compliance step to `preflight` - ask where the
-   product is sold and what data it handles, then list which legal documents
-   apply (privacy policy, terms, licence notices, cookie consent, DPAs,
-   accessibility statement, AI disclosure, CRA/SBOM) and file the missing ones
-   as `needs-you` lines. Today it checks only a licence and a privacy policy.
-2. Update an installed project, once it is back on a clean `main`:
-   `install.sh --target <dir>`, read its report, commit there, restart that
-   session (descriptions load at session start).
-
-**Review, 2026-10-14:** `./check.sh` OK (18 rules, 27 skills),
-`./tests/run.sh` 0 failed, nothing unpushed. Open after the two items above:
-
-- The user's call: fold `prepare` into `progress`, `layout` into `stack`, drop
-  the overview's *Current state* so `distill` is not needed after every
-  `ship`, and install a core skill set by default (proposed 2026-09-28).
-- Item 6's second half (`D21`): a Claude Code plugin package alongside the
-  scripts. Not started.
-- `D23`, agreed, not built: a project checker and a git pre-commit hook.
-  Next work: `harness-plan.md`, Task 1; Task 6 is a paid trial - ask first.
-- P3: a shorter house style in the skills (*Can be done here*, below).
-- C (mods) in `todos-2026-10-12.md`: four unchecked boxes, parked on "not
-  yet". The rest of that file is done - keep it or delete it.
-- `cms-rr` re-install and its two findings: needs the directory's path
-  (*Closed, and where the detail lives*, below).
-- Rebuild the pressure fixtures before the next pressure run: they predate the
-  archive ID prefix fix and every skill change since.
-- Runs, not work: the reorder's headline result (*Recommendations*, 2), and
-  the prose listed under *Unverified, and worth a real run*, below.
-- Resource-bound (*Needs a person*, below): device, managed host, two live
-  sessions, macOS/BSD, a new user, Flutter.
+1. `harness-plan.md` Task 2: install the checker to `.agents/bin/` beside
+   `merge-capabilities.sh` in `install.sh` (around line 164); `progress` runs
+   it and its own overview-cap check moves into it (seam test near
+   `tests/test-seams.sh` "distill caps the overview" holds the number); `ci`
+   runs it; `ship` Step 1 gains one safety-pass item (exit 2 never blocks);
+   a row in `docs/anatomy.md`. Tests first, each seen failing.
+2. Tasks 3-5, one commit each. Task 6 is a paid multi-part trial - **ask first**.
+3. Then the rest of what is open: the `preflight` compliance step and folding
+   `prepare`/`layout` (the user's call), the plugin package (D21's second
+   half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),
+   the pressure fixtures rebuilt, the runs owed (*Recommendations*, 2, and
+   *Unverified, and worth a real run*), and *Needs a person*.
+4. Re-install installed projects between items, never mid-item:
+   `install.sh --target <dir>`, commit there, restart that session.
 
 **Gotchas:**
 
+- **Rule 8 rejects a reference to a script that does not exist, in any
+  `dev-notes/` file** - the plan names unbuilt scripts without `.sh`. And a
+  script referenced only by `tests/` fails the lint fixture (its tests are
+  stubbed), so a new script needs a doc row in the same commit.
+- **Mutation harness used for Task 1:** extract the section from
+  `section "the project checker` to `finish` into a scratch file sourcing
+  `tests/lib.sh`, point `CK=` at a mutated copy, run with `TEST_TMP` set.
+- **A git hook cannot ask and can be skipped** - commit-on-`main` stays with
+  D20's hook; CI is the wall (D23).
+- **A multi-part product is one repository**; the root holds
+  `blueprint/context/` too, so a root is told apart by
+  `blueprint/orchestration.md`, not by `blueprint/context/`.
 - **The pack is standalone.** No skill, doc or note names an outside agent
-  team, a `~/para` path, or a personal skill. A team routes to itself.
-- Installing into a project mid-item mixes pack files into the item's diff,
-  and `ship`'s first check is that every changed file belongs to the spec.
+  team, a `~/para` path, or a personal skill.
+- Installing into a project mid-item mixes pack files into the item's diff.
 - A negative assertion written as `sh -c '! grep ... <<EOF $out EOF'` can
   never fail - `$out` is single-quoted. Use `assert_eq "" "$(grep ... <<<"$out")"`.
-- Editing a test file while `./tests/run.sh` runs changes what that run tests;
-  re-run before trusting it.
+- Editing a test file while `./tests/run.sh` runs changes what that run tests.
+
+**Verify with:** `git status --short` (empty), `git branch --show-current`
+(`harness`), `./check.sh` (OK, 18 rules), `./tests/run.sh` (0 failed).
 
 ## Where work stopped (2026-10-04)
 
