@@ -543,3 +543,30 @@ context window. One name meant two different things in the same tool.
 
 **When renaming a skill, check `lib/retired-names` before picking the new
 name.** A name that has been retired is not free to use again.
+
+## D23 - Rules execute through git and a project checker, in every tool (2026-10-14, agreed, not built)
+
+**Agreed, not built.** Design and its three answers in
+`dev-notes/harness-design.md`; plan in `harness-plan.md`.
+
+D20 made two rules executable, but only in Claude Code, and the pressure tier
+showed prose giving way where nothing executed. An installed project has no
+command that says whether its state files are well-formed, so a malformed
+findings index or spec header is found only when a later skill misreads it.
+
+**Proposed: a project checker, called from a git `pre-commit` hook and from
+CI**, because git and CI are the enforcement points every tool passes through.
+
+- **The checker checks only formats a template or skill already states**, each
+  naming its source, and a seam test holds the two together. A second reader
+  that drifts from its writer is this repo's most repeated defect.
+- **A git hook cannot ask, and can be skipped.** The commit-on-`main` rule
+  stays with D20's hook, which asks; CI is the wall; the git hook is a tripwire.
+- **An existing hook manager wins** - `install.sh` reports the line to add and
+  leaves git config alone.
+- **Opt-in and failing open, as D20.** The rules stay in `AGENTS.md` as prose.
+
+**Rejected: a separate harness project.** The checks worth running read this
+pack's own files; a project outside it would read formats it does not own.
+**Deferred:** further Claude Code hooks, which wait on a machine-readable
+`## Files and areas`, and wrappers for other tools' hooks.

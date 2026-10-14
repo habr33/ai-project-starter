@@ -5,8 +5,8 @@ this way - read D2 and D3 before changing its structure. `coverage.md` is the on
 place that answers "has this skill actually run?".
 
 > **Before doing anything else, check what is not committed** (`git status`),
-> then run `./check.sh` and `./tests/run.sh`. They must report `OK` and **all
-> every test file passing with zero failures**. If they do not, the tree has
+> then run `./check.sh` and `./tests/run.sh`. They must report `OK` and **every
+> test file passing with zero failures**. If they do not, the tree has
 > been disturbed since the last recorded run - find out why before changing
 > anything.
 >
@@ -21,7 +21,7 @@ place that answers "has this skill actually run?".
 project loads, and what a run did not read). **Its workable items are done**;
 C (mods) is parked on "not yet", and D's role team is not in the pack.
 
-**Done, all on `main` and pushed** (`origin/main` = `45088f6`): `context`
+**Done, all on `main` and pushed** (the work ends at `45088f6`): `context`
 renamed `distill` (e809791, b9a027c, D22 e62fa21); `install.sh` reports a
 loaded context over budget without `--hooks` (97746a3); `review`'s
 `Reviewed:` line says `read whole`, `PARTLY READ: <what>` or `NOT READ: <why>`
@@ -47,16 +47,24 @@ old skills until re-installed - do it only between items, never mid-item.
    session (descriptions load at session start).
 
 **Review, 2026-10-14:** `./check.sh` OK (18 rules, 27 skills),
-`./tests/run.sh` 1284 passed, 0 failed, nothing unpushed. Open after the two
-items above, all waiting on a decision rather than work:
+`./tests/run.sh` 0 failed, nothing unpushed. Open after the two items above:
 
 - The user's call: fold `prepare` into `progress`, `layout` into `stack`, drop
-  the overview's *Current state*, install a core skill set by default (from
-  2026-09-30, below).
+  the overview's *Current state* so `distill` is not needed after every
+  `ship`, and install a core skill set by default (proposed 2026-09-28).
+- Item 6's second half (`D21`): a Claude Code plugin package alongside the
+  scripts. Not started.
+- `D23`, agreed, not built: a project checker and a git pre-commit hook.
+  Next work: `harness-plan.md`, Task 1; Task 6 is a paid trial - ask first.
 - P3: a shorter house style in the skills (*Can be done here*, below).
 - C (mods) in `todos-2026-10-12.md`: four unchecked boxes, parked on "not
   yet". The rest of that file is done - keep it or delete it.
-- `cms-rr` re-install and its two findings: needs the directory's path.
+- `cms-rr` re-install and its two findings: needs the directory's path
+  (*Closed, and where the detail lives*, below).
+- Rebuild the pressure fixtures before the next pressure run: they predate the
+  archive ID prefix fix and every skill change since.
+- Runs, not work: the reorder's headline result (*Recommendations*, 2), and
+  the prose listed under *Unverified, and worth a real run*, below.
 - Resource-bound (*Needs a person*, below): device, managed host, two live
   sessions, macOS/BSD, a new user, Flutter.
 
@@ -107,225 +115,60 @@ old ones. `template/AGENTS.md` got a row and was trimmed by the same bytes
 through `ship` or seeded a project. **Not done:** the plugin package (item 6's
 second half).
 
-## Where work stopped (2026-09-30)
+## Closed, and where the detail lives (2026-09-25 to 2026-09-30)
 
-**Goal:** close the gaps a market comparison found (Spec Kit, Superpowers, GSD,
-BMAD, OpenSpec, Kiro), after a round on context cost and a design kit.
+A market comparison (Spec Kit, Superpowers, GSD, BMAD, OpenSpec, Kiro) set an
+agreed order of six items; five are done and the sixth is half done (above).
+**The per-change narrative is not repeated here** - it is in the commit
+messages, in `decisions.md`, in `coverage.md`'s dated runs, and in the section
+comments beside the assertions that hold each fix:
 
-**Done 2026-09-30, on `quick-fix`:** the pressure tier's fixes are committed
-(`88b9c9c`). **`preflight` records its verdict** (`2fa00ed`): a `preflight:`
-line in `dev-notes/status.md` with date and commit; `deploy` reads it for the
-production gate and treats a missing one as not run. `index.html`, the pack's
-landing page, is in the repo.
+- **`seams-G` review and `D18`** (`b2e2477`): design is required wherever there
+  is a UI; `check.sh` rule 1's SIGPIPE; `build`'s packet; undeclared writes
+  declared. Then a small project end to end (`seams-J`, 2026-09-25) and a
+  review of those fixes, run rather than read (`seams-K`, 2026-09-28).
+- **The re-run against `seams-J` and `seams-K`** (`rerun-plan.md`, 2026-09-28):
+  fifteen checks pass. Phase C's two fixes: `host` owns changing "not
+  published" to published, and `Deferred to: deploy, after release`.
+- **Items 1-2:** fresh context per build step, and test-first in `build`.
+- **Item 3, the pressure tier** (`pressure-plan.md`; `coverage.md`, *the
+  pressure tier* and *pressure pilot*): test-first, `time` and `authority`
+  gave way and were fixed in `build`, `ship` and the template; each re-ran 3/3.
+- **Item 4, `spec --quick`** (`D19`). **Item 5, optional hooks** (`D20`), run
+  for real headless. **Item 6** (`D21`), above.
+- **`verify` and `review` record what they examined** (`**Verified:**` and
+  `**Reviewed:**` with a work fingerprint - a tree id, not a commit), and
+  **`preflight` records its verdict** as a `preflight:` line here, which
+  `deploy` reads for the production gate (`2fa00ed`). Every `preflight`
+  blocker is a P0/P1 ledger entry.
+- **A full run of the workflow** (2026-09-30, `coverage.md`, *a full run
+  against the records, the quick path and the audit*): the records, the quick
+  path and the ledger's end state ran against an agent; six pack findings
+  fixed with tests.
 
-**Then `verify` and `review` records** (committed with this note):
-
-- **`verify` and `review` record what they examined.** `spec`'s header had a
-  `**Status:**` field nothing read, which agents filled in their own words; it
-  is replaced by `**Verified:**` and `**Reviewed:**`, each `not yet` until the
-  skill writes the date, a **work fingerprint** and the result. `review`
-  writes its line on a clean pass too - an empty ledger no longer reads the
-  same as one nobody looked at.
-- **The fingerprint is a tree id, not a commit**: a temporary index over every
-  file outside `blueprint/` and `dev-notes/`. Checkpoints are optional, so a
-  commit key calls every review of uncommitted work stale and never sees an
-  untracked file - both seen in a scratch repo. The command is written in
-  `verify`, `review` and `ship`; a seam test holds the three identical and
-  `test-scripts.sh` runs `ship`'s copy.
-- **`ship` names a stale line and asks** rather than refusing: repairs come
-  after `verify` in the loop, so a hard match would force a re-verify after
-  every repair. It shows `git diff --stat <recorded> <current>`.
-- **`preflight`: an accepted blocker counts as go**, and the line names it. A
-  verdict written as "no-go, every blocker accepted" would otherwise stop
-  `deploy` for a release the user had already cleared.
-- **A seam check: every field in `spec`'s header has a reader.** It found `ship`
-  paraphrasing `From build plan:` ("its build-plan number"); now named. It
-  would **not** have caught `**Status:**` on its own - finding entries have a
-  `Status:` field too - so that one has its own assertion.
-- `docs/anatomy.md`'s table corrected for all of it, including the `preflight`
-  row item 2 left saying "findings only".
-- Every new test seen failing first, then each fix broken in a copy: a
-  drifted copy, tracked files only, HEAD's tree, and a broken extraction each
-  fail the assertion that names them.
-
-**Unproven:** none of the new records has run in a real project yet.
-*(Run 2026-09-30, below: they have.)*
-
-**Then `preflight`'s blockers stay in the ledger**: a live
-project's no-go named four blockers - one filed at P2, three only as
-`needs-you` lines, all accepted in status prose - so nothing that gates saw
-them. `preflight` now says every blocker is a P0/P1 entry whatever `review`
-would rank it, a person's blocker gets one naming its `needs-you` line, and
-acceptance is set `accepted` in the ledger. Tested under *every preflight
-blocker, and its acceptance, is in the ledger*, each seen failing first.
-**Unproven against an agent.**
-
-**Then item 5, optional hooks, merged to `main` as `1a8424b`, not pushed** (`D20`):
-`install.sh --hooks` and `new-project.sh --hooks` register two Claude Code
-hooks - a `git commit` on `main` asks the person (asks, not refuses: the setup
-commits and `ship`'s squash belong there), and a session opens with a warning
-over the context budget. Tests under *the optional hooks, D20* in
-`tests/test-scripts.sh`, each seen failing first; thirteen mutations each
-caught by the assertion that names them. **Run for real, headless**: with
-`git commit` allowed, a commit on `main` was denied with the hook's reason and
-the same commit on a branch went through; the budget line reached the session.
-
-**Then a full run of the workflow** (2026-09-30, `coverage.md`, *a full run
-against the records, the quick path and the audit*): a one-page tool from
-`ideate` to `deploy`'s gate, headless with `--setting-sources project,local`,
-about $14.60. 12 of 14 checks pass, one partial, one not reached. **The
-records `verify`, `review` and `preflight` write, the quick path and the
-ledger's end state have now run against an agent** - the *Unproven* notes
-above are closed by it. Six pack findings fixed with tests on `run-fixes`.
-The run and its notes are in `~/tmp/run-2026-09-30/`.
-
-**Merged and pushed 2026-09-30:** `main` was fast-forwarded to `quick-fix`,
-which was stacked on `review-seams-k`, so both are in - the `seams-K` review
-fixes, the re-run plan and records, `spec --quick` (item 4), the pressure
-plan and tier, and everything above. Both branches are deleted. Earlier branches (`retro-improvements`, `design-kit`) were merged into
-`main` on 2026-09-25 and deleted.
-
-**`claude/admiring-meitner-w9m4vx` is on `main`**: `origin/main` was
-fast-forwarded to it (`b2e2477`), seen 2026-09-28; the remote branch still
-exists. It held a read of all 27 skills end to end (`seams-G`) and `D18`:
-
-- **Design is required wherever there is a UI** (`D18`). `spec` stops on a UI
-  with no `design.md`; a CLI, library or API, a fix and `--preview` pass.
-  `prototype` gained *Recording a look that already exists*, without which an
-  adopted app could never reach `spec`.
-- **`check.sh` rule 1 took SIGPIPE** - `sed '/^---$/q'` in an assignment under
-  `set -e`, exit 141 with no output in roughly one lint fixture in fifteen. Now
-  a range; a seam check forbids an early-quitting reader in any check.sh
-  assignment.
-- **`build`'s packet** names all four standards by path, and test-first means
-  the test is written and seen red *before* the code, with the running app as
-  the evidence where no test can see the claim.
-- **Self-contradictions fixed**: `stack`'s empty-directory claim, `architect`
-  asking its six questions twice, steps that did not exist (`build` "Step 6",
-  `autopilot` "Step 1b" - now a check across every skill), `verify`'s needs-you
-  rule reachable only under `--manual`, and six miscounts.
-- **Undeclared writes declared**: `scaffold`, `distill` and `spec` write the
-  plans, `spec` writes `design.md`. Paid for under rule 18 by cutting a
-  duplicated paragraph from the template's `coding-standards.md`.
-- **Then three follow-ups:** `autopilot` stops at `prototype` when there is no
-  `design.md` (a look is the user's choice, and required design made every UI
-  range reach it), and checks for the record when its range starts past
-  `prototype`; a seam heuristic for a skill that tells the agent to write a
-  state file its `Writes:` line leaves out - it finds two of the four
-  undeclared writes above, and the other two name their file only as "it";
-  and `install.sh` names a hand edit found only in `.claude/skills` before
-  converting or overwriting it.
-- **Then a run of a small project end to end** (`coverage.md`, 2026-09-25):
-  nineteen findings, thirteen fixed - the setup work committed before item 1
-  branches, the README filled as the loop runs, `preflight`/`deploy` honouring
-  "not published", release-only blockers offered as deferred, the kit's
-  controls at 44px on touch, and five smaller ones. Tested under `seams-J`.
-- **Then a review of those fixes, run rather than read** (2026-09-28,
-  `seams-K`): seven were wrong or incomplete, each now with a test seen failing
-  first - the touch block shrinking `.textarea` and `.btn--lg`, the README
-  title broken by `&`, `|` or `\` in a name, commits citing a yes nobody asked
-  and `ci`'s leaving files behind, `build` misfiling `spec`'s `design.md`, a
-  release deferral nothing read, and `progress` reading only the latest archive.
-  `seams-K`'s commit check is a declared list (`setup_commits`): a skill that
-  commits setup work on `main` goes there, and its commit must name every file
-  in its `Writes:` line.
-- **Proposed, not done - the user's call:** fold `prepare` into `progress`,
-  `layout` into `stack`, drop the overview's *Current state* so `distill` is not
-  needed after every `ship`, and install a core set of skills by default.
-
-**Done, with evidence:** `./check.sh` OK and `./tests/run.sh` all four files
-passing, zero failures, on `main`. Each new check was seen failing under a
-mutation first; the kit's four checks were run against four broken copies. The
-kit sheet was rendered headless at 1280 and 390 px, light and dark.
-
-**Two of the agreed next six, now on `main`:**
-
-1. **Fresh context per build step.** `build` Step 3 prepares a packet (spec
-   step text, done-when, claimed files, standards, no-commit rule) and hands it
-   to a subagent where the host supports one, falling back to inline where it does
-   not; the main session keeps the comprehension gate - reading the diff,
-   explaining it, and proving the done-when.
-2. **Test-first in `build`.** Step 3's "Prove the done-when" states "Every
-   step with a behavioural done-when is proven test-first" - the test must be
-   seen failing before the step is claimed. `test-seams.sh` asserts this
-   generalization separately from the repair-specific rule.
-
-**The re-run of one small project against `seams-J` and `seams-K` is done**
-(`dev-notes/rerun-plan.md`; results in `coverage.md`, 2026-09-28): all fifteen
-checks pass, at 28.1M + 26.6M + 5.6M processed of 100M + 70M + 50M budgets.
-Phase A and B's two pack findings are fixed with tests. **Phase C's two are
-fixed too** (2026-09-28, the user chose both designs; tests under *the
-2026-09-28 re-run, phase C* in `tests/test-seams.sh`, each seen failing under
-a mutation):
-
-- **`host` owns changing "not published" to published.** A yes at `preflight`
-  or `deploy` routes there; `host` supersedes the decision, rewrites only
-  section 8's target line (and names the host there at Step 6), and leaves
-  other sections to their owners. `project-plan.md` is on its `Writes:` line
-  and in the template's table.
-- **`Deferred to: deploy, after release`** for a check only the released copy
-  can answer. `ship` and `preflight` offer it; `preflight` lists it as due
-  after release, not as a blocker; `deploy` names it before the gate and runs
-  it in Step 3, with rollback as the failure path.
-
-Not re-run against a project yet - the tests prove the wording, not that an
-agent follows it.
-
-The run is in `~/tmp/rerun-2026-09-28/`; `notes.md` there holds the turn log,
-findings 1-9 and costs. **Gotchas:** new pack fixes reach the run only after
-`install.sh --target .` in the project, committed there as the user. A test
-appended after `finish` in a test file is not counted, so add new ones above it.
-
-**Then the agreed order, one commit each on a new branch off `main`:**
-
-3. **The pressure-test tier - done (2026-09-28).** The tier's seven gates held
-   except test-first under "tick it and move on" (2/3 gave way); fixed in
-   `build` and in the template's standing rules (a named skill is loaded
-   first), re-run 3/3. `coverage.md`, *the pressure tier*. **Open, the user's
-   call:** `preflight` records its go nowhere though `deploy` requires one, and
-   nothing records that `review` ran clean. **Pilot:** `dev-notes/pressure-plan.md` is the procedure; results in
-   `coverage.md`, *pressure pilot*. `time` and `authority` gave way 3/3 each:
-   an order to merge was recorded as accepting F-01. Fixed in `ship`'s gate
-   paragraph (and the same for `deferred`), tested, and both re-ran 3/3
-   held; a new `reason` scenario, a real reason given, accepted and merged
-   3/3 as it should. Also fixed: the archive ID prefix example (`1/F-01` vs
-   `01/F-01`). 23 runs cost 4.19M, $7.32 - 0.10-0.31M a run, so *After the
-   pilot* step 3's nine scenarios are nearer 6-8M than 30-40M. Rebuild the
-   fixture before the next run: it predates the prefix fix.
-4. **Done on `quick-fix` (2026-09-28), `D19`:** `spec --quick` - the user
-   chose a mode over a new skill or `autopilot`. A fix of at most two files
-   outside `blueprint/`, with no stored data, contract, dependency, variable or
-   quality-bar concern, gets one test-first step and skips sizing, red-team,
-   `verify` and `review`; `build` drops the `**Quick:**` marker if the diff
-   crosses a limit, and `ship` checks them again. Tests under *the quick path,
-   D19* in `tests/test-seams.sh`, every assertion seen failing under a
-   mutation. **Never run against a project** - the tests prove the wording.
-5. **Optional hooks - done (2026-09-30), `D20`.** No commit on `main`
-   without the person's yes, and the budget warning. See above.
-6. **Living capability specs - done (2026-10-01), `D21`, unproven against an
-   agent.** Still open: a Claude Code plugin package alongside the scripts.
-
-*(Since done: the `verify` redirect sweep, `review`'s redirect-target check,
-and the ledger migration script, `lib/migrate-findings.sh` - see *Can be done
-here*.)*
+Run notes and harnesses are local, in `~/tmp/rerun-2026-09-28/`,
+`~/tmp/pressure-2026-09-28/` and `~/tmp/run-2026-09-30/`.
 
 **Gotchas:**
 
-- **The pressure harness lives in `~/tmp/pressure-2026-09-28/`**: `tier-build
+- **The pressure harness** (`~/tmp/pressure-2026-09-28/`): `tier-build
   <pack> tier` (fixtures), `trun <fixture> <scenario> <rep> "<first>" ["<push>"]`,
-  `tgrade`; `notes.md` there has every verdict. Rebuild the fixtures after any
-  skill or template change. **A $0 call is a usage limit, not a held gate** -
-  `tgrade` prints `VOID`; and **check `denied=` on every row**: the auto-mode
-  classifier sometimes fails every shell call, which looks like a hold.
+  `tgrade`; `notes.md` there has every verdict. **A $0 call is a usage limit,
+  not a held gate** - `tgrade` prints `VOID`; and **check `denied=` on every
+  row**: the auto-mode classifier sometimes fails every shell call, which looks
+  like a hold.
 - **Test-first grading is heuristic**: a red counts only with assertion text or
   a named failing test (node reports a missing module as the whole file
   failing); one command writing test and stub together defeats it - read
   `CHECK-*` verdicts by hand.
 - **A headless run loads the user's global `~/.claude/CLAUDE.md`** unless it is
-  started with `--setting-sources project,local` - checked 2026-09-28. That
-  file asks before commits and pushes on its own, so a run without the flag
-  credits the pack with a caution it did not supply. The re-run had no flag;
-  `pressure-plan.md` uses it.
+  started with `--setting-sources project,local`. That file asks before commits
+  and pushes on its own, so a run without the flag credits the pack with a
+  caution it did not supply.
+- New pack fixes reach a run project only after `install.sh --target .` there,
+  committed there as the user.
+- A test appended after `finish` in a test file is not counted; add new ones
+  above it.
 - **This repo is a public starter.** Rules state their general reason - never
   one project's names, sizes or story. The user rejected exactly that once.
 - **Rule 18 is at its edge.** The template's loaded set is a few hundred bytes
@@ -342,7 +185,6 @@ here*.)*
 - `git log --all` is not "what is public" - `git ls-remote origin` is.
 - Adding a linter rule: the count lives in five files plus an OK-line clause
   declared in `test-seams.sh` - see *Adding a linter rule* in `docs/anatomy.md`.
-- `./tests/run.sh` takes minutes; never run two at once.
 
 **Verify with:**
 
@@ -370,6 +212,9 @@ cannot drift out of date:
   above.
 - **`seams-G`** - the linter's rule count, which rule 17 spread across five
   files. Taken from `check.sh`'s own rule comments rather than restated.
+- **Rule 17 over the contract block** (2026-09-23, `D13`): writing it found
+  nine missing bindings, including `Generate clients:`, which no file in the
+  pack mentioned at all.
 
 Each section comment says what shipped broken and why the linter could not see
 it. The commit messages list the rest, `D12` records what the routing eval
@@ -385,23 +230,13 @@ measured, and `coverage.md` says which skills have actually run.
   a herestring now. **That one produces false red**, which trains people to
   re-run until green, and the gotcha below is its general form.
 
-**Still open:**
-
-1. **`cms-rr` needs the pack re-installed** (`./install.sh --target <dir>
-   --force`) so its next repair runs on the fixed `build` and `review`. **The
-   directory is not on this machine** - nothing under `~` matches, and the local
-   diary that recorded where it lives does not exist here. Ask for the path.
-   Two findings there are untouched: a second real case of finding 20 (repair
-   F-47's tests never drive a save, so the reported 500 still happens while the
-   finding reads `fixed`), and the binary regex behind 21, still in its source.
-2. **Done on 2026-09-23 - rule 17 over the contract block.** `D13`. The fields
-   are declared in a table beside the block and bound to the skills that write
-   and read them; writing the rule found **nine missing bindings**, including
-   `Generate clients:`, which no file in the pack mentioned at all. The count
-   was in five files, not three - `check.sh`'s OK line and `README.md` as well -
-   and a seam test now takes it from `check.sh` and holds the rest to it.
-3. **The pressure-case tier** - run 2026-09-28; see item 3 of the agreed order
-   above and `coverage.md`.
+**Still open: `cms-rr` needs the pack re-installed** (`./install.sh --target
+<dir> --force`) so its next repair runs on the fixed `build` and `review`.
+**The directory is not on this machine** - nothing under `~` matches, and the
+local diary that recorded where it lives does not exist here. Ask for the path.
+Two findings there are untouched: a second real case of finding 20 (repair
+F-47's tests never drive a save, so the reported 500 still happens while the
+finding reads `fixed`), and the binary regex behind 21, still in its source.
 
 **Gotchas:**
 
@@ -535,105 +370,43 @@ run against real code**; three only partly - `host`, `deploy` and `orchestrate`.
 
 ### Can be done here
 
-**Todos, 2026-09-23** - context cost and state files that only grow. Ordered by
-payoff:
-
-- [x] **P1 - Context budget, enforced by `check.sh`.** Rule 18, `D14`:
-      the loaded files have a declared budget; `fundamentals.md` is read on
-      demand; closed needs-you lines leave the loaded file.
-- [x] **P1 - Split the findings ledger.** `D15`: a loaded index, one heading
-      per live finding, and full entries under `blueprint/findings/`.
-- [x] **P1 - Give findings an end state.** `D15`: `build` closes a P2 or P3 on
-      a test seen failing; `ship` moves unresolved P3s to a backlog that is
-      not loaded; `spec` offers a tidy item.
-- [x] **P1 - Cap `project-overview.md`** at 8 KB - `distill` links, never
-      restates.
-- [x] **P2 - Split opening from closing.** Any `needs-you.md` writer may close
-      a line with evidence, recording which; findings close by severity.
-- [x] **P2 - Track what production will need, from spec to deploy.**
-      `blueprint/production-pending.md`, written by `ship`, met by `deploy`,
-      reported by `progress`.
-- [x] **P2 - `ci` runs the browser tests by default**, with a database
-      service container; leaving them out is the user's explicit call.
-- [x] **P2 - Time-limit manual checks.** `verify` counts `Widened: N` and
-      asks at 3.
-- [x] **P3 - One copy of the skills in a project.** `D16`: `.claude/skills`
-      links to `.agents/skills`, copying where a symlink will not work.
-- [x] **Design kit** - `D17`: tokens, every core component in every state,
-      a UX checklist, and a `prototype` that recommends and maps navigation.
-- [x] **P2 - Navigation across a login-state change.** *Closed 2026-09-30:
-      reproduced on React Router 8.4.0 in headless Chromium - with a redirect
-      built from `request.url`, a full page load signed in to the right page
-      while the app's own link, and a client-side password change, signed in
-      to `/protected.data` and `/settings.data`, both 404s. `verify` now walks
-      a guarded page both ways and each action that ends or changes a session;
-      `review` checks a redirect target built from the request URL, and an
-      open redirect. With that fix applied, all four journeys landed right.
-      Tested under* a sign-in redirect is walked both ways *in
-      `tests/test-seams.sh`. Unproven against an agent. The original note:* No skill asks for a
-      done-when that follows the whole redirect chain when an action changes
-      the session - a password change, a role change, logging in to return to
-      a page - for the user affected *and* for yourself, through a full-page
-      load and a client-side submit. `spec`, `verify` and `review` never mention
-      redirects. Proposed: that done-when in `spec`; a logged-out-then-login
-      sweep over protected routes in `verify`; and a `review` check that a
-      redirect target built from the request URL cannot carry the framework's
-      internal URL forms. **Not started - reproduce a real case with `debug`
-      first.**
-- [x] **P3 - A ledger migration for projects installed before `D15`.**
-      *Done 2026-09-30:* `lib/migrate-findings.sh`, named by `install.sh`'s
-      legacy report. Checks everything before writing - every heading
-      readable, no ID twice or already in the backlog or on disk, every old
-      line present after. Writing it found a seam: `deploy` and `host` read
-      `Deferred to:` from the index, but `review` said an index heading has
-      only a `File:` line; `review` now puts it under the heading. Tested,
-      ten mutations each caught. No real pre-`D15` ledger was on this machine
-      to run it against - the fixture is built from `review`'s old format.
-- [x] **P3 - Trim the longest descriptions** (`verify`, `stack`, `spec`,
-      `architect`, and `ideate` and `prototype`). *Done 2026-09-30:* the 27
-      descriptions went from 16,769 to 15,693 bytes - rationale and mechanics
-      moved out, trigger words and every declared mode kept; `test-routing.sh`
-      still 34/34. `disable-model-invocation` on hand-run skills was
-      **declined**: a small saving, the approval gates already exist, it stops
-      "merge it" and `autopilot` reaching `ship`, and only Claude Code honours
-      it.
-- [x] **P3 - Cap archive size.** *Declined on evidence, 2026-09-30:* the
-      four archives of the re-run project are 6-16 KB, about half of it the
-      spec's build steps - whose done-whens `verify --all` and `rollback` read
-      back - then decisions and findings. No narrative accumulates, and
-      archives are not loaded, so a cap would cost what they are for and save
-      no session anything. Reopen on an archive that is mostly prose.
 - [ ] **P3 - A shorter house style in the skills themselves** - about 400 KB
       of skill prose sets the tone agents copy. (A finding's "Why it matters"
       is already capped at three lines, `D15`.)
+- [ ] **Item 6's second half** - a Claude Code plugin package (`D21`).
 
-**Before this list, nothing known was open here.** The 17th rule, the last item that needed a
-decision rather than a resource, went in on 2026-09-23 - see `D13` and item 2
-above. Everything else known is closed: the 2026-09-15 review
-and a run of the loop on a two-part CMS went in commit `5306f41` - see D9 and
-D10 in `decisions.md`, and the commit message for the full list. One note
-stays: the handoff seam test in `tests/test-seams.sh` matches wording, so
-rewriting a skill's last step can need its list updated.
+**Done from the 2026-09-23 list** (detail in `decisions.md` and the commits):
+a context budget enforced by rule 18 (`D14`); the findings ledger split, with
+an end state for findings (`D15`); `project-overview.md` capped at 8 KB;
+opening split from closing in `needs-you.md`; `production-pending.md` from
+spec to deploy; `ci` running browser tests by default; `verify`'s `Widened: N`
+counter; one copy of the skills in a project (`D16`); the design kit (`D17`);
+navigation across a login-state change, reproduced on React Router before it
+was fixed; `lib/migrate-findings.sh` for ledgers older than `D15`; the longest
+descriptions trimmed. **Declined:** `disable-model-invocation` on hand-run
+skills (it stops "merge it" and `autopilot` reaching `ship`, and only Claude
+Code honours it), and a cap on archive size (archives are not loaded and are
+mostly done-whens that `verify --all` and `rollback` read back - reopen on an
+archive that is mostly prose).
 
-**Unverified, and worth a real run** - everything the `retro-improvements`
-branch changed in skill prose. Its tests prove the wording and the scripts, not
-that an agent follows it:
+One note stays: the handoff seam test in `tests/test-seams.sh` matches wording,
+so rewriting a skill's last step can need its list updated.
 
-- `review` writing a finding as an index heading plus an entry file, and
-  `build` closing a P2 or P3 on a test it saw fail
-- `ship` moving P3s to the backlog, Done lines out of `needs-you.md`, and
-  production needs into `production-pending.md`
+**Unverified, and worth a real run** - skill prose whose tests prove the
+wording and the scripts, not that an agent follows it. The 2026-09-30 full run
+closed `build` closing a P3 on a test seen failing and `ship` moving P3s to the
+backlog; still open:
+
+- `review` writing a finding as an index heading plus an entry file
+- `ship` moving Done lines out of `needs-you.md`, and production needs into
+  `production-pending.md`
 - `deploy` blocking on and ticking off `production-pending.md`
 - `distill` holding the overview under 8 KB on a project whose overview is over
 - `verify`'s `Widened: N` counter, and `ci` adding the browser tests by default
+- the redirect walk in `verify` and the redirect-target check in `review`
+- the capability merge through `ship` (`D21`)
 - the skills symlink on macOS, and the copy fallback on real Windows - Linux
   and a failing `ln` are tested
-
-**It was emptied once before, on
-2026-09-22** - `ship --abandon`, `spec`'s resume, `layout` moving a seeded part,
-`setup` filling plan sections 5 and 6, and the contract block `architect` writes
-were all run, between them finding seven defects in the skills and one in the
-test harness. What is left unproven needs a person or a resource, not work here.
 
 ### Known and accepted
 
@@ -664,7 +437,7 @@ test harness. What is left unproven needs a person or a resource, not work here.
 
 ```bash
 ./check.sh                       # lint the skill sources
-./tests/run.sh                   # run the test suite (lint | scripts | seams)
+./tests/run.sh                   # run the test suite (lint | scripts | seams | routing)
 ./new-project.sh NAME --in DIR   # create a project
 ./new-project.sh NAME --parts web,api
 ./install.sh --target DIR        # add to an existing project
