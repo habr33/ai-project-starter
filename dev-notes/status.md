@@ -21,9 +21,8 @@ place that answers "has this skill actually run?".
 from a git pre-commit hook, CI, `progress` and `ship`. Design and its three
 agreed answers in `harness-design.md`; tasks in `harness-plan.md`.
 
-**Branch `harness`, off `main`.** Neither is pushed: `main` is one ahead of
-`origin/main` (`04653d9`, the design, the plan and D23), `harness` carries the D23 work
-(`git log --oneline main..harness`).
+**Merged and pushed, 2026-10-15.** `harness` fast-forwarded into `main` at
+`785792e` and pushed to `origin/main`; the branch is deleted.
 
 **Done:** Task 1, `23c8baf` - `lib/check-project.sh`, its tests (*the project
 checker, D23* in `tests/test-scripts.sh`) and the seam test (*the project
@@ -71,13 +70,12 @@ six pack findings, five fixed with tests (`7cdca52`, `780d51d`, `53842d8`,
 
 **Next:**
 
-1. Merging `harness` into `main`, and pushing, are the user's call.
-2. Then the rest of what is open: the `preflight` compliance step and folding
+1. The rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),
    the pressure fixtures rebuilt, the runs owed (*Recommendations*, 2, and
    *Unverified, and worth a real run*), and *Needs a person*.
-3. Re-install installed projects between items, never mid-item:
+2. Re-install installed projects between items, never mid-item:
    `install.sh --target <dir>`, commit there, restart that session.
 
 **Gotchas:**
