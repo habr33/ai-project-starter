@@ -83,7 +83,7 @@ for g in SEG.finditer(cmd):
             "permissionDecision": "deny",
             "permissionDecisionReason":
                 "This command " + bad + ". The project'"'"'s git pre-commit hook "
-                "(.agents/git-hooks/pre-commit, D23) checks the state files; fix what it "
+                "(.agents/git-hooks/pre-commit) checks the state files; fix what it "
                 "names with the skill it names instead of going around it."}}))
         sys.exit(0)
 # git, then only its own options, then the commit subcommand - so

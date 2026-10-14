@@ -1206,6 +1206,8 @@ for c in 'git commit --no-verify -m x' 'git commit -n -m x' 'git commit -anm x' 
   assert_ok "with them installed, denied: $c" deny "$c"
 done
 assert_ok "naming the hook it would skip" grep -q 'pre-commit' <<<"$(mc 'git commit -n -m x')"
+assert_fails "and no pack decision number, which a project does not have" \
+  grep -qE '\bD[0-9]+\b' <<<"$(mc 'git commit -n -m x')"
 for c in 'git log -n 3' 'git commit -m x' 'git commit -m -n' "git commit -m 'drop -n handling'" \
          'git commit -mn' 'git config core.hooksPath' 'git config --get core.hooksPath' 'git config user.name t'; do
   assert_fails "not denied: $c" deny "$c"
@@ -1540,7 +1542,10 @@ assert_refuses "a verdict deploy cannot read, with preflight" "fix with prefligh
 d=$(ck_copy "$MPB"); printf '\n### F-01 bad\n' >>"$d/api/blueprint/context/findings.md"
 assert_refuses "a root run checks every part, and names the part" "api/blueprint/context/findings.md: line" "$CK" "$d"
 d=$(ck_copy "$MPB"); echo live >"$d/blueprint/status/web.md"; git -C "$d" add -f blueprint/status/web.md
-assert_refuses "a force-added part status file is named at the root" "never committed (D9)" "$CK" "$d"
+# Named by the project file that states the rule: the pack's decision numbers
+# mean nothing inside a project - the trial's agent went looking for D9.
+assert_refuses "a force-added part status file is named at the root, with where the rule is" \
+  "never committed (blueprint/orchestration.md)" "$CK" "$d"
 
 d=$(ck_copy "$SPB"); printf '\n### F-01 bad\n' >>"$d/blueprint/context/findings.md"
 assert_ok "--staged ignores a bad file that is not staged" "$CK" --staged "$d"

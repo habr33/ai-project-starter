@@ -250,7 +250,7 @@ if is_root:
         pre = "" if rel == "." else rel + "/"
         for f in sorted(indexed):
             if f.startswith(pre + "blueprint/status/") and not f.endswith("/.gitkeep"):
-                problems.append(f"{f[len(pre):]}: live part state is never committed (D9) - git rm --cached it")
+                problems.append(f"{f[len(pre):]}: live part state is never committed (blueprint/orchestration.md) - git rm --cached it")
     for d in sorted(os.listdir(root)):
         if os.path.isdir(os.path.join(root, d, "blueprint/context")) and not d.startswith("."):
             check_part(os.path.join(root, d))
