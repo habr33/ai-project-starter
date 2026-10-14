@@ -3282,6 +3282,13 @@ while IFS='|' read -r _c _fx _sf _src _txt; do
   if grep -qF "\`$_fx\`" <<<"$_row"; then _ok; else _no "template/AGENTS.md's row for $_sf does not list $_fx"; fi
 done <<<"$_srcs"
 
+# The status set is a list in two places - review's table and the checker - so
+# hold them equal. The checker once lacked `unverified` and refused a correct one.
+_review_st=$(sed -n '/^| Status |/,/^$/p' skills/review.md | grep -oE '^\| `[a-z]+`' | tr -d '|` ' | sort | tr '\n' ' ')
+_ck_st=$(grep -E '^STATUSES = ' lib/check-project.sh | grep -oE '"[a-z]+"' | tr -d '"' | sort | tr '\n' ' ')
+assert_ok "review's status table is found" test -n "$_review_st"
+assert_eq "the checker's statuses are review's" "$_review_st" "$_ck_st"
+
 section "progress, ci and ship run the project checker, D23"
 # A checker nothing runs checks nothing. ship is the one every item passes
 # through, so a project with no hooks is still checked once per item - but exit 2

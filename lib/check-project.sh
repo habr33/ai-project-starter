@@ -41,6 +41,8 @@ SOURCES = [
     ("findings-status", "review", "blueprint/context/findings.md", "skills/review.md", "Set `accepted` only"),
     ("findings-status", "review", "blueprint/context/findings.md", "skills/review.md", "Set `deferred` the same way"),
     ("findings-status", "review", "blueprint/context/findings.md", "skills/review.md", "Set `invalid` only"),
+    ("findings-status", "review", "blueprint/context/findings.md", "skills/review.md",
+     "Record a risk worth tracking but unproven as `unverified`"),
     ("findings-file-line", "review", "blueprint/context/findings.md", "skills/review.md", "heading and one `File:` line"),
     ("findings-entry", "review", "blueprint/context/findings.md", "skills/review.md",
      "**The entry** goes in `blueprint/findings/F-03.md`"),
@@ -76,7 +78,7 @@ NAME = r"[a-z0-9][a-z0-9-]*"
 CLAIM = re.compile(rf"^- \*\*({NAME})\.(\d+)\*\* - (.*?) \*Since:\* (\S+)(?: · \*Changed:\* (\S+))?$")
 TOMB = re.compile(rf"^- ({NAME})\.(\d+) - removed by (\S+)$")
 HEAD = re.compile(r"^### (F-\d+) \[(P[0-3])\] ([a-z]+) - \S")
-STATUSES = {"open", "fixed", "closed", "accepted", "deferred", "invalid"}
+STATUSES = {"unverified", "open", "fixed", "closed", "accepted", "deferred", "invalid"}
 DATED = re.compile(r"^\d{4}-\d{2}-\d{2}, [0-9a-f]{7,40}, \S")
 PREFLIGHT = re.compile(r"^preflight: (go|no-go), \d{4}-\d{2}-\d{2}, [0-9a-f]{7,40}( - \S.*)?$")
 FIX = {s[0]: s[1] for s in SOURCES}

@@ -1476,7 +1476,10 @@ assert_ok "and clean from git's index" "$CK" --staged "$MPB"
 
 d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] deferred - Backups' 'File: ops/backup.sh' 'Deferred to: host'
 ck_finding "$d" '### F-02 [P3] open - Slow list' 'File: src/list.ts:9'
-assert_ok "well-formed findings pass" "$CK" "$d"
+# review records an unproven lead as `unverified`; the first checker left it out
+# of its set and refused it - found by the D23 trial, on a real agent's ledger.
+ck_finding "$d" '### F-03 [P2] unverified - Maybe a race' 'File: src/save.ts'
+assert_ok "well-formed findings pass, an unverified lead among them" "$CK" "$d"
 d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 P1 open - No brackets' 'File: a'
 assert_refuses "a malformed heading is named, with review" "is not '### F-NN [Px] <status> - <title>'" "$CK" "$d"
 assert_refuses "and the skill that repairs it" "fix with review" "$CK" "$d"
