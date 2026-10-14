@@ -97,6 +97,9 @@ branch = git_in(repo(m.group(1)), "branch", "--show-current")
 moves = re.findall(r"git\s+(?:switch|checkout)\s+(?:-q\s+)?(-c|-C|--create|-b|-B)?\s*([^\s;&|]+)", cmd[:m.start()])
 if moves and moves[-1][0] and moves[-1][1] not in ("main", "master"):
     sys.exit(0)
+# ...and a switch to main is, though HEAD is still on the branch.
+if moves and moves[-1][1] in ("main", "master"):
+    branch = moves[-1][1]
 if branch not in ("main", "master"):
     sys.exit(0)
 print(json.dumps({"hookSpecificOutput": {

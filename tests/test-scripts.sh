@@ -1206,6 +1206,11 @@ assert_ok "and a branch made after the commit does not count" \
   grep -q '"ask"' <<<"$(mc 'git commit -m x && git switch -c later')"
 (cd "$w" && git checkout -qb item)
 assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
+# ...unless the command switches to main first - ship's squash, run from the
+# branch in one line, went through unasked in the D23 trial.
+assert_ok "a switch to main earlier in the command still asks" \
+  grep -q '"ask"' <<<"$(mc 'git switch -q main && git merge --squash -q item && git commit -q -m x')"
+assert_ok "and so does checkout master" grep -q '"ask"' <<<"$(mc 'git checkout master && git commit -m x')"
 assert_eq "nor does anything outside a repository" "" \
   "$(printf '{"tool_input":{"command":"git commit"},"cwd":"/"}' | "$MC")"
 assert_eq "unreadable input fails open, silently" "" "$(printf 'not json' | "$MC")"
