@@ -236,6 +236,14 @@ Claude Code asks the person before any `git commit` on `main`, and a session
 starts with a warning when the loaded context is over its budget. Only Claude
 Code runs them, so nothing above may depend on them.
 
+**One check runs in every tool** (`D23`): `.agents/bin/check-project.sh`, which
+`install.sh` puts beside the skills. It reads the state files - the findings
+index, `needs-you.md`, `current-work.md`'s header, the overview's cap, the loaded
+context, capability files, a `preflight:` line - and names each one out of the
+form its skill writes, with that skill as the fix. `progress` reports it, `ci`
+runs it on every push, and `ship`'s safety pass blocks on it; exit 2 (it could
+not run) never blocks. It writes nothing.
+
 ## What holds this together mechanically
 
 `check.sh` has 18 rules. Thirteen were added *after* a specific bug got through,

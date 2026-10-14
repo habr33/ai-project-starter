@@ -3043,10 +3043,13 @@ section "an overview over its cap is reported, not only prevented"
 # the cap, or edited by hand since, stayed over it with nothing reading its size.
 cap=$(grep -F '`blueprint/context/project-overview.md`' template/AGENTS.md | grep -oE 'at most [0-9]+ KB' | grep -oE '[0-9]+ KB')
 assert_ok "the template declares the overview's cap" test -n "$cap"
-assert_ok "progress checks the overview against that cap" \
-  _says skills/progress.md "\`blueprint/context/project-overview.md\` over $cap"
-assert_ok "and routes it to distill" \
-  _says skills/progress.md 'route to `distill`, which cuts it'
+# One copy of the check: progress runs the checker, which reads the cap from
+# AGENTS.md at run time, rather than stating its own number beside it (D23).
+assert_ok "progress reports it by running the checker" \
+  _says skills/progress.md 'Run `.agents/bin/check-project.sh`'
+assert_lacks "and no longer states the number itself" skills/progress.md "over $cap"
+assert_ok "the checker routes the overview to distill" \
+  grep -q '^overview-cap|distill|' <<<"$(lib/check-project.sh --sources)"
 
 section "every field in spec's header has a reader"
 # **Status:** was written into every spec and read by nothing. A field with a
@@ -3278,5 +3281,20 @@ while IFS='|' read -r _c _fx _sf _src _txt; do
   _name="$_c: $_fx, named as its fix, is a writer of $_sf"
   if grep -qF "\`$_fx\`" <<<"$_row"; then _ok; else _no "template/AGENTS.md's row for $_sf does not list $_fx"; fi
 done <<<"$_srcs"
+
+section "progress, ci and ship run the project checker, D23"
+# A checker nothing runs checks nothing. ship is the one every item passes
+# through, so a project with no hooks is still checked once per item - but exit 2
+# means it could not run, and a missing python3 must not block a merge.
+assert_ok "progress runs it" _says skills/progress.md 'Run `.agents/bin/check-project.sh`'
+assert_ok "ci's pipeline runs it from the repository root" \
+  _says skills/ci.md 'run `.agents/bin/check-project.sh` from the repository root'
+_ship1=$(sed -n '/^## Step 1 /,/^## Step 2 /p' skills/ship.md | tr '\n' ' ' | tr -s ' ')
+assert_ok "ship's safety pass runs it" grep -qF 'run `.agents/bin/check-project.sh`' <<<"$_ship1"
+assert_ok "a problem it names is a blocker, fixed by the skill it names" \
+  grep -qF 'Exit 1 is a blocker' <<<"$_ship1"
+assert_ok "and exit 2 is reported without blocking" \
+  grep -qF 'Exit 2 means it could not run - report that; it does not block' <<<"$_ship1"
+assert_ok "anatomy names who runs it" _says docs/anatomy.md '`.agents/bin/check-project.sh`'
 
 finish

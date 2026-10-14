@@ -22,8 +22,8 @@ from a git pre-commit hook, CI, `progress` and `ship`. Design and its three
 agreed answers in `harness-design.md`; tasks in `harness-plan.md`.
 
 **Branch `harness`, off `main`.** Neither is pushed: `main` is one ahead of
-`origin/main` (`04653d9`, the design, the plan and D23), `harness` one ahead of
-`main`.
+`origin/main` (`04653d9`, the design, the plan and D23), `harness` carries the D23 work
+(`git log --oneline main..harness`).
 
 **Done:** Task 1, `23c8baf` - `lib/check-project.sh`, its tests (*the project
 checker, D23* in `tests/test-scripts.sh`) and the seam test (*the project
@@ -34,17 +34,21 @@ projects under `~/tmp` pass clean. `./check.sh` OK, `./tests/run.sh` 0 failed.
 One change from the plan, recorded in it: each check names its one repairing
 skill, held to the writer column by the seam test.
 
+Task 2 - `install.sh` copies the checker to `.agents/bin/check-project.sh`
+(the `.sh` kept, like the merge script); `progress` Step 3 runs it in place of
+its own overview-cap measurement; `ci`'s pipeline gains step 5; `ship` Step 1
+blocks on exit 1, reports exit 2 without blocking; a paragraph in
+`docs/anatomy.md`'s gates. Tests: *the project checker reaches a project, D23*
+(`test-scripts.sh`) and *progress, ci and ship run the project checker, D23*
+(`test-seams.sh`), all 14 seen failing first; a refresh-skipping mutation of
+`install.sh` caught by both refresh tests.
+
 **In progress:** nothing half-made.
 
 **Next:**
 
-1. `harness-plan.md` Task 2: install the checker to `.agents/bin/` beside
-   `merge-capabilities.sh` in `install.sh` (around line 164); `progress` runs
-   it and its own overview-cap check moves into it (seam test near
-   `tests/test-seams.sh` "distill caps the overview" holds the number); `ci`
-   runs it; `ship` Step 1 gains one safety-pass item (exit 2 never blocks);
-   a row in `docs/anatomy.md`. Tests first, each seen failing.
-2. Tasks 3-5, one commit each. Task 6 is a paid multi-part trial - **ask first**.
+1. `harness-plan.md` Task 3: `lib/git-pre-commit` and `--git-hooks`.
+2. Tasks 4-5, one commit each. Task 6 is a paid multi-part trial - **ask first**.
 3. Then the rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),

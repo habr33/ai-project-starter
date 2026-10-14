@@ -84,6 +84,9 @@ blockers**:
   stored data, contract, dependency or environment variable, and its Behaviour changes only add. If it does more,
   it is an ordinary fix that skipped `verify` and `review` - stop and run them.
 - The spec has a `## Behaviour changes` section, even if it says `None`. A missing one is missing evidence: nothing declared what this item changed.
+- **The state files are in the form their skills write** - run `.agents/bin/check-project.sh`.
+  Exit 1 is a blocker: each line names the file and the skill that repairs it,
+  so run that skill rather than editing around it. Exit 2 means it could not run - report that; it does not block.
 - **No P0 or P1 finding in `blueprint/context/findings.md` is `open` or `fixed`.**
 
 That last one is the gate. `fixed` still blocks on purpose: the repair exists but

@@ -95,11 +95,14 @@ Report only what is actually wrong:
   detail a line and a link would carry. Every session pays for these files
   before the user types a word, and they grow by accretion - closed entries
   and prose restating other files - unless something measures them.
-- **`blueprint/context/project-overview.md` over 8 KB**, the cap `AGENTS.md`
-  gives it, even when the total is within budget. Measure with `wc -c` and
-  route to `distill`, which cuts it. `distill` holds the cap only when it runs,
-  so an overview written before the cap, or edited by hand since, is over it
-  until something reads its size - and this is that check.
+- **Run `.agents/bin/check-project.sh`** and report every line it prints: a
+  state file out of its stated form, or
+  `blueprint/context/project-overview.md` over the cap `AGENTS.md` gives it,
+  even when the total is within budget. Each line names the skill that repairs
+  it - route there. `distill` holds the overview's cap only when it runs, so an
+  overview written before the cap, or edited by hand since, is over it until
+  something reads its size - and this is that check. Exit 2 means it could not
+  run; say so and what it needs.
 - No verification command, or no test runner, when the project has real code.
 - **A UI with no `blueprint/context/design.md`.** `spec` stops on it, so the
   next action is `prototype`, not `spec` - naming `spec` sends the user

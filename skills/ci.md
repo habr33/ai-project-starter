@@ -83,6 +83,9 @@ Keep it to what the project actually has. For most projects that is one job:
 2. set up the recorded runtime version
 3. install dependencies **from the lockfile**, not a fresh resolve
 4. run the one verification command
+5. run `.agents/bin/check-project.sh` from the repository root - the state files
+   the skills write, in the form they write them; at a multi-part product's root
+   it checks every part
 
 **When the parts are in different ecosystems**, the pipeline sets up each
 toolchain and runs each part's checks - Node plus the .NET SDK, `npm test` plus
@@ -143,7 +146,7 @@ to cover the defects that matter most, and a suite CI never runs gates nothing.
 - **Flutter** - `flutter analyze` and `flutter test`. Same rule about builds.
 - **Native mobile** - a CI runner needs the right OS image and signing setup;
   say what it would take rather than writing a config that cannot run.
-- **Command-line tool, library, or service with no UI** - the four steps above
+- **Command-line tool, library, or service with no UI** - the five steps above
   and nothing else. There is no build to add unless the project genuinely has
   one, and **a typecheck or lint is not optional here even when there is no test
   suite**: for a project with no running app, static checks are the only thing

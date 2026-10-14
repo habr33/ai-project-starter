@@ -1533,4 +1533,20 @@ assert_eq "no python3: exit 2, nothing checked" "2" "$(env PATH=/nonexistent /bi
 assert_eq "outside a project: exit 2" "2" "$("$CK" "$(workdir)" >/dev/null 2>&1; echo $?)"
 assert_eq "--staged outside a repository: exit 2" "2" "$(d=$(workdir); mkdir -p "$d/blueprint/context"; "$CK" --staged "$d" >/dev/null 2>&1; echo $?)"
 
+section "the project checker reaches a project, D23"
+# progress, ci and ship run it inside a project, which has no lib/ - the merge
+# script's lesson: a skill's script must exist where it runs, and stay current.
+w=$(workdir); (cd "$w" && "$NP" ckp >/dev/null 2>&1); p="$w/ckp"
+assert_ok "a new project holds an executable checker" test -x "$p/.agents/bin/check-project.sh"
+assert_ok "identical to the pack's" cmp -s "$CK" "$p/.agents/bin/check-project.sh"
+assert_ok "and it runs clean from the project, by the path the skills give" \
+  bash -c 'cd "$1" && .agents/bin/check-project.sh' _ "$p"
+echo '# stale' >"$p/.agents/bin/check-project.sh"
+"$IN" --target "$p" >/dev/null 2>&1
+assert_ok "a re-install replaces a stale copy" cmp -s "$CK" "$p/.agents/bin/check-project.sh"
+w=$(workdir); (cd "$w" && "$NP" ckm --parts api,web >/dev/null 2>&1)
+assert_ok "a part of a multi-part project has it" test -x "$w/ckm/api/.agents/bin/check-project.sh"
+assert_ok "and so does the product root, where one run checks every part" \
+  bash -c 'cd "$1" && .agents/bin/check-project.sh' _ "$w/ckm"
+
 finish
