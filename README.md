@@ -311,6 +311,7 @@ The scripts:
 | `lib/part-name.sh` | part-name checks shared by `new-project.sh` and `convert-to-parts.sh` |
 | `lib/migrate-findings.sh` | split a findings ledger from before `D15` - `install.sh` names it when it finds one |
 | `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
+| `lib/check-project.sh` | checks a project's state files are in the form the skills write them (`D23`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 
 The two `lib/` scripts exist because `new-project.sh --parts` and

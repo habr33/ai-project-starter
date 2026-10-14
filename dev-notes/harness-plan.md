@@ -25,8 +25,11 @@ Bash + `python3`, like `lib/migrate-findings.sh` and
   hook and for CI alike.
 - **`--staged` reads every checked file from the index** (`git show :<path>`),
   not the tree: what the commit will contain, whatever was staged.
-- One line per problem: `<file>: <problem> - fix with <skill>`, the skill taken
-  from the writer column of `template/AGENTS.md` at run time, not restated.
+- One line per problem: `<file>: <problem> - fix with <skill>`. *Changed in
+  the building:* each check names its one repairing skill, and the seam test
+  requires it to be in that file's writer column in `template/AGENTS.md` -
+  reading the column at run time named up to eleven writers, which tells
+  nobody which one to run.
 - The checks are the design's table, plus at a root with `--staged`: no path
   under `blueprint/status/` other than `.gitkeep` is in the index (`D9`; the
   files are gitignored, so only `git add -f` gets one there).

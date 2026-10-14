@@ -3262,4 +3262,21 @@ assert_lacks "nor in its Rules" skills/preflight.md 'the only file this writes'
 assert_ok "rollback writes the Type line the spec template uses" _says skills/rollback.md 'marked `**Type:** Rollback`'
 assert_ok "architect points at the step that asked" _says skills/architect.md 'Step 2 asked whether this project has real load'
 
+section "the project checker reads formats the skills state, D23"
+# The checker is a second reader of formats the skills write - the class of
+# defect this repo keeps finding. So each check declares the text its form rests
+# on, and the skill that repairs it; this holds both. Edit a skill's example
+# heading without the checker, and this fails rather than a project's commits.
+_srcs=$(lib/check-project.sh --sources)
+assert_ok "the checker declares its sources" test -n "$_srcs"
+while IFS='|' read -r _c _fx _sf _src _txt; do
+  _flat=$([ -f "$_src" ] && tr '\n' ' ' <"$_src" | tr -s ' ')
+  _name="$_c: $_src still states what the check matches"
+  if grep -qF -- "$_txt" <<<"$_flat"; then _ok; else _no "no '$_txt' in $_src"; fi
+  [ -n "$_sf" ] || continue
+  _row=$(grep -F "| \`$_sf\` |" template/AGENTS.md || true)
+  _name="$_c: $_fx, named as its fix, is a writer of $_sf"
+  if grep -qF "\`$_fx\`" <<<"$_row"; then _ok; else _no "template/AGENTS.md's row for $_sf does not list $_fx"; fi
+done <<<"$_srcs"
+
 finish

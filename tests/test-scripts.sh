@@ -1437,4 +1437,100 @@ w=$(workdir); (cd "$w" && "$NP" mp --parts api,web >/dev/null 2>&1)
 assert_ok "a part of a multi-part project has it" test -x "$w/mp/api/.agents/bin/merge-capabilities.sh"
 assert_ok "and so does the product root" test -x "$w/mp/.agents/bin/merge-capabilities.sh"
 
+section "the project checker, D23 - each check fires, names itself and its skill"
+# A checker that never fires reads exactly like a clean project, so every check
+# is broken once here, alone, and must both fail and name what it found. The
+# fresh projects and well-formed entries passing is the other half: a check that
+# fires on correct output is a wrong check, and the real runs' projects passed.
+CK="$REPO/lib/check-project.sh"
+w=$(workdir); (cd "$w" && "$NP" sp >/dev/null 2>&1 && "$NP" mp --parts api,web >/dev/null 2>&1)
+SPB="$w/sp"; MPB="$w/mp"
+ck_copy() { local d; d=$(workdir); cp -R "$1/." "$d/"; printf '%s' "$d"; }
+ck_finding() {  # dir, heading, lines under it...; writes the entry file too
+  local d="$1" h="$2"; shift 2
+  { printf '\n%s\n' "$h"; printf '%s\n' "$@"; } >>"$d/blueprint/context/findings.md"
+  mkdir -p "$d/blueprint/findings"; : >"$d/blueprint/findings/$(grep -oE 'F-[0-9]+' <<<"$h").md"
+}
+assert_ok "a fresh single-part project is clean" "$CK" "$SPB"
+assert_ok "a fresh multi-part product is clean" "$CK" "$MPB"
+assert_ok "and clean from git's index" "$CK" --staged "$MPB"
+
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] deferred - Backups' 'File: ops/backup.sh' 'Deferred to: host'
+ck_finding "$d" '### F-02 [P3] open - Slow list' 'File: src/list.ts:9'
+assert_ok "well-formed findings pass" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 P1 open - No brackets' 'File: a'
+assert_refuses "a malformed heading is named, with review" "is not '### F-NN [Px] <status> - <title>'" "$CK" "$d"
+assert_refuses "and the skill that repairs it" "fix with review" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] wontfix - x' 'File: a'
+assert_refuses "an unknown status" "has status 'wontfix'" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] open - x'
+assert_refuses "a heading with no File: line" "F-01 has no File: line" "$CK" "$d"
+d=$(ck_copy "$SPB"); printf '\n### F-01 [P1] open - x\nFile: a\n' >>"$d/blueprint/context/findings.md"
+assert_refuses "a heading with no entry file" "no entry at blueprint/findings/F-01.md" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] deferred - x' 'File: a'
+assert_refuses "a deferral with no target" "deferred with no Deferred to: line" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] open - x' 'File: a'; ck_finding "$d" '### F-01 [P2] open - y' 'File: b'
+assert_refuses "an ID listed twice" "F-01 is listed twice" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P3] open - x' 'File: a'
+printf '### F-01 [P3] open - x\nFile: a\n' >"$d/blueprint/findings/backlog.md"
+assert_refuses "an ID in the index and the backlog" "in the index and in blueprint/findings/backlog.md" "$CK" "$d"
+
+d=$(ck_copy "$SPB")
+sed -i 's/^## Open$/## Open\n- [x] **Buy the domain** - spend. Closed by host, registered. Status: done./' "$d/blueprint/context/needs-you.md"
+assert_refuses "a closed needs-you line left under Open" "a closed line is still under Open" "$CK" "$d"
+d=$(ck_copy "$SPB")
+sed -i 's/^## Done$/## Done\n- [x] **Buy the domain** - spend. Closed by host, registered. Status: done./' "$d/blueprint/context/needs-you.md"
+assert_ok "the same line under Done passes" "$CK" "$d"
+
+spec_hdr() { printf '# Feature: export\n\n**From build plan:** item 2\n**Type:** Feature\n**Verified:** %s\n**Reviewed:** %s\n\n## Goal\nx\n' "$2" "$3" >"$1/blueprint/context/current-work.md"; }
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' '2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking'
+assert_ok "a spec's header, as spec, verify and review write it, passes" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'not yet'; sed -i '/^\*\*Reviewed:/d' "$d/blueprint/context/current-work.md"
+assert_refuses "a spec missing a header field" "no **Reviewed:** line - fix with spec" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'all good' 'not yet'
+assert_refuses "a Verified: line in no recorded form, with verify" "fix with verify" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'looked at it'
+assert_refuses "a Reviewed: line in no recorded form, with review" "**Reviewed:** is neither" "$CK" "$d"
+d=$(ck_copy "$SPB"); printf '# Export\n' >"$d/blueprint/context/current-work.md"
+assert_refuses "a current-work file that is neither stub nor spec" "neither the reset stub nor a spec" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); head -c 60000 /dev/zero | tr '\0' 'x' >>"$d/CLAUDE.md"
+assert_refuses "loaded context over the budget AGENTS.md states" "KB budget in AGENTS.md" "$CK" "$d"
+d=$(ck_copy "$SPB"); head -c 9000 /dev/zero | tr '\0' 'x' >>"$d/blueprint/context/project-overview.md"
+assert_refuses "an overview over its cap, with distill" "over its 8 KB cap - fix with distill" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
+printf '# Capability: count\n\n- **count.1** - Prints the total *Since:* features/01-count\n\n## Removed\n- count.2 - removed by features/02-x\n' >"$d/blueprint/capabilities/count.md"
+assert_ok "a capability file as the merge writes it passes" "$CK" "$d"
+printf -- '- **count.3** - No provenance\n' >>"$d/blueprint/capabilities/count.md"
+assert_refuses "a claim line the merge cannot read, with ship" "the merge script cannot read" "$CK" "$d"
+d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
+printf -- '- **count.1** - A *Since:* features/01\n- count.1 - removed by features/02\n' >"$d/blueprint/capabilities/count.md"
+assert_refuses "a claim ID used twice" "count.1 appears twice" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); echo 'preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14' >>"$d/dev-notes/status.md"
+assert_ok "a preflight: line as preflight writes it passes" "$CK" "$d"
+echo 'preflight: go, 2026-03-03, a1b2c3d' >>"$d/dev-notes/status.md"
+assert_refuses "two verdicts, where each replaces the last" "2 preflight: lines" "$CK" "$d"
+d=$(ck_copy "$SPB"); echo 'preflight: looks good to me' >>"$d/dev-notes/status.md"
+assert_refuses "a verdict deploy cannot read, with preflight" "fix with preflight" "$CK" "$d"
+
+d=$(ck_copy "$MPB"); printf '\n### F-01 bad\n' >>"$d/api/blueprint/context/findings.md"
+assert_refuses "a root run checks every part, and names the part" "api/blueprint/context/findings.md: line" "$CK" "$d"
+d=$(ck_copy "$MPB"); echo live >"$d/blueprint/status/web.md"; git -C "$d" add -f blueprint/status/web.md
+assert_refuses "a force-added part status file is named at the root" "never committed (D9)" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); printf '\n### F-01 bad\n' >>"$d/blueprint/context/findings.md"
+assert_ok "--staged ignores a bad file that is not staged" "$CK" --staged "$d"
+git -C "$d" add -A
+assert_refuses "and refuses it once staged" "is not '### F-NN" "$CK" --staged "$d"
+git -C "$d" checkout -q -- . 2>/dev/null; git -C "$d" show :blueprint/context/findings.md >/dev/null
+cp "$SPB/blueprint/context/findings.md" "$d/blueprint/context/findings.md"
+assert_ok "with the tree fixed but not staged, a plain run passes" "$CK" "$d"
+assert_fails "while --staged still sees the bad staged copy" "$CK" --staged "$d"
+
+assert_eq "no python3: exit 2, nothing checked" "2" "$(env PATH=/nonexistent /bin/bash "$CK" "$SPB" >/dev/null 2>&1; echo $?)"
+assert_eq "outside a project: exit 2" "2" "$("$CK" "$(workdir)" >/dev/null 2>&1; echo $?)"
+assert_eq "--staged outside a repository: exit 2" "2" "$(d=$(workdir); mkdir -p "$d/blueprint/context"; "$CK" --staged "$d" >/dev/null 2>&1; echo $?)"
+
 finish
