@@ -38,6 +38,8 @@ Usage:
   --hooks     Also install the optional Claude Code hooks (D20) - see
               install.sh --help. In a multi-part project, at the root and in
               every part, since a session may start in any of them.
+  --git-hooks Also install the git pre-commit hook (D23) - see install.sh
+              --help. Once, at the root: a product is one repository.
   --help      This
 
 Creates the directory, installs every skill once (.claude/skills links to it), seeds the
@@ -52,6 +54,7 @@ PARENT_SET=0
 DO_GIT=1
 PARTS=""
 HOOKS=""
+GIT_HOOKS=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -59,6 +62,7 @@ while [ $# -gt 0 ]; do
     --parts)  PARTS="${2:?--parts needs a comma-separated list}"; shift 2 ;;
     --no-git) DO_GIT=0; shift ;;
     --hooks)  HOOKS="--hooks"; shift ;;
+    --git-hooks) GIT_HOOKS=1; shift ;;
     --help|-h) usage; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
     *) [ -n "$NAME" ] && { echo "Only one name, please." >&2; exit 1; }; NAME="$1"; shift ;;
@@ -70,6 +74,10 @@ done
 # written the project, so ask here instead.
 [ -z "$HOOKS" ] || command -v python3 >/dev/null 2>&1 \
   || { echo "--hooks needs python3, to write .claude/settings.json" >&2; exit 1; }
+# The hook needs the repository this script makes - refused here, not after.
+if [ "$GIT_HOOKS" -eq 1 ] && { [ "$DO_GIT" -eq 0 ] || ! command -v git >/dev/null 2>&1; }; then
+  echo "--git-hooks needs git, and --no-git skips it" >&2; exit 1
+fi
 
 # The name may be a bare name, a relative path, or an absolute path. Resolve all
 # three to one target, rather than blindly joining onto the parent - which turns
@@ -300,6 +308,13 @@ if [ "$DO_GIT" -eq 1 ]; then
     echo "  note: git not found, skipping init"
     DO_GIT=0
   fi
+fi
+
+# After init, before the first commit - so the first commit already runs it.
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  # after-write: install.sh --git-hooks refuses only outside a repository's top
+  # level, and $TARGET is the top of the repository just initialised.
+  "$HERE/install.sh" --target "$TARGET" --git-hooks >/dev/null
 fi
 
 # The initial commit is made here, not left to the user.

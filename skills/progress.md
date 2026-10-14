@@ -103,6 +103,12 @@ Report only what is actually wrong:
   overview written before the cap, or edited by hand since, is over it until
   something reads its size - and this is that check. Exit 2 means it could not
   run; say so and what it needs.
+- **`.agents/git-hooks/` present but not the active `core.hooksPath`**
+  (`git config core.hooksPath`) - a fresh clone: the hook travels with the
+  repository and its activation does not, so commits go unchecked without a
+  word. Name it, with `git config core.hooksPath .agents/git-hooks` as the fix -
+  unless a hook manager (`.husky/`, `.pre-commit-config.yaml`, `lefthook.yml`)
+  already runs `.agents/git-hooks/pre-commit`.
 - No verification command, or no test runner, when the project has real code.
 - **A UI with no `blueprint/context/design.md`.** `spec` stops on it, so the
   next action is `prototype`, not `spec` - naming `spec` sends the user

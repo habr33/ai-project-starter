@@ -15,7 +15,7 @@ usage() {
 install.sh - add the workflow to an existing project
 
 Usage:
-  install.sh [--target DIR] [--force] [--hooks]
+  install.sh [--target DIR] [--force] [--hooks] [--git-hooks]
 
   --target DIR   Where to install (default: the current directory)
   --force        Accepted but no longer needed: skills are always replaced.
@@ -29,12 +29,20 @@ Usage:
                  a commit on main asks the person first, and a session starts
                  with a warning when the loaded context is over its budget.
                  Merged into any settings already there; nothing else changes.
+  --git-hooks    Also install a git pre-commit hook (D23), for every tool: a
+                 commit whose state files are out of form is refused, naming
+                 the skill that repairs each. Sets core.hooksPath to
+                 .agents/git-hooks - unless a hook manager (husky, pre-commit,
+                 lefthook, or core.hooksPath already set) runs this repository's
+                 hooks; then only the line to add to it is printed. Run it at
+                 the repository's top level - one hook serves the whole repo.
   --help         This
 USAGE
 }
 
 SKILLS_ONLY=0
 HOOKS=0
+GIT_HOOKS=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -42,6 +50,7 @@ while [ $# -gt 0 ]; do
     --force)  FORCE=1; shift ;;
     --skills-only) SKILLS_ONLY=1; shift ;;
     --hooks)  HOOKS=1; shift ;;
+    --git-hooks) GIT_HOOKS=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -59,6 +68,19 @@ if [ "$HOOKS" -eq 1 ]; then
     || { echo "--hooks needs python3, to merge into .claude/settings.json" >&2; exit 1; }
   if [ -e "$settings" ] && ! python3 -c 'import json,sys; assert isinstance(json.load(open(sys.argv[1])), dict)' "$settings" 2>/dev/null; then
     echo "$settings is not a JSON object - fix it, then run --hooks again. Nothing was written." >&2
+    exit 1
+  fi
+fi
+
+# --git-hooks sets one repository-wide config value, so it is refused below the
+# top level - a part of a multi-part product is not a repository - before
+# anything is written.
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  command -v git >/dev/null 2>&1 || { echo "--git-hooks needs git. Nothing was written." >&2; exit 1; }
+  git_top=$(git -C "$TARGET" rev-parse --show-toplevel 2>/dev/null) \
+    || { echo "--git-hooks: $TARGET is not a git repository - git init it first. Nothing was written." >&2; exit 1; }
+  if [ "$(cd "$git_top" && pwd -P)" != "$(cd "$TARGET" && pwd -P)" ]; then
+    echo "--git-hooks: $TARGET is inside the repository at $git_top - one hook serves the whole repository, so run --git-hooks there. Nothing was written." >&2
     exit 1
   fi
 fi
@@ -595,6 +617,27 @@ with open(path, "w") as f:
 PY
 fi
 
+# --- optional git hook (D23) ---
+#
+# The hook is pack-owned and always replaced. core.hooksPath is not: a hook
+# manager already running this repository's hooks is left to run them, and told
+# the one line that adds this hook - as a hand-written CLAUDE.md is reported,
+# never edited.
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  mkdir -p "$TARGET/.agents/git-hooks"
+  # after-write: this only copies the hook, never runs it - git runs it at commit.
+  cp "$HERE/lib/git-pre-commit.sh" "$TARGET/.agents/git-hooks/pre-commit"
+  chmod +x "$TARGET/.agents/git-hooks/pre-commit"
+  hook_manager=""
+  current_hooks=$(git -C "$TARGET" config core.hooksPath || true)
+  [ -n "$current_hooks" ] && [ "$current_hooks" != ".agents/git-hooks" ] \
+    && hook_manager="core.hooksPath ($current_hooks)"
+  for m in .husky .pre-commit-config.yaml lefthook.yml; do
+    [ -z "$hook_manager" ] && [ -e "$TARGET/$m" ] && hook_manager="$m"
+  done
+  [ -n "$hook_manager" ] || git -C "$TARGET" config core.hooksPath .agents/git-hooks
+fi
+
 echo "Installed into $TARGET"
 echo "  $skill_count skill(s) in .agents/skills; .claude/skills $skills_shape"
 [ -n "${skills_converted:-}" ] && echo "    converted from two copies to one - commit .claude/skills as the link it now is"
@@ -613,6 +656,14 @@ echo "  $command_count opencode command wrapper(s) in .opencode/command/"
 [ -n "$replaced_commands" ] && \
   echo "    rewritten from a different version:$replaced_commands"
 [ "$HOOKS" -eq 1 ] && echo "  2 Claude Code hooks in .claude/hooks/, registered in .claude/settings.json (D20)"
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  if [ -z "$hook_manager" ]; then
+    echo "  git pre-commit hook in .agents/git-hooks/, active as core.hooksPath (D23)"
+  else
+    echo "  git pre-commit hook in .agents/git-hooks/ - not activated: $hook_manager runs this"
+    echo "    repository's hooks. Add this to its pre-commit hook: .agents/git-hooks/pre-commit"
+  fi
+fi
 if [ "$SKILLS_ONLY" -eq 1 ]; then
   if [ "$DETECTED_ROOT" -eq 1 ]; then
     echo "  product root detected - skills only, no build-loop files"

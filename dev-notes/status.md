@@ -43,12 +43,23 @@ blocks on exit 1, reports exit 2 without blocking; a paragraph in
 (`test-seams.sh`), all 14 seen failing first; a refresh-skipping mutation of
 `install.sh` caught by both refresh tests.
 
+Task 3 - `lib/git-pre-commit.sh`, installed by `--git-hooks` (`install.sh`
+and `new-project.sh`, once at the root) as `.agents/git-hooks/pre-commit` with
+`core.hooksPath`; refusals before any write; a hook manager is left alone and
+named; `progress` names a clone where it is not active; README and anatomy.
+Tests: *the git pre-commit hook, D23* (`test-scripts.sh`) and three seam
+assertions. Four mutations (hooksPath always set, own path taken for a manager,
+no not-a-repo refusal, exit 2 blocking) each caught by the assertion naming it.
+`new-project.sh --git-hooks` re-runs `install.sh` after `git init`, so the first
+commit already runs the hook.
+
 **In progress:** nothing half-made.
 
 **Next:**
 
-1. `harness-plan.md` Task 3: `lib/git-pre-commit` and `--git-hooks`.
-2. Tasks 4-5, one commit each. Task 6 is a paid multi-part trial - **ask first**.
+1. `harness-plan.md` Task 4: `--hooks` denies `--no-verify` and a change to
+   `core.hooksPath` where `.agents/git-hooks/` is active.
+2. Task 5, one commit. Task 6 is a paid multi-part trial - **ask first**.
 3. Then the rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),

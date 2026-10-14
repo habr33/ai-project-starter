@@ -244,6 +244,13 @@ form its skill writes, with that skill as the fix. `progress` reports it, `ci`
 runs it on every push, and `ship`'s safety pass blocks on it; exit 2 (it could
 not run) never blocks. It writes nothing.
 
+With `--git-hooks` it also runs on **every commit, from any tool**: a pre-commit
+hook in `.agents/git-hooks/`, once per repository - at a product's root, where
+one run covers every part. What it cannot do, so nothing leans on it: it cannot
+ask, so the commit-on-`main` rule stays with `D20`'s hook; it can be
+skipped with `--no-verify`; and `core.hooksPath` is per-clone config, so a fresh
+clone is unguarded until `progress` names it. CI is the wall.
+
 ## What holds this together mechanically
 
 `check.sh` has 18 rules. Thirteen were added *after* a specific bug got through,

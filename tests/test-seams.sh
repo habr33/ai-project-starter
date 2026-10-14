@@ -3296,5 +3296,11 @@ assert_ok "a problem it names is a blocker, fixed by the skill it names" \
 assert_ok "and exit 2 is reported without blocking" \
   grep -qF 'Exit 2 means it could not run - report that; it does not block' <<<"$_ship1"
 assert_ok "anatomy names who runs it" _says docs/anatomy.md '`.agents/bin/check-project.sh`'
+# core.hooksPath is per-clone config: the hook travels with the repository and
+# its activation does not, so a fresh clone is unguarded without a word.
+assert_ok "progress names git hooks installed but not active" \
+  _says skills/progress.md '`.agents/git-hooks/` present but not the active `core.hooksPath`'
+assert_ok "README documents --git-hooks" _says README.md '--git-hooks'
+assert_ok "anatomy says what the git hook cannot do" _says docs/anatomy.md 'skipped with `--no-verify`'
 
 finish

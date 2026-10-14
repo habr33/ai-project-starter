@@ -1549,4 +1549,74 @@ assert_ok "a part of a multi-part project has it" test -x "$w/ckm/api/.agents/bi
 assert_ok "and so does the product root, where one run checks every part" \
   bash -c 'cd "$1" && .agents/bin/check-project.sh' _ "$w/ckm"
 
+section "the git pre-commit hook, D23 - every tool's commits run the checker"
+# Every tool commits through git, so this is the one place a rule holds in all
+# of them. It is a tripwire, not a wall: it fails open when the checker cannot
+# run, and --no-verify skips it - CI is the wall.
+gc() { git -C "$1" -c user.email=t@t -c user.name=t commit -q -m "$2" 2>&1; }
+bad_finding() { printf '\n### F-01 bad\n' >>"$1/blueprint/context/findings.md"; }
+w=$(workdir); (cd "$w" && "$NP" gh --git-hooks >/dev/null 2>&1); p="$w/gh"
+assert_eq "new-project --git-hooks makes it the active hooks path" ".agents/git-hooks" \
+  "$(git -C "$p" config core.hooksPath)"
+assert_ok "the hook is executable" test -x "$p/.agents/git-hooks/pre-commit"
+assert_ok "identical to the pack's" cmp -s "$REPO/lib/git-pre-commit.sh" "$p/.agents/git-hooks/pre-commit"
+assert_eq "and the first commit, which ran it, was made" "1" "$(git -C "$p" rev-list --count HEAD 2>/dev/null)"
+bad_finding "$p"; git -C "$p" add -A
+assert_refuses "a malformed staged state file refuses the commit, naming its skill" \
+  "fix with review" gc "$p" bad
+assert_eq "and nothing was committed" "1" "$(git -C "$p" rev-list --count HEAD)"
+git -C "$p" reset -q --hard
+echo z >>"$p/README.md"; git -C "$p" add -A
+assert_ok "with the state files well-formed, it commits" gc "$p" good
+printf '#!/bin/sh\nexit 2\n' >"$p/.agents/bin/check-project.sh"; echo x >>"$p/README.md"; git -C "$p" add README.md
+out=$(gc "$p" x2); rc=$?
+assert_eq "a checker that could not run lets the commit through" "0" "$rc"
+assert_ok "with one line saying so" grep -q 'could not run' <<<"$out"
+rm "$p/.agents/bin/check-project.sh"; echo y >>"$p/README.md"; git -C "$p" add README.md
+out=$(gc "$p" nock); rc=$?
+assert_eq "so does a project with no checker" "0" "$rc"
+assert_ok "naming what is missing" grep -q 'no .agents/bin/check-project.sh' <<<"$out"
+
+w=$(workdir); (cd "$w" && "$NP" ghm --parts api,web --git-hooks >/dev/null 2>&1); p="$w/ghm"
+assert_eq "a multi-part product gets one hook, at the root" ".agents/git-hooks" "$(git -C "$p" config core.hooksPath)"
+assert_absent "and none in a part" "$p/api/.agents/git-hooks"
+bad_finding "$p/api"; git -C "$p" add -A
+assert_refuses "a bad file in a part refuses a commit at the root, naming the part" \
+  "api/blueprint/context/findings.md" gc "$p" bad
+
+# An existing hook manager owns the repository's hooks: write nothing to git
+# config, name the line to add, install the rest.
+gh_repo() { local d; d=$(workdir); git -C "$d" init -q -b main; printf '%s' "$d"; }
+for mgr in .husky .pre-commit-config.yaml lefthook.yml core.hooksPath; do
+  d=$(gh_repo)
+  case "$mgr" in
+    .husky) mkdir "$d/.husky" ;;
+    core.hooksPath) git -C "$d" config core.hooksPath .githooks ;;
+    *) touch "$d/$mgr" ;;
+  esac
+  before=$(git -C "$d" config core.hooksPath || true)
+  out=$("$IN" --target "$d" --git-hooks 2>&1)
+  assert_eq "$mgr: git config is left alone" "$before" "$(git -C "$d" config core.hooksPath || true)"
+  assert_ok "$mgr: the line to add to it is named" grep -qF '.agents/git-hooks/pre-commit' <<<"$out"
+  assert_ok "$mgr: and the rest is installed" test -x "$d/.agents/git-hooks/pre-commit"
+done
+
+d=$(gh_repo); mkdir "$d/sub"; echo keep >"$d/sub/f"
+before=$(cd "$d" && find . -path ./.git -prune -o -type f -print | sort | xargs cksum)
+assert_refuses "below a repository's top level it refuses, sending it to the root" "run --git-hooks there" \
+  "$IN" --target "$d/sub" --git-hooks
+assert_eq "with every file byte-identical" "$before" \
+  "$(cd "$d" && find . -path ./.git -prune -o -type f -print | sort | xargs cksum)"
+d=$(workdir)
+assert_refuses "outside any repository it refuses" "not a git repository" "$IN" --target "$d" --git-hooks
+assert_eq "having written nothing" "" "$(ls -A "$d")"
+assert_refuses "new-project --git-hooks --no-git refuses" "--git-hooks needs git" \
+  "$NP" --in "$d" nogit --git-hooks --no-git
+assert_absent "before creating anything" "$d/nogit"
+
+d=$(gh_repo); "$IN" --target "$d" --git-hooks >/dev/null 2>&1
+out=$("$IN" --target "$d" --git-hooks 2>&1)
+assert_eq "a re-run is idempotent: one hooksPath" "1" "$(git -C "$d" config --get-all core.hooksPath | grep -c .)"
+assert_fails "and its own path is not taken for a hook manager" grep -qF 'not activated' <<<"$out"
+
 finish

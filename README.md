@@ -242,6 +242,16 @@ headless (`claude -p`) there is nobody to ask, so they are refused -
 and a session opens with a warning when the always-loaded files are over the
 budget `AGENTS.md` states. Other tools ignore them; the rules still hold as prose.
 
+**Optional, every tool: `--git-hooks`** (on `install.sh` or `new-project.sh`,
+at the repository's top level) installs a git pre-commit hook in
+`.agents/git-hooks/` and points `core.hooksPath` at it. A commit whose state
+files are out of the form the skills write - the findings index, the spec's
+header, a `blueprint/status/` file staged at all - is refused, each line naming
+the skill that repairs it. If husky, pre-commit or lefthook already runs your
+hooks, nothing in git config changes; the line to add to it is printed instead.
+`core.hooksPath` does not travel with a clone - `progress` names a clone where
+it is not set. It is a tripwire, skippable with `--no-verify`; CI is the wall.
+
 No manifest, no conflict detection, no backups. That is a deliberate trade at
 this size — the repo is the version control.
 
@@ -312,6 +322,7 @@ The scripts:
 | `lib/migrate-findings.sh` | split a findings ledger from before `D15` - `install.sh` names it when it finds one |
 | `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
 | `lib/check-project.sh` | checks a project's state files are in the form the skills write them (`D23`) |
+| `lib/git-pre-commit.sh` | the git pre-commit hook `--git-hooks` installs, which runs that checker (`D23`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 
 The two `lib/` scripts exist because `new-project.sh --parts` and
