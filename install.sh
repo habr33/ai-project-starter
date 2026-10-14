@@ -465,7 +465,7 @@ fi
 # clone, so ship's merge script exists only on the machine that installed it.
 # The .gitignore is the project's, so this reports the lines and writes none.
 if git -C "$TARGET" check-ignore -q .agents/bin/merge-capabilities.sh 2>/dev/null; then
-  legacy="$legacy\n  - .agents/bin/ is gitignored, so ship's merge script is missing from every clone\n    and ship fails there. Add these two lines to .gitignore, then commit the script:\n      !.agents/bin/\n      !.agents/bin/**"
+  legacy="$legacy\n  - .agents/bin/ is gitignored, so ship's merge script is missing from every clone\n    and ship fails there. Add these two lines to .gitignore, then commit the script:\n      !**/.agents/bin/\n      !**/.agents/bin/**"
 fi
 # AGENTS.md is project-owned - it holds Commands and Environments, which are this
 # project's - so it is never overwritten, and a section added to the template

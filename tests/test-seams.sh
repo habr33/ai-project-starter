@@ -3190,6 +3190,14 @@ for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); 
 done
 assert_ok "and at least one is named, so the loop above is not empty" \
   grep -q '\.agents/bin/' skills/ship.md
+# A multi-part product is one repository whose root .gitignore covers every
+# part, and `!.agents/bin/` re-included the root's alone - each part's scripts
+# were on disk and in no clone. Found by the D23 trial.
+w=$(workdir); (cd "$w" && "$REPO/new-project.sh" skm --parts api,web >/dev/null 2>&1)
+for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); do
+  assert_fails "api/$f is not gitignored in a multi-part product" \
+    git -C "$w/skm" check-ignore -q "api/$f"
+done
 # A project with its own .gitignore keeps it - install.sh never edits one - so
 # the ignore it already has must at least be named.
 w=$(workdir); git -C "$w" init -q; printf 'bin/\n' > "$w/.gitignore"

@@ -232,8 +232,9 @@ target/
 !**/skills/out/**
 # The same trap for the scripts installed beside them: `bin/` above matches
 # .agents/bin/, so ship's merge script was on disk and absent from every clone.
-!.agents/bin/
-!.agents/bin/**
+# At any depth - a multi-part product's parts sit under this one .gitignore.
+!**/.agents/bin/
+!**/.agents/bin/**
 
 # Local noise
 .DS_Store
