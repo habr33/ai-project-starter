@@ -59,10 +59,10 @@ unambiguous prefixes; `-m -n` is a message) and a `git config` or `git -c` that
 changes `core.hooksPath`; a read of it is allowed. Silent without git hooks.
 Tests beside *the optional hooks, D20*; three mutations each caught.
 
-**In progress:** nothing half-made.
-
 Task 5 - `D23` recorded as built, with what the tests prove and do not; the
 two scripts in the listing below.
+
+**In progress:** nothing half-made.
 
 **Next:**
 
