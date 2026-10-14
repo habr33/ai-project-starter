@@ -1187,6 +1187,18 @@ assert_ok "and names the rule it holds" grep -q 'Never build on' <<<"$(mc 'git a
 assert_ok "git's own options before commit still count" grep -q '"ask"' <<<"$(mc 'git -c core.editor=true commit')"
 assert_eq "a command that only mentions commit says nothing" "" "$(mc 'git log --grep commit')"
 assert_eq "nor does a merge that is not a commit" "" "$(mc 'git merge --squash item')"
+# A branch made earlier in the same command is where the commit lands, though
+# the hook runs while HEAD is still main - the trial's agent was denied that way.
+assert_eq "a commit after creating a branch in the same command says nothing" "" \
+  "$(mc 'git switch -q -c chore/x && git add -A && git commit -m x')"
+assert_eq "nor after checkout -b" "" "$(mc 'git checkout -b fix/y && git commit -m x')"
+assert_ok "switching to main first still asks" grep -q '"ask"' <<<"$(mc 'git switch main && git commit -m x')"
+assert_ok "even after a branch was made earlier in the line" \
+  grep -q '"ask"' <<<"$(mc 'git switch -c x && git switch main && git commit -m x')"
+assert_ok "and a checkout of files is not a branch" \
+  grep -q '"ask"' <<<"$(mc 'git checkout -- . && git commit -m x')"
+assert_ok "and a branch made after the commit does not count" \
+  grep -q '"ask"' <<<"$(mc 'git commit -m x && git switch -c later')"
 (cd "$w" && git checkout -qb item)
 assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
 assert_eq "nor does anything outside a repository" "" \

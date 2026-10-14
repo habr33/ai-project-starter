@@ -92,6 +92,11 @@ m = re.search(r"(?:^|[\s;&|(])git((?:\s+(?:-[Cc]\s+\S+|--?[\w-]+(?:=\S+)?))*)\s+
 if not m:
     sys.exit(0)
 branch = git_in(repo(m.group(1)), "branch", "--show-current")
+# A branch created earlier in the same command is where the commit lands, though
+# HEAD is still on main while this runs.
+moves = re.findall(r"git\s+(?:switch|checkout)\s+(?:-q\s+)?(-c|-C|--create|-b|-B)?\s*([^\s;&|]+)", cmd[:m.start()])
+if moves and moves[-1][0] and moves[-1][1] not in ("main", "master"):
+    sys.exit(0)
 if branch not in ("main", "master"):
     sys.exit(0)
 print(json.dumps({"hookSpecificOutput": {
