@@ -42,6 +42,7 @@ Real projects, named here by what they are rather than what they are called.
 | layout-move | a seeded two-part product, moved before any code existed | **`layout`'s documented move of a seeded part** - the four steps, and `seed-part.sh`'s refusal |
 | paperlog | an existing Express + SQLite JSON API, no workflow in it | **`setup`'s adoption route** - filling plan sections 5 and 6 from the code, then `distill`'s check against the result |
 | one-page-app | one-page web app, plain HTML/JS, `node:test` + Playwright, not published | **the loop with design required** (`D18`) - `new-project.sh` to `ship`, then `preflight`, `docs` and the operate stops, every skill followed as written; the user's answers were played by the agent |
+| two-part-hooks | a click counter, **two parts** (`node:http` api, plain-JS web), hand-written contract, created with `--hooks --git-hooks` | **`D23` against agents** - the project checker, the git pre-commit hook and the `--hooks` denials, one item per part through the loop |
 
 ## Plan
 
@@ -94,6 +95,40 @@ Real projects, named here by what they are rather than what they are called.
 | `setup` | yes | brownfield-nextjs, expo-workspace | **Ran 2026-09-06.** Found `ci` unreachable on the brownfield route, and that template files froze at install time forever. **2026-09-11 on expo-workspace:** a code-first npm workspace adopted single-part. Backfilled coding standards and a quality bar from the code - most bar rows honestly left unmeasured - recorded four contradictions in the existing docs as UNDECIDED rather than resolving them by guess, and opened 14 `needs-you.md` lines, 2 blocking. Its report named `distill` then `ci`, because **Step 5 named `ci` as the next skill, Step 7 named only `distill`, and the skill's own chain puts `ci` first** - the file disagreed with itself about what comes next. **Fixed 2026-09-15**: Step 7 now names every remaining step in the chain's order, with a seams test proven to fail on the old text **2026-09-22 on paperlog: the adoption route's sections 5 and 6 ran for the first time.** Sections 5 and 6 each carry **a second seeded paragraph** below the obvious one - the note that 5 is filled after 6, and the note that `layout` adds the directory tree. "Replace the seeded instruction *sentence*" leaves both, `distill` reads seeded text as unfilled "whatever has been added around it", and it routes to `architect` and `stack` - the two skills this very route says never run. Now: replace every seeded paragraph, naming those two |
 | `progress` | yes | brownfield-nextjs, nextjs-app, expo-workspace | **Ran 2026-09-06.** Four defects: template residue, an mtime freshness check a hand edit defeats, an invalid archive count, no finished-plan state. **2026-09-08 on nextjs-app:** caught an overview stale *in content* while its timestamp looked fine, and product code committed to `main` with no spec. **2026-09-14 on expo-workspace:** caught that `distill` and `ci` never ran after `setup` - `setup`'s report had named both, and the session's closing summary after a push dropped them. Recovering a handoff a conversation lost is what this skill is for |
 | `prepare` | yes | brownfield-nextjs, nextjs-app | **Ran 2026-09-06.** Four defects, incl. reporting "nothing is blocking" when a user-owned file was broken. **2026-09-08 on nextjs-app:** found an empty `BETTER_AUTH_SECRET` that stops the very next item, and a hostname nobody had ever chosen - neither recorded anywhere |
+
+## 2026-10-14: `D23` in a two-part product - the checker, the git hook, the denials
+
+A two-part click counter created with `new-project.sh --parts web,api --hooks
+--git-hooks`, headless `claude -p --setting-sources project,local`, answers
+from a script written first. Root: `ideate`, `architect`, `stack`, `layout`,
+`orchestrate`'s freeze. Each part: `scaffold`, `distill`, then one item through
+`spec`, `build`, `verify`, `review` and `ship` - `prototype` before web's. About
+$14.10. **Headless, `--hooks` turns every commit on `main` into a denial**
+(`D20`), so the person made each setup and merge commit by hand; every one, and
+every agent commit on a branch - about twenty - passed the git hook.
+
+**All eight `D23` checks pass:** the hook active from the first commit; no
+correct output refused; `progress` ran the checker and saw the hook active;
+`ship` Step 1 ran it on both items; a hand-edited `**Verified:** yes` in web and
+a status of `later` in api's index each refused at commit, naming `verify` and
+`review`, with the agent declining to go around it; a force-added
+`blueprint/status/` file refused at the root; and `--no-verify`, asked for
+outright, denied by `--hooks` with no other way tried. Twice an agent refused
+the malformed edit from the prose before the hook was reached.
+
+**Six findings, all in the pack; five fixed with tests seen failing:**
+the checker's status set lacked `review`'s `unverified` (a seam test now holds
+the two equal); the root `.gitignore` hid every part's `.agents/bin/`, so no
+clone had a part's merge script or checker (now `**/`); the checker and the
+deny cited pack decision numbers a project does not have, and the agent went
+looking for one; and `D20`'s hook judged the current branch, so `switch -c x &&
+commit` asked and `switch main && merge --squash && commit` did not. The sixth:
+the deny reason's "anything else belongs on a branch" led agents to move
+`scaffold`'s and `distill`'s setup commits onto a feature branch - reworded,
+then held in all three later denials, which is not much evidence.
+
+**Not reached:** `ci` (no remote), `integrate`, and a second session working
+a part in parallel.
 
 ## 2026-09-30: a full run against the records, the quick path and the audit
 

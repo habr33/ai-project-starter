@@ -62,12 +62,16 @@ Tests beside *the optional hooks, D20*; three mutations each caught.
 Task 5 - `D23` recorded as built, with what the tests prove and do not; the
 two scripts in the listing below.
 
+Task 6 - the trial, 2026-10-14/15, about $14.10: all eight `D23` checks pass;
+six pack findings, five fixed with tests (`7cdca52`, `780d51d`, `53842d8`,
+`f442c8f`, `cbd84cd`, and the D9 message), one reworded. Detail in
+`coverage.md`; the run's notes and driver in `~/tmp/run-2026-10-14/`.
+
 **In progress:** nothing half-made.
 
 **Next:**
 
-1. `harness-plan.md` Task 6 is a paid multi-part trial - **ask first**. Then
-   merging `harness` into `main` is the user's call.
+1. Merging `harness` into `main`, and pushing, are the user's call.
 2. Then the rest of what is open: the `preflight` compliance step and folding
    `prepare`/`layout` (the user's call), the plugin package (D21's second
    half), the P3 house style, C (mods, parked), `cms-rr` (needs its path),

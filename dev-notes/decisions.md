@@ -591,9 +591,10 @@ in scratch repositories a bad staged file refuses a commit and a good one goes
 through, a part's bad file refuses a commit at the root, exit 2 passes, each
 hook manager is left alone, and the deny forms are denied while reads and
 messages are not - each assertion seen failing, under a mutation of what it
-names. **What they do not:** that an agent, in any tool, repairs a refusal with
-the skill named rather than around it, or that a real multi-part run's state
-files pass. That is Task 6, the trial, not yet run.
+names. **The trial** (2026-10-14, `coverage.md`): in a two-part product, real
+agents' state files passed the hook across about twenty commits, every planted
+malformation was refused naming its skill, and no agent went around a refusal.
+**Still unproven:** any tool but Claude Code driving it, and `ci` running it.
 
 **Rejected: a separate harness project.** The checks worth running read this
 pack's own files; a project outside it would read formats it does not own.
