@@ -29,7 +29,10 @@ Usage:
                  a commit on main asks the person first, and a session starts
                  with a warning when the loaded context is over its budget.
                  Where --git-hooks is active, a commit with --no-verify or -n
-                 and a change to core.hooksPath are denied.
+                 and a change to core.hooksPath are denied. A commit on main
+                 holding only workflow state does not ask, and the read-only
+                 git commands, git add and git commit and the project checker
+                 are allowed, so they stop prompting (D24).
                  Merged into any settings already there; nothing else changes.
   --git-hooks    Also install a git pre-commit hook (D23), for every tool: a
                  commit whose state files are out of form is refused, naming
@@ -613,6 +616,15 @@ def add(event, matcher, script):
     entries.append(entry)
 add("PreToolUse", "Bash", "hook-main-commit.sh")
 add("SessionStart", None, "hook-context-budget.sh")
+# D24: the commands the loop runs constantly, allowed so they stop prompting.
+# Read-only, plus add and commit - which the main-commit hook above still asks
+# about on main unless the commit is workflow state alone.
+allow = d.setdefault("permissions", {}).setdefault("allow", [])
+for rule in ("Bash(.agents/bin/check-project.sh:*)", "Bash(git status:*)", "Bash(git diff:*)",
+             "Bash(git log:*)", "Bash(git show:*)", "Bash(git branch --show-current)",
+             "Bash(git add:*)", "Bash(git commit:*)"):
+    if rule not in allow:
+        allow.append(rule)
 with open(path, "w") as f:
     json.dump(d, f, indent=2)
     f.write("\n")

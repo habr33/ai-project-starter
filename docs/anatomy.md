@@ -232,8 +232,11 @@ none of them execute:
    once — every gate technically satisfied and nobody has read anything.
 
 **Two rules can execute, if the project opts in** (`install.sh --hooks`, `D20`):
-Claude Code asks the person before any `git commit` on `main`, and a session
-starts with a warning when the loaded context is over its budget. Only Claude
+Claude Code asks the person before a `git commit` on `main` that holds more than
+workflow state (`D24`), and a session starts with a warning when the loaded
+context is over its budget. `--hooks` also allows the checker, read-only git,
+`git add` and `git commit`, and lets a plain push of `main` through where
+`AGENTS.md`'s committed `Push main without asking:` says `yes`. Only Claude
 Code runs them, so nothing above may depend on them.
 
 **One check runs in every tool** (`D23`): `.agents/bin/check-project.sh`, which

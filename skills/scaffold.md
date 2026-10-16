@@ -449,7 +449,10 @@ right place, and nothing was visibly wrong until the build was actually run.
 
 Fill in `AGENTS.md`:
 
-- the **real** dev, build, test, and verification commands
+- the **real** dev, build, test, and verification commands. **Where
+  `.claude/settings.json` has a `permissions.allow` list** - `install.sh --hooks`
+  writes one (D24) - add `Bash(<verification command>)` to it, so the check every
+  skill runs stops prompting. Only that command; anything else is the user's.
 - the **source layout that actually landed** - which shape (one application, two
   parts in one repo, separate repos), and the real directory for each part.
   `src/`, `lib/`, `app/`, `web/src` plus `api/` - whatever the framework and the

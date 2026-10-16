@@ -1,11 +1,11 @@
 ---
 name: ship
-description: "Close out finished work: a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, one work-level commit, then a squash-merge with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed. Asks separately before pushing. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
+description: "Close out finished work: a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, one work-level commit, then a squash-merge with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed. Asks separately before pushing, unless AGENTS.md holds the user's standing yes. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
 ---
 
 # ship - log it, commit it, merge it
 
-**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/capabilities/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/`
+**Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/capabilities/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/` · `dev-notes/status.md`
 
 Where this sits:
 
@@ -272,6 +272,15 @@ to remove is still there, say so and stop rather than reporting a clean finish -
 and if the directory remains because later items still need it, say that too,
 naming the items, so it reads as a decision rather than the same old oversight.
 
+**Refresh what a cold session reads first, in this same change** (D24). Run
+`distill` now - it regenerates the overview's *Current state* from the plan this
+step just ticked, and commits nothing when `ship` runs it. Then correct
+`dev-notes/status.md`'s *where this stands*: how many build-plan items are done,
+that nothing is in flight, and any line this item made false - "not pushed",
+"CI never run". **Edit only the lines this item changed**; the rest is `docs`'s.
+Left for afterwards, both became a second commit on `main` after every item, and
+on a real run the status headline still said "0 of 15 started" two items later.
+
 Do not commit yet. The next step makes one commit covering the code and this
 bookkeeping together.
 
@@ -325,10 +334,13 @@ directory this session is standing in.
 **A worktree of a bare repository** has no main checkout - the command stops -
 and `main` is checked out nowhere, so switch to it in the worktree and merge
 there as usual; the worktree stays.
-3. **Stop and ask** whether to push `main` to its upstream. Approval to merge is
-   not approval to push, and neither is running this skill.
-4. Push only after a separate, explicit yes **in this conversation**. If the repo
-   has no remote, say so rather than guessing.
+3. **If `AGENTS.md` says `**Push main without asking:** yes`, push `main` to its
+   upstream now** - a plain `git push`, no force, no other branch or tag - and say
+   you did. That line is the user's standing yes, written by them; never set it.
+   Otherwise **stop and ask** whether to push. Approval to merge is not approval
+   to push, and neither is running this skill.
+4. Without that line, push only after a separate, explicit yes **in this
+   conversation**. If the repo has no remote, say so rather than guessing.
 
 Then finish with a short **how to try it** note for the completed work - or, for
 a rollback, how to confirm the removed behavior is gone plus one unaffected path
@@ -374,14 +386,6 @@ Then point at what is next:
 - **`deploy`** if this project is already live. Merging put the work on `main`;
   it did not put it in front of anyone. **This is the step most easily forgotten**,
   because the loop feels finished at the merge and the branch is gone.
-- **`distill`** whenever the overview's *Current state* is now wrong - which is
-  **after every ship**, because this skill just ticked an item off
-  `blueprint/build-plan.md` and reset the spec. The overview is the file every
-  cold session loads, so a stale one starts the next session on a false picture:
-  wrong item count, wrong next item, and any claim that has since changed. It is
-  cheap and idempotent. **Nothing else refreshes it** - `spec` is named in that
-  skill's re-run list and this one was not, so it silently went stale once per
-  item.
 - otherwise **`spec`** for the next item.
 
 ## Abandoning or parking an item - `--abandon`
@@ -444,7 +448,8 @@ it - the spec with its ticks, and the branch it names.
   drop.
 - **A rollback preserves the original archive** and adds its own. Never rewrite
   history to make a feature look as though it never existed.
-- **Merging and pushing are separate decisions, and both are the user's.**
+- **Merging and pushing are separate decisions, and both are the user's** -
+  the push one made once, in `AGENTS.md`, if they choose.
 - **One item per run.** A parent with unchecked sub-items stays unchecked.
 
 ## Formatting

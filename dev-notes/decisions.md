@@ -600,3 +600,57 @@ malformation was refused naming its skill, and no agent went around a refusal.
 pack's own files; a project outside it would read formats it does not own.
 **Deferred:** further Claude Code hooks, which wait on a machine-readable
 `## Files and areas`, and wrappers for other tools' hooks.
+
+## D24 - Ask once, and only about code (2026-10-15)
+
+On a real project's first day (22 sessions), the same bookkeeping commit was
+asked about twice: the skill asked in text ("Can I commit the overview on
+`main`?"), then D20's hook asked again. Eight skills ended that way, `build`
+asked again about anything uncommitted, every item ended with a second
+`docs: regenerate overview` commit on `main`, every push needed a fresh yes,
+and every check prompted for permission. People stop reading prompts that are
+always the same, which is the opposite of what an ask is for.
+
+- **Workflow state is not code.** A commit holding only `blueprint/`,
+  `dev-notes/` or `CHANGELOG.md` - every file `AGENTS.md`'s two tables declare -
+  is a skill's record of its own run. The skill commits it unasked, and
+  `hook-main-commit.sh` says nothing about it on `main`, at the top or in a part
+  (a directory with `blueprint/context/`). Anything else in the commit - a CI
+  file, an `AGENTS.md` row, a README line, client wiring - still asks, and
+  **once**: where the hook will ask, the skill does not ask in text too.
+  `deploy`, `preflight` and `migrate` now commit unasked; `ci`, `host`,
+  `monitor`, `distill` and `docs` ask once when their commit holds more.
+- **The hook decides from what the commit would hold**, not from the message:
+  the index, plus what each `git add` and `git commit -a`/pathspec in the line
+  would stage. A line doing anything else - `cd`, `rm`, `merge`, `--amend` -
+  asks, so `ship`'s squash still asks.
+- **`ship` refreshes the overview and status inside the item.** It runs
+  `distill` (which commits nothing when `ship` runs it) and corrects the lines
+  of `dev-notes/status.md` the item made false, before its work commit. `ship`
+  joins the writers of `status.md`. On the same project the status headline
+  said "0 of 15 started" two items after the first shipped.
+- **One standing push yes, written by the user.** `**Push main without asking:**`
+  in `AGENTS.md`, `no` by default. At `yes`, `ship` pushes `main` after its
+  merge, and the hook allows a plain push of `main` - one command alone, to a
+  known remote, no flags but `-q`, from `main` - **reading the committed
+  `AGENTS.md`**, so an uncommitted edit grants nothing. A force push, a tag,
+  another branch or any deploy is never covered.
+- **`--hooks` also writes a small allowlist**: the project checker, read-only
+  git, `git add` and `git commit`. `git commit` is safe there only because the
+  hook still asks about code on `main`; nothing pushes. `scaffold` adds the
+  project's verification command where that list exists.
+
+**Cost:** an agent can now commit workflow state on `main` without a person
+seeing it - the files are the agent's own records, and the pre-commit hook
+(D23) still checks their form. `ai-interaction.md`'s approval lines now point
+at `AGENTS.md`'s rules instead of restating them, which was needed to stay
+inside the context budget: the template has about 15 bytes of headroom left.
+
+**What the tests prove:** state-only commits on `main` pass silently, at the
+top and in a part; code, a code file staged earlier, `-a`, a pathspec, `cd`,
+`rm` and `--amend` ask; a `blueprint/` inside code is not a part's; the push
+allow needs the committed policy, one plain command and `main`; `--hooks`
+writes the allowlist without a push. Seams: a skill committing "without asking"
+writes only workflow state, and the hook's pattern covers every file the tables
+declare - each seen failing under a mutation. **Unproven:** how Claude Code
+combines an allowlisted `git commit` with the hook's silence in a real session.

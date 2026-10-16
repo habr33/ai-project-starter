@@ -188,13 +188,14 @@ passes it. **Say whether `AGENTS.md`'s `## What this is` was filled, left alone 
 it already had prose, or updated** - it is a user-owned file, so a write to it
 is never silent.
 
-**Then ask to commit what this run wrote** - `project-overview.md`, any change
+**Then commit what this run wrote** - `project-overview.md`, any change
 to `project-plan.md` or `build-plan.md`, and the `AGENTS.md` or README line it
-filled - as one `docs: ...` commit. Step 2 asks only when it proposes a plan
-change, so this question is the yes; commit on it. **Between items that is
+filled - as one `docs: ...` commit. The overview and plans are workflow state,
+committed without asking (`AGENTS.md`'s rules); an `AGENTS.md` or README line is
+not, so a commit holding one is asked about once. **Between items that is
 `main`**, and it is the commit that keeps the next item's branch free of it;
 mid-item it is the item's branch, where the plan change belongs to that item
-anyway.
+anyway. **Run from `ship`, commit nothing**: its work commit carries this.
 
 Then point at what is next:
 
@@ -211,8 +212,8 @@ Then point at what is next:
 - After `spec` adds a new item to the build plan.
 - **After every `ship`.** It ticks an item off the build plan and resets the
   spec, so *Current state* - the item count, what is next, what is in flight -
-  is wrong the moment it finishes. This is the most frequent reason to re-run
-  and was the one missing from this list.
+  is wrong the moment it finishes. **`ship` runs this itself**, before its work
+  commit, so the refresh lands in the item rather than a second commit on `main`.
 - After anything that changes direction, users, data, stack, or deployment.
 
 It is cheap and idempotent. Re-running it when nothing changed produces the same

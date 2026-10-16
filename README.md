@@ -237,11 +237,16 @@ own are never touched**: the plans, the specs, `dev-notes/`, `AGENTS.md`.
 **Optional, Claude Code only: `--hooks`** (on `install.sh` or `new-project.sh`)
 adds two hooks to `.claude/settings.json`, merged beside anything already there.
 A `git commit` on `main` then needs your yes in the UI however the model was
-told to proceed - setup commits and `ship`'s merge still work, they just ask;
+told to proceed - unless it holds only workflow state (`blueprint/`,
+`dev-notes/`, `CHANGELOG.md`), which goes through unasked (`D24`); setup commits
+holding code and `ship`'s merge still work, they just ask;
 headless (`claude -p`) there is nobody to ask, so they are refused -
 and a session opens with a warning when the always-loaded files are over the
 budget `AGENTS.md` states. With `--git-hooks` active too, a commit with
 `--no-verify` or `-n` and a change to `core.hooksPath` are refused outright.
+It also allows the checker, read-only git, `git add` and `git commit`, so
+they stop prompting, and lets `ship` push `main` unasked once you set
+`**Push main without asking:** yes` in `AGENTS.md` and commit it.
 Other tools ignore them; the rules still hold as prose.
 
 **Optional, every tool: `--git-hooks`** (on `install.sh` or `new-project.sh`,

@@ -191,8 +191,10 @@ default and it is usually wrong.
 What you wrote, what you moved, and what is still missing. Documentation gaps are
 worth naming even when you did not fill them.
 
-**Then ask to commit what this run wrote**, as one `docs: ...` commit naming its
+**Then commit what this run wrote**, as one `docs: ...` commit naming its
 files - **between items that is `main`**, mid-item it is the item's branch.
+`dev-notes/` and `CHANGELOG.md` are workflow state, committed without asking;
+a README or API doc is not, so a commit holding one is asked about once.
 Nothing to commit in `--check` mode, which writes nothing. Left uncommitted,
 `deploy` refuses the dirty tree and the next `build` carries the docs onto an
 item's branch as someone else's work. Committing is not pushing.

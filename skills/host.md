@@ -312,7 +312,8 @@ add a `dev-notes/decisions.md` entry for the host choice and why, and name the
 host on the target line of section 8 of `blueprint/project-plan.md`, where
 `preflight` and `deploy` look for it.
 
-**Then ask to commit what this run wrote**, on `main`, as its own
+**Then ask once to commit what this run wrote** - where the main-commit hook
+is installed its prompt is the question, so not in text too - on `main`, as its own
 `chore: host ...` commit naming its files - the Environments rows in
 `AGENTS.md`, section 8 of the plan, `dev-notes/status.md`,
 `dev-notes/decisions.md`, `needs-you.md`, and any finding it changed. **`deploy`

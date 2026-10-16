@@ -202,7 +202,9 @@ hand, so the same checks can be run without the pipeline.
 **Ask to commit what this run wrote, on `main`, locally** - the workflow file,
 the `ci` row in `AGENTS.md`, the line in `dev-notes/status.md`, and any finding
 recorded in `findings.md` and `findings/` - as one `ci: ...` commit. Step 3
-showed the config but asked nothing, so this question is the yes; commit on it.
+showed the config but asked nothing, so this question is the yes. **Ask it
+once**: where the main-commit hook is installed, run the commit and its prompt
+is the question - do not ask in text as well.
 **Committing is not pushing**, and pushing stays the user's separate call. Left
 uncommitted, all of it is carried onto the first item's branch and merged as
 part of that item.

@@ -345,7 +345,8 @@ Then say **go** or **no-go**, plainly, in one line.
 production on it, and a verdict said only in the conversation is gone when the
 context is cleared.
 
-**Then ask to commit what this run wrote**, on `main`, as its own
+**Then commit what this run wrote, without asking** - it is workflow state
+(`AGENTS.md`'s rules) - on `main`, as its own
 `chore: preflight` commit: `blueprint/context/findings.md`, the entries under
 `blueprint/findings/`, and the `preflight:` line in `dev-notes/status.md`.
 `deploy` refuses a dirty tree, so a verdict left uncommitted stops the very

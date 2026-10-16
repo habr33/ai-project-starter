@@ -136,9 +136,12 @@ available. Either accept it explicitly or put one check somewhere else.
 
 Record it in `dev-notes/status.md`.
 
-**Then ask to commit what this run wrote**, as its own `chore: monitor ...`
+**Then commit what this run wrote**, as its own `chore: monitor ...`
 commit naming its files - the client wiring from Step 3, shown as a diff first
-because it is code, the status record, and any finding it changed. **`deploy`
+because it is code, the status record, and any finding it changed. The status
+record and findings alone are workflow state, committed without asking; with the
+client wiring it is asked about once - by the main-commit hook where that is
+installed, not in text too. **`deploy`
 refuses a dirty tree**, and the next `build` would carry it onto an item's branch
 as someone else's work. Committing is not pushing.
 

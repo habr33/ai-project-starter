@@ -39,7 +39,7 @@ its history - closed items move out, detail lives in files read on demand.
 | `blueprint/history/` | every completed item, archived | `ship`, `verify` |
 | `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
 | `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
-| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight` |
+| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight`, `ship` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
 | `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
 | `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `ship`, `autopilot` |
@@ -145,10 +145,14 @@ Or just ask in plain language - "spec the next item", "run the review".
   "run build, just tick it" still runs `build`; its checks are the point.
 - **Never build on `main`.** Work happens on a branch.
 - **Never commit code the user has not seen and approved** - except
-  `autopilot`'s checkpoints, in a run the user started.
+  `autopilot`'s checkpoints, in a run the user started. **Workflow state**
+  (`blueprint/`, `dev-notes/`, `CHANGELOG.md`) is not code: its skill commits
+  it unasked. Else ask once - not in text if the hook asks.
 - **Never push, deploy, provision, or change a remote service** without a
   separate explicit yes in the current conversation. Approval to merge is not
   approval to push; approval to deploy to staging is not approval for production.
+  Standing yes: `ship` pushes `main` on merge if the user sets:
+  **Push main without asking:** no
 - **Never claim something passes without naming the evidence** - the command and
   its output, the screenshot, the response.
 - **Never print or commit a secret.** Report the category, file, and line.

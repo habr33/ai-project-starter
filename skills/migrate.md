@@ -113,8 +113,8 @@ not understand.
 Update `dev-notes/status.md`, and add a `dev-notes/decisions.md` entry when the
 change was a real decision rather than a mechanical addition.
 
-**Then ask to commit what this run wrote** - the record above, and any finding it
-changed. **Mid-item, that is the item's branch**, beside the migration file it
+**Then commit what this run wrote, without asking** - the record above, and any
+finding it changed, are workflow state (`AGENTS.md`'s rules). **Mid-item, that is the item's branch**, beside the migration file it
 records, which belongs to the item's build step. **Applying an already-merged
 migration to another environment, it is `main`**, as its own `chore: migrate
 <environment>` commit: `deploy` refuses a dirty tree, so a record left

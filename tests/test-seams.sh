@@ -1531,10 +1531,13 @@ sp=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
 cx=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
 _pair() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
 
-_pair "ship routes to distill after a merge"      "after every ship" "$sp"
-_pair "and says why a stale overview matters"     "starts the next session on a false picture" "$sp"
+# D24: ship now runs distill itself, before its work commit - routing to it
+# afterwards made a second commit on main after every item.
+_pair "ship runs distill before its work commit"   "Run \`distill\` now" "$sp"
+_pair "and says why it is not left for afterwards" "became a second commit on \`main\` after every item" "$sp"
 _pair "distill lists ship as a reason to re-run"  "After every \`ship\`" "$cx"
-_pair "and names it the most frequent one"        "most frequent reason to re-run" "$cx"
+_pair "and says ship runs it itself"              "\`ship\` runs this itself" "$cx"
+_pair "and that run from ship it commits nothing" "Run from \`ship\`, commit nothing" "$cx"
 
 section "the lessons a real deployment taught"
 # Every one of these came from taking one project from ideate to a live, backed
@@ -2642,7 +2645,7 @@ section "the setup work is committed before the first item branches"
 assert_ok "scaffold commits what landed" _says skills/scaffold.md 'Commit what landed, before handing on'
 assert_ok "ci commits its workflow locally, and does not push" \
   _says skills/ci.md 'Ask to commit what this run wrote, on `main`, locally'
-assert_ok "distill commits what it wrote" _says skills/distill.md 'Then ask to commit what this run wrote'
+assert_ok "distill commits what it wrote" _says skills/distill.md 'Then commit what this run wrote'
 assert_ok "prototype commits the record and the mockups" \
   _says skills/prototype.md 'Commit the record and the mockups on `main`'
 assert_ok "and build looks at git status before it branches" \
@@ -2747,9 +2750,9 @@ section "a setup skill's commit names everything the skill wrote"
 setup_commits=(
   'scaffold|Commit what landed, before handing on'
   'ci|Ask to commit what this run wrote, on `main`, locally'
-  'distill|Then ask to commit what this run wrote'
+  'distill|Then commit what this run wrote'
   'prototype|Commit the record and the mockups on `main`'
-  'preflight|Then ask to commit what this run wrote'
+  'preflight|Then commit what this run wrote, without asking'
 )
 for entry in "${setup_commits[@]}"; do
   s=${entry%%|*}; anchor=${entry#*|}; para=$(_para "skills/$s.md" "$anchor")
@@ -3212,15 +3215,48 @@ assert_ok "and leaves that .gitignore as it was" \
 # leaves it uncommitted stops the release it was part of. host, deploy, migrate,
 # monitor and docs all did. Declared by the Writes: line, so a new skill that
 # records there is held to it without anyone remembering this list.
-section "a skill that records in dev-notes/status.md asks to commit it"
+section "a skill that records in dev-notes/status.md commits it"
 _says_i() { grep -qiF -- "$2" <<<"$(tr '\n' ' ' < "$1" | tr -s ' ')"; }
 _status_writers=""
 for f in skills/*.md; do
   _w="$(grep -m1 '^\*\*Writes:\*\*' "$f" || true)"
   grep -qF '`dev-notes/status.md`' <<<"$_w" || continue
   _status_writers="$_status_writers ${f#skills/}"
-  assert_ok "${f#skills/} asks to commit what it wrote" _says_i "$f" 'ask to commit what this run wrote'
+  # ship records it in Step 2 and commits it in the item's one work commit.
+  assert_ok "${f#skills/} commits what it wrote" sh -c '
+    t=$(tr "\n" " " < "$1" | tr -s " ")
+    case "$t" in *"commit what this run wrote"*|*"one commit covering the code and this bookkeeping"*) ;; *) exit 1 ;; esac' _ "$f"
 done
+
+# D24: a commit made "without asking" must hold only workflow state - the paths
+# AGENTS.md's rule names and the main-commit hook lets through. Declared by the
+# Writes: line, so a skill that starts writing code there is caught here.
+section "a skill that commits without asking writes only workflow state, D24"
+_unasked=""
+for f in skills/*.md; do
+  _says_i "$f" 'commit what this run wrote, without asking' || continue
+  _unasked="$_unasked ${f#skills/}"
+  _bad=$(grep -m1 '^\*\*Writes:\*\*' "$f" | grep -o '`[^`]*`' | tr -d '`' \
+         | grep -vE '^(blueprint/|dev-notes/|CHANGELOG\.md$)' || true)
+  assert_eq "${f#skills/} writes nothing but workflow state" "" "$_bad"
+done
+assert_ok "and the loop checked something" test -n "$_unasked"
+# The hook's pattern and AGENTS.md's tables are the same list, written twice.
+_paths=$(awk '/^\| File \| What it holds \| Written by \|/ {t=1; next} /^$/ {t=0} t' template/AGENTS.md \
+         | grep -oE '^\| `[^`]+`' | tr -d '|` ' | sort -u)
+assert_ok "the two state-file tables were read" test "$(wc -w <<<"$_paths")" -ge 15
+_hook_re=$(grep -o 'STATE = re.compile(r"[^"]*")' lib/hook-main-commit.sh | sed 's/^STATE = re.compile(r"//; s/")$//')
+assert_ok "the main-commit hook names its pattern" test -n "$_hook_re"
+_uncovered=$(python3 -c 'import re,sys; r=re.compile(sys.argv[1]); print(" ".join(p for p in sys.argv[2].split() if not r.fullmatch(p) and not r.fullmatch(p+"x")))' "$_hook_re" "$_paths")
+assert_eq "every state file AGENTS.md declares is workflow state to the hook" "" "$_uncovered"
+# The standing push yes is one line read by two things: ship, and the hook.
+for f in template/AGENTS.md skills/ship.md; do
+  assert_ok "$f names the push line exactly" grep -qF '**Push main without asking:**' "$f"
+done
+assert_ok "the template ships it as no" grep -qE '^ *\*\*Push main without asking:\*\* no$' template/AGENTS.md
+assert_ok "and the hook reads that same line" grep -qF 'Push main without asking:' lib/hook-main-commit.sh
+assert_ok "and AGENTS.md's commit rule names the same three" \
+  _says template/AGENTS.md '(`blueprint/`, `dev-notes/`, `CHANGELOG.md`) is not code'
 assert_ok "and the list is not empty, so the loop above checked something" \
   test -n "$_status_writers"
 
@@ -3262,8 +3298,8 @@ assert_ok "a review outside the run closes autopilot's repairs" \
   _says skills/autopilot.md 'until a `review` run outside this one closes them'
 assert_ok "AGENTS.md names autopilot's checkpoints as the exception to its commit rule" \
   _says template/AGENTS.md "except \`autopilot\`'s checkpoints"
-assert_ok "and so does ai-interaction.md" \
-  _says template/blueprint/context/ai-interaction.md 'seen and approved, `autopilot` aside'
+assert_ok "and ai-interaction.md defers to it rather than restating it (D24)" \
+  _says template/blueprint/context/ai-interaction.md "follow \`AGENTS.md\`'s rules"
 assert_lacks "progress does not call every commit on main drift" skills/progress.md '^  - work committed directly to `main`$'
 assert_ok "only product code that bypassed ship's merge" \
   _says skills/progress.md "product code committed to \`main\` by anything but \`ship\`'s merge"

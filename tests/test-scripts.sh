@@ -1204,6 +1204,52 @@ assert_ok "and a checkout of files is not a branch" \
   grep -q '"ask"' <<<"$(mc 'git checkout -- . && git commit -m x')"
 assert_ok "and a branch made after the commit does not count" \
   grep -q '"ask"' <<<"$(mc 'git commit -m x && git switch -c later')"
+
+# D24: a commit on main holding only workflow state is the skill's record of
+# its own run - asked once in text and again by this hook, in the life-os run
+# the second ask was the one people stopped reading. Anything else still asks.
+mkdir -p "$w/blueprint/context" "$w/dev-notes" "$w/web/blueprint/context" "$w/src"
+echo s >"$w/dev-notes/status.md"; echo p >"$w/blueprint/build-plan.md"; echo c >"$w/web/blueprint/context/c.md"
+quiet() { assert_eq "workflow state alone on main says nothing: $1" "" "$(mc "$1")"; }
+asks() { assert_ok "and this still asks: $1" grep -q '"ask"' <<<"$(mc "$1")"; }
+quiet 'git add -A && git commit -m x'
+quiet 'git add dev-notes blueprint && git commit -m x'
+quiet 'git add web/blueprint/context/c.md && git commit -m x'
+echo code >"$w/src/a"
+asks 'git add -A && git commit -m x'
+asks 'git add dev-notes && git commit -m x src/a'
+assert_ok "naming what is not workflow state" grep -q 'workflow state: src/a' <<<"$(mc 'git add -A && git commit -m x')"
+quiet 'git add dev-notes && git commit -m x'
+(cd "$w" && git add src/a)
+asks 'git add dev-notes && git commit -m x'
+(cd "$w" && git reset -q && echo a >a && git add a && git commit -qam t)
+asks 'git commit -am x'
+for c in 'git commit -m x' 'git add dev-notes && rm -rf src && git commit -m x' \
+         'cd . && git add dev-notes && git commit -m x' 'git add dev-notes && git commit --amend -m x'; do
+  asks "$c"
+done
+# A blueprint/ inside code is not a part's: a part has blueprint/context/.
+mkdir -p "$w/lib/blueprint" && echo x >"$w/lib/blueprint/y"
+asks 'git add lib && git commit -m x'
+rm -rf "$w/lib" "$w/src"
+
+# ...and a plain push of main is allowed where the committed AGENTS.md says so.
+git init -q --bare "$w.remote" && git -C "$w" remote add origin "$w.remote"
+allows() { grep -q '"permissionDecision": *"allow"' <<<"$(mc "$1")"; }
+assert_fails "no policy, a push is left to Claude Code" allows 'git push origin main'
+printf '**Push main without asking:** yes\n' >"$w/AGENTS.md"
+assert_fails "a policy only in the working tree grants nothing" allows 'git push origin main'
+(cd "$w" && git add AGENTS.md dev-notes blueprint web && git commit -qm policy)
+for c in 'git push origin main' 'git push' 'git push -q origin HEAD'; do
+  assert_ok "committed, a plain push of main is allowed: $c" allows "$c"
+done
+for c in 'git push --force' 'git push -f' 'git push --force origin main' 'git push origin +main' 'git push origin main:prod' 'git push origin --tags' \
+         'git push nowhere main' 'git push origin main && rm -rf x' 'git commit -m x && git push origin main'; do
+  assert_fails "and this is not: $c" allows "$c"
+done
+(cd "$w" && git checkout -qb other)
+assert_fails "nor a push from another branch" allows 'git push origin main'
+(cd "$w" && git checkout -q main)
 (cd "$w" && git checkout -qb item)
 assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
 # ...unless the command switches to main first - ship's squash, run from the
@@ -1275,6 +1321,12 @@ assert_eq "--hooks keeps the settings already there" "opus" "$(hk 'd["model"]')"
 assert_eq "and the hooks already there" "mine.sh" "$(hk 'd["hooks"]["PreToolUse"][0]["hooks"][0]["command"]')"
 assert_ok "adds the main-commit hook on Bash" grep -q 'main-commit.sh' <<<"$(hk '[e for e in d["hooks"]["PreToolUse"] if e.get("matcher")=="Bash"]')"
 assert_ok "adds the budget hook at session start" grep -q 'context-budget.sh' <<<"$(hk 'd["hooks"]["SessionStart"]')"
+# D24: what the loop runs constantly stops prompting. git commit is among them
+# only because the main-commit hook still asks about code on main.
+for r in 'Bash(.agents/bin/check-project.sh:*)' 'Bash(git status:*)' 'Bash(git commit:*)'; do
+  assert_ok "allows $r" grep -qF "'$r'" <<<"$(hk 'd["permissions"]["allow"]')"
+done
+assert_fails "and never a push" grep -q 'push' <<<"$(hk 'd["permissions"]["allow"]')"
 assert_ok "copies the hook scripts, runnable" test -x "$t/.claude/hooks/hook-main-commit.sh" -a -x "$t/.claude/hooks/hook-context-budget.sh"
 assert_ok "and they are the pack's current ones" cmp -s "$MC" "$t/.claude/hooks/hook-main-commit.sh"
 before=$(cat "$s"); "$IN" --target "$t" --hooks >/dev/null 2>&1
