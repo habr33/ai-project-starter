@@ -1,0 +1,793 @@
+#!/usr/bin/env bash
+# Install the workflow into a project that already exists.
+#
+# Installs every skill once, into .agents/skills, links .claude/skills to it,
+# and copies the template files that are not already there. Files you own - the plans, the specs, dev-notes - are
+# never overwritten, with or without --force.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET="$PWD"
+FORCE=0
+
+usage() {
+  cat <<'USAGE'
+install.sh - add the workflow to an existing project
+
+Usage:
+  install.sh [--target DIR] [--force] [--hooks] [--git-hooks]
+  install.sh --status [--target DIR]
+
+  --target DIR   Where to install (default: the current directory)
+  --force        Accepted but no longer needed: skills are always replaced.
+                 Nothing touches files you own - plans, specs, dev-notes.
+  --skills-only  Install the skills and nothing else. For the product root of a
+                 multi-part project, which needs every skill available but has
+                 no build loop of its own - no build-plan, no current-work.
+                 Detected automatically: a directory with the board and no
+                 'Part:' in its AGENTS.md is a product root, and this is implied.
+  --hooks        Also install two Claude Code hooks (D20) into .claude/settings.json:
+                 a commit on main asks the person first, and a session starts
+                 with a warning when the loaded context is over its budget.
+                 Where --git-hooks is active, a commit with --no-verify or -n
+                 and a change to core.hooksPath are denied. A commit on main
+                 holding only workflow state does not ask, and the read-only
+                 git commands, git add and git commit and the project checker
+                 are allowed, so they stop prompting (D24).
+                 Merged into any settings already there; nothing else changes.
+  --git-hooks    Also install a git pre-commit hook (D23), for every tool: a
+                 commit whose state files are out of form is refused, naming
+                 the skill that repairs each. Sets core.hooksPath to
+                 .agents/git-hooks - unless a hook manager (husky, pre-commit,
+                 lefthook, or core.hooksPath already set) runs this repository's
+                 hooks; then only the line to add to it is printed. Run it at
+                 the repository's top level - one hook serves the whole repo.
+  --status       Write nothing: say which pack version DIR was installed from
+                 (.agents/pack-version) and name every skill or script there
+                 that differs from this pack. Exit 0 when it is current, 1 when
+                 it is not. Run it per part in a multi-part product.
+  --help         This
+USAGE
+}
+
+SKILLS_ONLY=0
+HOOKS=0
+GIT_HOOKS=0
+STATUS=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --target) TARGET="${2:?--target needs a directory}"; shift 2 ;;
+    --force)  FORCE=1; shift ;;
+    --skills-only) SKILLS_ONLY=1; shift ;;
+    --hooks)  HOOKS=1; shift ;;
+    --git-hooks) GIT_HOOKS=1; shift ;;
+    --status) STATUS=1; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+  esac
+done
+
+[ -d "$TARGET" ] || { echo "No such directory: $TARGET" >&2; exit 1; }
+TARGET="$(cd "$TARGET" && pwd)"
+
+# What an install came from (D25): the last commit that touched anything this
+# script copies, and its date - not HEAD, so a commit to the pack's own notes
+# does not make every project look behind. "+changes" when those files have
+# uncommitted edits; "unversioned" when this copy of the pack is not a checkout.
+# It is a label for a person. --status compares the files themselves.
+pack_version() {
+  local v
+  v=$(git -C "$HERE" log -1 --abbrev=12 --format='%h %cs' -- skills lib template install.sh 2>/dev/null)
+  [ -n "$v" ] || { echo unversioned; return; }
+  [ -z "$(git -C "$HERE" status --porcelain -- skills lib template install.sh 2>/dev/null)" ] || v="$v +changes"
+  echo "$v"
+}
+PACK_VERSION="$(pack_version)"
+PACK_SCRIPTS="merge-capabilities.sh check-project.sh"
+
+if [ "$STATUS" -eq 1 ]; then
+  [ -d "$TARGET/.agents/skills" ] || { echo "$TARGET: the workflow is not installed here" >&2; exit 1; }
+  recorded="$(cat "$TARGET/.agents/pack-version" 2>/dev/null || true)"
+  differing=""
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    cmp -s "$src" "$TARGET/.agents/skills/$name/SKILL.md" || differing="$differing $name"
+  done
+  for script in $PACK_SCRIPTS; do
+    cmp -s "$HERE/lib/$script" "$TARGET/.agents/bin/$script" || differing="$differing $script"
+  done
+  echo "$TARGET"
+  echo "  installed from: ${recorded:-nothing recorded}"
+  echo "  this pack:      $PACK_VERSION"
+  if [ -z "$differing" ] && [ -n "$recorded" ]; then
+    echo "  current - every skill and script matches this pack"
+    exit 0
+  fi
+  [ -n "$differing" ] && echo "  $(wc -w <<<"$differing" | tr -d ' ') differ from this pack:$differing"
+  [ -n "$recorded" ] || echo "  records no pack version - installed before the pack recorded one"
+  echo "  Re-install between items, never mid-item: install.sh --target $TARGET"
+  exit 1
+fi
+
+# --hooks merges into a settings.json the user may already own, so one that
+# will not parse is refused here, before anything else is written - not after
+# the skills are in and the hooks half-made.
+settings="$TARGET/.claude/settings.json"
+if [ "$HOOKS" -eq 1 ]; then
+  command -v python3 >/dev/null 2>&1 \
+    || { echo "--hooks needs python3, to merge into .claude/settings.json" >&2; exit 1; }
+  if [ -e "$settings" ] && ! python3 -c 'import json,sys; assert isinstance(json.load(open(sys.argv[1])), dict)' "$settings" 2>/dev/null; then
+    echo "$settings is not a JSON object - fix it, then run --hooks again. Nothing was written." >&2
+    exit 1
+  fi
+fi
+
+# --git-hooks sets one repository-wide config value, so it is refused below the
+# top level - a part of a multi-part product is not a repository - before
+# anything is written.
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  command -v git >/dev/null 2>&1 || { echo "--git-hooks needs git. Nothing was written." >&2; exit 1; }
+  git_top=$(git -C "$TARGET" rev-parse --show-toplevel 2>/dev/null) \
+    || { echo "--git-hooks: $TARGET is not a git repository - git init it first. Nothing was written." >&2; exit 1; }
+  if [ "$(cd "$git_top" && pwd -P)" != "$(cd "$TARGET" && pwd -P)" ]; then
+    echo "--git-hooks: $TARGET is inside the repository at $git_top - one hook serves the whole repository, so run --git-hooks there. Nothing was written." >&2
+    exit 1
+  fi
+fi
+
+# The product root of a multi-part project takes the skills and nothing else -
+# no code is built there and there is no build loop. README documents
+# --skills-only for it, but a flag you have to remember is not a guard: run
+# without it and the root got a fundamentals.md it has no use for, and six
+# AGENTS.md sections were reported as legacy drift because they were compared
+# against the *part* template. Both symptoms were one missing question.
+#
+# A product root has the board and declares no `Part:`; a part declares both
+# `Part:` and `Product root:`. That is the difference, so detect it rather than
+# asking the user to.
+PRODUCT_ROOT=0
+if [ -f "$TARGET/blueprint/orchestration.md" ] \
+   && ! grep -q '^- Part: ' "$TARGET/AGENTS.md" 2>/dev/null; then
+  PRODUCT_ROOT=1
+  if [ "$SKILLS_ONLY" -eq 0 ]; then
+    SKILLS_ONLY=1
+    DETECTED_ROOT=1
+  fi
+fi
+DETECTED_ROOT="${DETECTED_ROOT:-0}"
+
+# Was the workflow already here? Decided before anything is written, because
+# every counter below changes as a side effect of writing. A first install and an
+# upgrade need different closing advice, and inferring it afterwards from what
+# was written gets it backwards: on a first install every pack-owned file is
+# "new", which looks exactly like nothing needing an update.
+HAD_WORKFLOW=0
+{ [ -d "$TARGET/.claude/skills" ] || [ -d "$TARGET/.agents/skills" ]; } && HAD_WORKFLOW=1
+
+# --- skills: one copy in .agents/skills, and .claude/skills linked to it ---
+#
+# .agents/skills is where opencode, Codex and the other tools look. Claude Code
+# looks only in .claude/skills - checked with 2.1.280, which listed no skill
+# from .agents/skills alone and ran one through a directory symlink. So the
+# project holds one copy, and .claude/skills is a link to it: with two copies,
+# every repo-wide search hits each passage twice, and a hand edit to one copy
+# makes the tools quietly disagree.
+#
+# Where a symlink cannot be made or does not resolve - Windows without symlink
+# support, where `ln -s` copies or git checks the link out as a plain file -
+# .claude/skills is a copy instead, and the report says so.
+skill_count=0
+replaced_names=""
+skills_shape=""
+claude_skills="$TARGET/.claude/skills"
+
+# An existing real .claude/skills directory is converted to the link only when
+# nothing in it would be lost: every entry is the pack's, or the same in
+# .agents/skills, or absent there and moved across. Decided before anything is
+# written, so a directory we cannot convert is left exactly as it was.
+convert_claude=0
+if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+  convert_claude=1
+  for dir in "$claude_skills"/*/; do
+    [ -d "$dir" ] || continue
+    n="$(basename "$dir")"
+    [ -f "$HERE/skills/$n.md" ] && continue
+    if [ -e "$TARGET/.agents/skills/$n" ] && ! diff -rq "$dir" "$TARGET/.agents/skills/$n" >/dev/null 2>&1; then
+      convert_claude=0
+      skills_kept_reason="$n differs between .claude/skills and .agents/skills"
+      break
+    fi
+  done
+fi
+
+adapters=".agents"
+for adapter in $adapters; do
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    dest="$TARGET/$adapter/skills/$name/SKILL.md"
+    # Skills are pack-owned and always overwritten. `skills/` is the one source
+    # and install fans it out - editing an installed copy is editing a generated
+    # artifact, which the pack says plainly ("only ever one copy to edit").
+    #
+    # This used to keep any skill whose content differed, on the assumption that
+    # a difference meant a local edit. It usually means the opposite: the pack
+    # moved on. So a plain re-install upgraded nothing, and picking up new skills
+    # required knowing to pass --force, whose own help calls it a way to replace
+    # *edited* files. A stale skill is invisible and behaves like a current one,
+    # which is the worst shape available.
+    #
+    # A skill under a name this pack does not have is the user's and is never
+    # touched here - it is not in skills/, so this loop never reaches it.
+    if [ -e "$dest" ] && ! cmp -s "$src" "$dest"; then
+      case " $replaced_names " in
+        *" $name "*) ;;
+        *) replaced_names="$replaced_names $name" ;;
+      esac
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    skill_count=$((skill_count + 1))
+  done
+done
+
+# Skills name scripts they run inside the project - ship and verify merge a
+# spec's behaviour changes; progress, ci and ship run the project checker (D23) -
+# and a project has no lib/ of the pack's. So they are installed beside the
+# skills, pack-owned and always replaced like them.
+mkdir -p "$TARGET/.agents/bin"
+for script in $PACK_SCRIPTS; do
+  cp "$HERE/lib/$script" "$TARGET/.agents/bin/$script"
+  chmod +x "$TARGET/.agents/bin/$script"
+done
+previous_version="$(cat "$TARGET/.agents/pack-version" 2>/dev/null || true)"
+echo "$PACK_VERSION" > "$TARGET/.agents/pack-version"
+
+# A pack skill in a real .claude/skills directory is about to be overwritten (the
+# copy shape) or removed (the conversion), and the report above compared only
+# .agents/skills. An edit made in the copy Claude Code actually reads would go
+# without a word whenever the pack's own version had not changed - so compare
+# it here, before either happens, and name it with the rest.
+if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    { [ -f "$claude_skills/$name/SKILL.md" ] && ! cmp -s "$src" "$claude_skills/$name/SKILL.md"; } || continue
+    case " $replaced_names " in
+      *" $name "*) ;;
+      *) replaced_names="$replaced_names $name" ;;
+    esac
+  done
+fi
+
+# Copy the pack's skills into .claude/skills - the fallback shape, and the shape
+# an unconvertible existing directory keeps.
+copy_claude_skills() {
+  for src in "$HERE"/skills/*.md; do
+    name="$(basename "$src" .md)"
+    mkdir -p "$claude_skills/$name"
+    cp "$src" "$claude_skills/$name/SKILL.md"
+  done
+}
+
+mkdir -p "$TARGET/.claude"
+if [ -L "$claude_skills" ] && [ -f "$claude_skills/spec/SKILL.md" ]; then
+  skills_shape="linked"
+elif [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ] && [ "$convert_claude" -eq 0 ]; then
+  copy_claude_skills
+  skills_shape="copied (kept: $skills_kept_reason)"
+else
+  if [ -d "$claude_skills" ] && [ ! -L "$claude_skills" ]; then
+    # Convertible: move across what .agents/skills lacks, then drop the copy.
+    for dir in "$claude_skills"/*/; do
+      [ -d "$dir" ] || continue
+      n="$(basename "$dir")"
+      [ -e "$TARGET/.agents/skills/$n" ] || mv "$dir" "$TARGET/.agents/skills/$n"
+    done
+    rm -rf "$claude_skills"
+    skills_converted=1
+  elif [ -e "$claude_skills" ] || [ -L "$claude_skills" ]; then
+    # A plain file (a symlink git could not check out) or a dangling link.
+    rm -f "$claude_skills"
+  fi
+  ln -s ../.agents/skills "$claude_skills" 2>/dev/null || true
+  if [ -L "$claude_skills" ] && [ -f "$claude_skills/spec/SKILL.md" ]; then
+    skills_shape="linked"
+  else
+    rm -rf "$claude_skills"
+    copy_claude_skills
+    skills_shape="copied (this filesystem did not make a working symlink)"
+  fi
+fi
+
+# --- opencode commands: a thin `/name` wrapper per skill ---
+#
+# opencode discovers the skills above (it searches .claude/skills and
+# .agents/skills), but skills there are invoked by the model matching a
+# description - there is no `/name` to type, the way Claude Code exposes one.
+# This pack's entire documented UX is "run `spec`", so without these a user
+# types `/spec`, gets nothing, and reasonably concludes the skills did not load.
+#
+# These are wrappers, not copies: the skill body stays the single source. Format
+# is opencode's own (.opencode/command/<name>.md, frontmatter + prompt body,
+# $ARGUMENTS for what the user typed).
+#
+# Wrappers are generated from `skills/`, so they are pack-owned and always
+# rewritten - the same rule as the skills themselves, for the same reason. This
+# used to skip any wrapper that already existed unless --force, which meant a
+# skill's description could change, the installed skill would take the new one,
+# and the wrapper would keep the old. In opencode the wrapper's description is
+# what the command menu shows and what the model matches a request against, so
+# the stale copy is the visible one.
+command_count=0
+replaced_commands=""
+for src in "$HERE"/skills/*.md; do
+  name="$(basename "$src" .md)"
+  dest="$TARGET/.opencode/command/$name.md"
+  # First sentence only. Split on ". " rather than "." so filenames in the text
+  # (current-work.md, project-plan.md) do not truncate it mid-phrase.
+  desc="$(sed -n 's/^description:[[:space:]]*"\{0,1\}//p' "$src" | head -1 \
+          | sed 's/\. .*/./' | sed 's/"//g')"
+  # A first sentence can still run long. Trim on a word boundary rather than
+  # mid-word, so the command menu stays readable.
+  if [ "${#desc}" -gt 150 ]; then
+    desc="$(printf '%s' "$desc" | cut -c1-150 | sed 's/[ ,-]*[^ ]*$//')..."
+  fi
+  # The modes a skill declares in its `## Input` table. Rule 15 makes sure they
+  # are named in the skill's own description - which is what Claude Code matches
+  # on - but the wrapper keeps only the first sentence, so no mode ever survived
+  # into it. In opencode the wrapper is what the command menu shows and what the
+  # model matches a request against, so every mode was invisible there:
+  # `/ideate --rescope` worked, because $ARGUMENTS reaches the skill, but nobody
+  # could discover it. Naming them in the body costs one line and no menu space.
+  modes="$(sed -n '/^## Input/,/^## [^I]/p' "$src" | grep -oE '^\| `[^`]+`' \
+           | sed 's/^| //; s/`//g' | grep -E '^-|^[a-z]' | tr '\n' ' ' || true)"
+  mkdir -p "$(dirname "$dest")"
+  # Generated beside the target and compared, so a wrapper that changed can be
+  # named in the report rather than replaced silently.
+  tmp="$dest.tmp.$$"
+  cat > "$tmp" <<EOF
+---
+description: $desc
+---
+
+Use the \`$name\` skill from this project's workflow, following its steps in
+order and stopping at every gate it defines. Read its \`## Before you start\`
+section first and report anything missing rather than working around it.
+EOF
+  if [ -n "$modes" ]; then
+    cat >> "$tmp" <<EOF
+
+Modes this skill declares: $modes- see its \`## Input\` table for what each does.
+EOF
+  fi
+  cat >> "$tmp" <<EOF
+
+\$ARGUMENTS
+EOF
+  if [ -e "$dest" ] && ! cmp -s "$tmp" "$dest"; then
+    replaced_commands="$replaced_commands $name"
+  fi
+  mv -f "$tmp" "$dest"
+  command_count=$((command_count + 1))
+done
+
+# Where is this being installed? A plain install is a single-part project and
+# gets everything. The two multi-part shapes each have files they must NOT have,
+# and writing one is not harmless - it is silently wrong:
+#
+#   - In a part, `blueprint/` means *that part's* blueprint, so a stub
+#     project-plan.md there is what an unqualified path resolves to instead of
+#     the real product plan one level up. lib/seed-part.sh deletes it for exactly
+#     that reason, and a re-install used to put it back.
+#   - At a product root, the build loop is per-part. A build-plan.md or
+#     current-work.md there is a second answer to a question that already has one.
+#
+# This matters most on an upgrade - re-running install.sh over a multi-part
+# product to pick up new skills is the normal way to do that.
+IS_PART=0
+IS_PRODUCT_ROOT=0
+[ -f "$TARGET/AGENTS.md" ] && grep -q '^- Part: ' "$TARGET/AGENTS.md" && IS_PART=1
+[ -f "$TARGET/blueprint/orchestration.md" ] && IS_PRODUCT_ROOT=1
+
+# --- template: only ever written when absent. These become yours on first write. ---
+template_count=0
+refreshed=0
+if [ "$SKILLS_ONLY" -eq 0 ]; then
+  while IFS= read -r src; do
+    rel="${src#"$HERE"/template/}"
+    case "$rel" in
+      # The coordination board belongs at the product root of a multi-part
+      # project, never inside a part. new-project.sh --parts places it.
+      blueprint/orchestration.md) continue ;;
+      # template/product/ is the product root's own AGENTS.md and CLAUDE.md.
+      # Also placed by new-project.sh --parts, and meaningless in a part.
+      product/*) continue ;;
+      # The product plan lives at the root and is read from a part as
+      # `../blueprint/project-plan.md`.
+      blueprint/project-plan.md)
+        [ "$IS_PART" -eq 1 ] && continue ;;
+      # The build loop belongs to a part, never to the product root.
+      blueprint/build-plan.md|blueprint/context/current-work.md|\
+      blueprint/context/findings.md|blueprint/context/coding-standards.md|\
+      blueprint/context/project-overview.md|blueprint/context/needs-you.md|\
+      blueprint/history/*)
+        [ "$IS_PRODUCT_ROOT" -eq 1 ] && continue ;;
+    esac
+    dest="$TARGET/$rel"
+
+    # Pack-owned files are refreshed on every install. Everything else is
+    # written once and never touched again.
+    #
+    # Without this, a template file froze at install time forever: a project set
+    # up months ago still had a findings.md stub naming skills that no longer
+    # exist, an 864-line blueprint/README.md describing a workflow that had been
+    # replaced, and a CLAUDE.md importing a file nothing writes. `setup` was
+    # correcting all of it by hand - 1741 deleted lines of work the installer
+    # should have done.
+    #
+    # A file is only listed here if the project never has a reason to edit it.
+    # Anything holding project content - the plans, the standards, the state
+    # files, AGENTS.md - is the user's and is never overwritten, even when the
+    # template moves on.
+    case "$rel" in
+      blueprint/context/fundamentals.md|\
+      blueprint/design-kit/*|\
+      blueprint/history/*/README.md)
+        if [ -e "$dest" ]; then
+          cmp -s "$src" "$dest" && continue
+          cp "$src" "$dest"
+          refreshed=$((refreshed + 1))
+        else
+          # Writing it for the first time is not refreshing it - counting it as
+          # one made a first install look like an upgrade.
+          mkdir -p "$(dirname "$dest")"
+          cp "$src" "$dest"
+          template_count=$((template_count + 1))
+        fi
+        continue ;;
+    esac
+
+    if [ -e "$dest" ]; then continue; fi
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    template_count=$((template_count + 1))
+  done < <(find "$HERE/template" -type f)
+fi
+
+# --- prune skills this pack used to have -------------------------------------
+#
+# Installing never removed anything, so a project set up long ago carried every
+# skill it was ever given. One had 42 installed and 16 were from a predecessor
+# pack - `audit`, `brief`, `onboard`, `techstack` and the rest - all loaded by
+# the agent, all contradicting the current workflow. check.sh rule 5 catches a
+# stale *reference* inside this repo; nothing caught stale *files* inside a
+# project, which is the copy anyone actually runs against.
+#
+# Only names in lib/retired-names are removed. Anything else unrecognised is the
+# user's own skill and is reported, never deleted - a `run-<project>` skill is a
+# real example, and deleting it would be destroying their work to tidy ours.
+pruned_names=""
+unknown=""
+retired_file="$HERE/lib/retired-names"
+if [ -f "$retired_file" ]; then
+  retired_names="$(grep -v '^#' "$retired_file" | grep -v '^[[:space:]]*$' | tr '\n' ' ')"
+  for adapter in "$TARGET/.claude/skills" "$TARGET/.agents/skills"; do
+    [ -d "$adapter" ] || continue
+    # A linked .claude/skills is .agents/skills; walking it twice is harmless
+    # for removal but would report every unknown name from both.
+    [ -L "$adapter" ] && continue
+    for dir in "$adapter"/*/; do
+      [ -d "$dir" ] || continue
+      name="$(basename "$dir")"
+      [ -f "$HERE/skills/$name.md" ] && continue
+      case " $retired_names " in
+        *" $name "*)
+          rm -rf "$dir"
+          rm -f "$TARGET/.opencode/command/$name.md"
+          # Count names, not directories. A skill can exist in one adapter and
+          # not the other - a hand-written Claude Code skill usually does - so
+          # halving a directory count reports the wrong number.
+          case " $pruned_names " in *" $name "*) ;; *) pruned_names="$pruned_names $name" ;; esac ;;
+        *)
+          case " $unknown " in *" $name "*) ;; *) unknown="$unknown $name" ;; esac ;;
+      esac
+    done
+  done
+fi
+
+# --- legacy shapes: report, never rewrite ------------------------------------
+#
+# A project installed before a structural change carries the old shape, and the
+# installer cannot fix it: these are project-owned files, and overwriting one is
+# the defect the ownership boundary above exists to prevent. Worse, a merge here
+# needs judgement a script does not have - the first real `setup` run corrected
+# four wrong rules while restructuring, and a script stripping "the duplicated
+# part" would have deleted those corrections along with the duplication.
+#
+# So: name it, name who fixes it, and touch nothing.
+legacy=""
+cs="$TARGET/blueprint/context/coding-standards.md"
+if [ -f "$cs" ] && grep -qE '^#+ Part 1' "$cs"; then
+  legacy="$legacy\n  - blueprint/context/coding-standards.md still has its own \"Part 1\".\n    The fundamentals now live in fundamentals.md, which the pack refreshes.\n    Run 'setup' to reconcile: it keeps what this project genuinely does\n    differently and drops what is now duplicated."
+fi
+
+# A project's own .gitignore commonly ignores bin/ - new-project.sh wrote one
+# that did until 2026-10-04 - and that silently drops .agents/bin/ from every
+# clone, so ship's merge script exists only on the machine that installed it.
+# The .gitignore is the project's, so this reports the lines and writes none.
+if git -C "$TARGET" check-ignore -q .agents/bin/merge-capabilities.sh 2>/dev/null; then
+  legacy="$legacy\n  - .agents/bin/ is gitignored, so ship's merge script is missing from every clone\n    and ship fails there. Add these two lines to .gitignore, then commit the script:\n      !**/.agents/bin/\n      !**/.agents/bin/**"
+fi
+# AGENTS.md is project-owned - it holds Commands and Environments, which are this
+# project's - so it is never overwritten, and a section added to the template
+# later never reaches a project that already exists. One had no Environments
+# table at all while nine skills read it, including `migrate`, whose rule is that
+# an environment *not* in the table is treated as holding real data. With no
+# table, that is undefined rather than safe.
+#
+# Compared by heading, and reported rather than inserted: a project may have
+# deleted a section deliberately, and this file is not ours to edit.
+# A product root's AGENTS.md comes from template/product/AGENTS.md and has
+# deliberately different sections. Comparing it against the part template
+# reported six sections missing and told the user to run `setup` over a file
+# that was exactly right.
+AGENTS_TEMPLATE="$HERE/template/AGENTS.md"
+[ "$PRODUCT_ROOT" -eq 1 ] && AGENTS_TEMPLATE="$HERE/template/product/AGENTS.md"
+if [ -f "$TARGET/AGENTS.md" ] && [ -f "$AGENTS_TEMPLATE" ]; then
+  missing_sections=""
+  while IFS= read -r heading; do
+    grep -qxF "$heading" "$TARGET/AGENTS.md" || missing_sections="$missing_sections${missing_sections:+, }${heading#\#\# }"
+  done < <(grep '^## ' "$AGENTS_TEMPLATE")
+  [ -n "$missing_sections" ] && legacy="$legacy\n  - AGENTS.md has no: $missing_sections\n    Sections the workflow added after this project was set up. It is your file,\n    so nothing here writes them - 'setup' fills them in from the real project."
+  # The budget is a line, not a heading, so the comparison above cannot see it
+  # missing - and without it nothing measures what every session loads.
+  budget_line="$(grep -m1 -oE '^\*\*Context budget: [0-9]+ KB\.\*\*' "$AGENTS_TEMPLATE" || true)"
+  if [ -n "$budget_line" ] && ! grep -qE '^\*\*Context budget: [0-9]+ KB\.\*\*' "$TARGET/AGENTS.md"; then
+    legacy="$legacy\n  - AGENTS.md states no context budget, so nothing measures what CLAUDE.md\n    loads every session and the project checker reports it. Add this line to\n    AGENTS.md, under the table of loaded files:\n      $budget_line"
+  fi
+fi
+
+# The board's part list was copied verbatim from the template until 2026-09-07,
+# so any product seeded before then names `web.md` and `api.md` whatever its
+# parts are really called - the coordination file wrong about the one thing it
+# exists to record. It is project-owned state (it holds the frozen contract
+# line), so this reports and never rewrites, like every other legacy shape here.
+BOARD="$TARGET/blueprint/orchestration.md"
+if [ -f "$BOARD" ] && [ -d "$TARGET/blueprint/status" ]; then
+  board_wrong=""
+  for f in "$TARGET"/blueprint/status/*.md; do
+    [ -e "$f" ] || continue
+    n=$(basename "$f")
+    grep -q "^    blueprint/status/$n\$" "$BOARD" || board_wrong="$board_wrong $n"
+  done
+  # A listed file that is absent is normal now - status files are not committed,
+  # so a fresh clone has none until each part writes. It is wrong only when no
+  # part of that name is listed in the root's AGENTS.md either.
+  board_phantom=""
+  while read -r n; do
+    [ -n "$n" ] || continue
+    [ -e "$TARGET/blueprint/status/$n" ] && continue
+    grep -qE '^- `([^`]*/)?'"${n%.md}"'/`' "$TARGET/AGENTS.md" 2>/dev/null && continue
+    board_phantom="$board_phantom $n"
+  done < <(sed -n 's|^    blueprint/status/\(.*\.md\)$|\1|p' "$BOARD")
+  if [ -n "$board_wrong" ] || [ -n "$board_phantom" ]; then
+    legacy="$legacy\n  - blueprint/orchestration.md lists the wrong parts."
+    [ -n "$board_phantom" ] && legacy="$legacy\n    Names files that do not exist:$board_phantom"
+    [ -n "$board_wrong" ]   && legacy="$legacy\n    Does not name real parts:$board_wrong"
+    legacy="$legacy\n    It was seeded from a template that hard-coded web.md and api.md. The\n    board is yours - it holds the contract line - so nothing here rewrites it.\n    Fix the list under 'Where each part's state lives' to match blueprint/status/."
+  fi
+fi
+
+# Products seeded before 2026-09-15 commit blueprint/status/. It is live working
+# state: tracked, every `ship` leaves the main checkout dirty and the next commit
+# sweeps in other parts' state. Untracking changes the user's index, so this
+# reports the two commands and runs neither.
+if [ -f "$BOARD" ] && [ -n "$(git -C "$TARGET" ls-files -- 'blueprint/status/*.md' 2>/dev/null)" ]; then
+  legacy="$legacy\n  - blueprint/status/ is committed, and it is live working state - tracked, every\n    ship leaves the main checkout dirty. To stop committing it, in $TARGET:\n      echo '/blueprint/status/*.md' >> .gitignore\n      touch blueprint/status/.gitkeep && git add blueprint/status/.gitkeep\n      git rm --cached blueprint/status/*.md\n    The files stay on disk; only git stops tracking them, and the .gitkeep keeps\n    the directory in every clone."
+fi
+
+# CLAUDE.md is yours and is never rewritten here, so a project created before a
+# context file was added keeps an import list that predates it - the file lands
+# in blueprint/context/ and nothing ever loads it. That is the pack's own worst
+# defect class arriving by upgrade: a file with readers and nothing that puts it
+# in context. Reported against what the current template declares auto-loaded.
+if [ -f "$TARGET/CLAUDE.md" ] && [ -f "$HERE/template/AGENTS.md" ]; then
+  unimported=""
+  while read -r ctx; do
+    [ -n "$ctx" ] || continue
+    # only mention a file the project actually has - otherwise this is noise
+    [ -f "$TARGET/$ctx" ] || continue
+    grep -qF "@$ctx" "$TARGET/CLAUDE.md" || unimported="$unimported ${ctx##*/}"
+  done < <(awk '/These are already loaded/{f=1} /These are not loaded/{f=0} f' \
+             "$HERE/template/AGENTS.md" | grep -oE 'blueprint/context/[a-z-]+\.md' | sort -u)
+  if [ -n "$unimported" ]; then
+    legacy="$legacy\n  - CLAUDE.md does not load:$unimported"
+    legacy="$legacy\n    These exist here and AGENTS.md lists them as always-loaded context, but"
+    legacy="$legacy\n    CLAUDE.md's import list predates them, so no session actually gets them."
+    legacy="$legacy\n    CLAUDE.md is yours, so nothing here edits it - add a line per file:"
+    for m in $unimported; do legacy="$legacy\n        @blueprint/context/$m"; done
+  fi
+  # ...and the reverse: a file that has since moved out of the loaded set, still
+  # imported by an older CLAUDE.md, costs every session its size for nothing.
+  # Read from the table's own rows and their first column only: the range used
+  # to run to the end of the file, so a loaded file merely mentioned in later
+  # prose - or in another row's description - was reported as one to stop loading.
+  overloaded=""
+  while read -r ctx; do
+    [ -n "$ctx" ] || continue
+    grep -qxF "@$ctx" "$TARGET/CLAUDE.md" && overloaded="$overloaded ${ctx##*/}"
+  done < <(awk '/These are not loaded/{f=1; next} f && /^\|/{t=1; print; next} f && t{exit}' \
+             "$HERE/template/AGENTS.md" | grep -oE '^\| `blueprint/context/[a-z-]+\.md`' \
+             | grep -oE 'blueprint/context/[a-z-]+\.md' | sort -u)
+  if [ -n "$overloaded" ]; then
+    legacy="$legacy\n  - CLAUDE.md loads files AGENTS.md now says are read on demand:$overloaded"
+    legacy="$legacy\n    Every session pays for them before a word is typed. Remove the line for each:"
+    for m in $overloaded; do legacy="$legacy\n        @blueprint/context/$m"; done
+    legacy="$legacy\n    AGENTS.md is yours too: move each one's row to its read-on-demand table, so"
+    legacy="$legacy\n    no session is told it already has a file it must now open."
+  fi
+  # A hand-written CLAUDE.md that never imports AGENTS.md keeps its own copy of
+  # the instructions, which drifts from the plan while Claude Code loads it.
+  if [ -f "$TARGET/AGENTS.md" ] && ! grep -qxF '@AGENTS.md' "$TARGET/CLAUDE.md"; then
+    legacy="$legacy\n  - CLAUDE.md does not import AGENTS.md, so Claude Code never loads this pack's"
+    legacy="$legacy\n    instructions and any it holds itself drift from them. Add the line, and move"
+    legacy="$legacy\n    anything it restates into AGENTS.md or blueprint/:"
+    legacy="$legacy\n        @AGENTS.md"
+  fi
+fi
+
+# A ledger from before D15 keeps every finding whole in a file every session
+# loads, and the skills now read entries from blueprint/findings/. It is the
+# project's state, so this names the script rather than running it.
+if grep -qE '^\*\*(File|Found):\*\*' "$TARGET/blueprint/context/findings.md" 2>/dev/null; then
+  legacy="$legacy\n  - blueprint/context/findings.md holds whole findings, from before the ledger was split."
+  legacy="$legacy\n    Every session loads all of it. Split it - nothing is lost, no status changes:"
+  # after-write: named for the user to run, never called here.
+  legacy="$legacy\n        $HERE/lib/migrate-findings.sh --target $TARGET"
+fi
+
+if [ -d "$TARGET/blueprint/.state" ]; then
+  legacy="$legacy\n  - blueprint/.state/ is from an older pack. Nothing here reads it.\n    Safe to delete once you are happy nothing of yours depends on it."
+fi
+
+# --- optional Claude Code hooks (D20) ---
+#
+# The scripts are pack-owned and always replaced, like the skills. The settings
+# file is not: entries are added beside whatever is there, and an entry already
+# naming the same script is left as it is, so a second run changes nothing.
+if [ "$HOOKS" -eq 1 ]; then
+  mkdir -p "$TARGET/.claude/hooks"
+  cp "$HERE/lib/hook-main-commit.sh" "$TARGET/.claude/hooks/hook-main-commit.sh"
+  cp "$HERE/lib/hook-context-budget.sh" "$TARGET/.claude/hooks/hook-context-budget.sh"
+  chmod +x "$TARGET/.claude/hooks/hook-main-commit.sh" "$TARGET/.claude/hooks/hook-context-budget.sh"
+  python3 - "$settings" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+d = json.load(open(path)) if os.path.exists(path) else {}
+hooks = d.setdefault("hooks", {})
+def add(event, matcher, script):
+    cmd = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/' + script
+    entries = hooks.setdefault(event, [])
+    if any(h.get("command") == cmd for e in entries for h in e.get("hooks", [])):
+        return
+    entry = {"hooks": [{"type": "command", "command": cmd}]}
+    if matcher:
+        entry = {"matcher": matcher, **entry}
+    entries.append(entry)
+add("PreToolUse", "Bash", "hook-main-commit.sh")
+add("SessionStart", None, "hook-context-budget.sh")
+# D24: the commands the loop runs constantly, allowed so they stop prompting.
+# Read-only, plus add and commit - which the main-commit hook above still asks
+# about on main unless the commit is workflow state alone.
+allow = d.setdefault("permissions", {}).setdefault("allow", [])
+for rule in ("Bash(.agents/bin/check-project.sh:*)", "Bash(git status:*)", "Bash(git diff:*)",
+             "Bash(git log:*)", "Bash(git show:*)", "Bash(git branch --show-current)",
+             "Bash(git add:*)", "Bash(git commit:*)"):
+    if rule not in allow:
+        allow.append(rule)
+with open(path, "w") as f:
+    json.dump(d, f, indent=2)
+    f.write("\n")
+PY
+fi
+
+# --- optional git hook (D23) ---
+#
+# The hook is pack-owned and always replaced. core.hooksPath is not: a hook
+# manager already running this repository's hooks is left to run them, and told
+# the one line that adds this hook - as a hand-written CLAUDE.md is reported,
+# never edited.
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  mkdir -p "$TARGET/.agents/git-hooks"
+  # after-write: this only copies the hook, never runs it - git runs it at commit.
+  cp "$HERE/lib/git-pre-commit.sh" "$TARGET/.agents/git-hooks/pre-commit"
+  chmod +x "$TARGET/.agents/git-hooks/pre-commit"
+  hook_manager=""
+  current_hooks=$(git -C "$TARGET" config core.hooksPath || true)
+  [ -n "$current_hooks" ] && [ "$current_hooks" != ".agents/git-hooks" ] \
+    && hook_manager="core.hooksPath ($current_hooks)"
+  for m in .husky .pre-commit-config.yaml lefthook.yml; do
+    [ -z "$hook_manager" ] && [ -e "$TARGET/$m" ] && hook_manager="$m"
+  done
+  [ -n "$hook_manager" ] || git -C "$TARGET" config core.hooksPath .agents/git-hooks
+fi
+
+echo "Installed into $TARGET"
+echo "  $skill_count skill(s) in .agents/skills; .claude/skills $skills_shape"
+[ -n "${skills_converted:-}" ] && echo "    converted from two copies to one - commit .claude/skills as the link it now is"
+if [ -n "$previous_version" ] && [ "$previous_version" != "$PACK_VERSION" ]; then
+  echo "  pack version $PACK_VERSION (was $previous_version)"
+elif [ -z "$previous_version" ] && [ "$HAD_WORKFLOW" -eq 1 ]; then
+  echo "  pack version $PACK_VERSION (none recorded before)"
+else
+  echo "  pack version $PACK_VERSION"
+fi
+[ -n "$replaced_names" ] && {
+  echo "  updated from a different version:$replaced_names"
+  echo "    If you had edited one of these, it is in git - recover with git diff."
+}
+[ -n "$pruned_names" ] && echo "  retired skill(s) removed:$pruned_names"
+[ -n "$unknown" ] && {
+  echo "  kept, not from this pack:$unknown"
+  echo "    Your own skills, one a framework's generator installed (create-react-router"
+  echo "    adds one), or from a version this pack does not know about."
+  echo "    Nothing here removes them - delete any you no longer want."
+}
+echo "  $command_count opencode command wrapper(s) in .opencode/command/"
+[ -n "$replaced_commands" ] && \
+  echo "    rewritten from a different version:$replaced_commands"
+[ "$HOOKS" -eq 1 ] && echo "  2 Claude Code hooks in .claude/hooks/, registered in .claude/settings.json (D20)"
+if [ "$GIT_HOOKS" -eq 1 ]; then
+  if [ -z "$hook_manager" ]; then
+    echo "  git pre-commit hook in .agents/git-hooks/, active as core.hooksPath (D23)"
+  else
+    echo "  git pre-commit hook in .agents/git-hooks/ - not activated: $hook_manager runs this"
+    echo "    repository's hooks. Add this to its pre-commit hook: .agents/git-hooks/pre-commit"
+  fi
+fi
+if [ "$SKILLS_ONLY" -eq 1 ]; then
+  if [ "$DETECTED_ROOT" -eq 1 ]; then
+    echo "  product root detected - skills only, no build-loop files"
+    echo "  (it has the board and declares no 'Part:'; --skills-only was implied)"
+  else
+    echo "  skills only - no template files written"
+  fi
+else
+  echo "  $template_count template file(s) written (existing ones left alone)"
+  [ "$refreshed" -gt 0 ] && echo "  $refreshed pack-owned file(s) refreshed"
+fi
+
+# Legacy findings print in BOTH modes. They used to sit inside the branch above,
+# so `--skills-only` silently suppressed them - and the product root, which is
+# the one place --skills-only is the documented mode, is also the only place the
+# board's part list can be wrong. The report that existed for that case could
+# never reach it.
+[ -n "$legacy" ] && { echo; echo "From an older version of this pack:"; printf '%b\n' "$legacy"; }
+
+# The same count the --hooks budget hook makes at session start. Without
+# --hooks nothing else reports it, and a project over budget upgraded silently.
+over_budget=$(CLAUDE_PROJECT_DIR="$TARGET" bash "$HERE/lib/hook-context-budget.sh")
+[ -n "$over_budget" ] && { echo; echo "$over_budget"; }
+
+# A re-install can bring a checker rule the project does not meet yet. Without
+# this the upgrade closed on "nothing of yours was changed" over a project its
+# own new checker refused, and only someone who ran the checker found out.
+# after-write: every write is done by here, and its refusal is printed, never obeyed.
+if [ "$HAD_WORKFLOW" -eq 1 ] && ! now_named=$(bash "$HERE/lib/check-project.sh" "$TARGET" 2>&1); then
+  echo; echo "The project checker names, as installed now:"
+  printf '%s\n' "$now_named" | sed 's/^/  /'
+fi
+
+echo
+# "Run setup" is right for a first install and wrong for an upgrade: a project
+# already part-way through the loop has been tuned, and `setup` would re-tune
+# it. Anything replaced here means the pack moved on, not that the project is
+# new. `progress` is the skill that says where an existing project stands.
+if [ "$HAD_WORKFLOW" -eq 1 ]; then
+  echo "This project already had the workflow. Nothing of yours was changed -"
+  echo "run 'progress' to see where it stands, or 'prepare' for anything waiting"
+  echo "on you. Run 'setup' only if the workflow no longer matches this repo."
+else
+  echo "Next: open this directory with your AI tool and run 'setup' so the workflow"
+  echo "matches what is actually here."
+fi

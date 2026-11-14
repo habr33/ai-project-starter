@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="One command creates a project with 27 AI coding skills already in it, from ideate to monitor.">
+<title>AI Project Starter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a quiet signage-style page around one dark "signal box panel" that draws the loop as a railway route you can set. */
+:root {
+  --ground: #edf1ee;
+  --paper: #f8faf8;
+  --ink: #1b2b27;
+  --ink-soft: #4d5f59;
+  --rule: #c7d1cb;
+  --accent: #1d6b52;
+  --panel: #23403a;
+  --panel-tile: #27463f;
+  --panel-ink: #eaf0ec;
+  --panel-soft: #a9bdb5;
+  --track-dim: #58786d;
+  --track-lit: #ffffff;
+  --lamp-red: #ec4b3c;
+  --lamp-amber: #f2b53f;
+  --font: "Overpass", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Overpass Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --measure: 62ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #131c1a; --paper: #19241f; --ink: #e2eae6; --ink-soft: #9fb1aa; --rule: #2d3d38;
+    --accent: #72c9a6; --panel: #1c342e; --panel-tile: #203a33; --panel-ink: #eaf0ec; --panel-soft: #9fb5ac;
+    --track-dim: #4b6a5f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #131c1a; --paper: #19241f; --ink: #e2eae6; --ink-soft: #9fb1aa; --rule: #2d3d38;
+  --accent: #72c9a6; --panel: #1c342e; --panel-tile: #203a33; --panel-ink: #eaf0ec; --panel-soft: #9fb5ac;
+  --track-dim: #4b6a5f; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--ground); color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--font);
+  padding-inline: 16px; padding-block: 0;
+}
+.wrap { max-width: 1120px; margin-inline: auto; }
+a { color: var(--accent); text-underline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+/* header */
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 22px; }
+.mark { font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; color: var(--ink); text-decoration: none; }
+.top nav { display: flex; gap: 20px; font-size: .95rem; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: start; padding-block: 48px 72px; }
+.hero h1 { font-weight: 800; font-size: clamp(2.5rem, 4.4vw + .8rem, 4.4rem); line-height: 1; letter-spacing: -.028em; }
+.hero .lede { margin-top: 26px; font-size: 1.25rem; line-height: 1.5; color: var(--ink-soft); max-width: 34ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; margin-top: 34px; }
+.btn {
+  font: 600 1rem/1 var(--font); padding: 15px 22px 13px; border-radius: 4px; text-decoration: none;
+  background: var(--ink); color: var(--ground); border: 0; cursor: pointer;
+}
+.btn:hover { background: var(--accent); color: var(--paper); }
+
+.listing { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 22px 24px 20px; min-width: 0; }
+.listing .cmd { font-family: var(--mono); font-weight: 600; font-size: .98rem; padding-bottom: 14px; border-bottom: 1px solid var(--rule); margin-bottom: 12px; overflow-x: auto; white-space: nowrap; }
+.listing .cmd span { color: var(--ink-soft); font-weight: 400; user-select: none; }
+.tree { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 22px; row-gap: 5px; }
+.tree li { display: contents; }
+.tree .p { font-family: var(--mono); font-size: .9rem; white-space: pre; line-height: 1.55; }
+.tree .p b { font-weight: 600; }
+.tree .n { font-size: .92rem; color: var(--ink-soft); line-height: 1.45; padding-top: 2px; }
+.listing .after { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--rule); font-size: .95rem; color: var(--ink-soft); }
+
+/* the panel */
+.box {
+  background-color: var(--panel);
+  background-image:
+    linear-gradient(var(--panel-tile) 1px, transparent 1px),
+    linear-gradient(90deg, var(--panel-tile) 1px, transparent 1px);
+  background-size: 24px 24px; background-position: -1px -1px;
+  color: var(--panel-ink); border-radius: 10px;
+  padding: 40px clamp(18px, 4vw, 48px) 32px;
+
+}
+.box h2 { font-size: clamp(1.7rem, 2vw + 1rem, 2.4rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.box .intro { margin-top: 12px; color: var(--panel-soft); max-width: var(--measure); }
+.diagram { margin-top: 20px; min-width: 0; }
+.diagram svg { display: block; width: 100%; height: auto; overflow: visible; }
+.diagram text { fill: var(--panel-ink); }
+.diagram .phase { font: 600 14px var(--font); fill: var(--panel-soft); }
+.diagram .lbl { font: 400 14px var(--mono); }
+.diagram .note { font: 400 12px var(--mono); fill: var(--panel-soft); }
+.trk { fill: none; stroke: var(--track-dim); stroke-width: 5; stroke-linejoin: round; }
+.lit { fill: none; stroke: var(--track-lit); stroke-width: 5; stroke-linejoin: round; transition: stroke-dasharray .7s cubic-bezier(.3,.7,.2,1); }
+.aux { fill: none; stroke: var(--panel-soft); stroke-width: 2; stroke-dasharray: 6 6; }
+.stop { stroke: var(--track-dim); stroke-width: 5; }
+.stn { cursor: pointer; outline: none; }
+.stn .hit { fill: transparent; }
+.stn .lamp { fill: var(--panel); stroke: var(--track-dim); stroke-width: 3; transition: fill .25s, stroke .25s; }
+.stn.on .lamp { fill: var(--track-lit); stroke: var(--track-lit); }
+.stn.sel .lamp { stroke: var(--track-lit); stroke-width: 5; }
+.stn.sel .lbl { font-weight: 600; }
+.stn .ring { fill: none; stroke: transparent; stroke-width: 2.5; }
+.stn:focus-visible .ring { stroke: var(--lamp-amber); }
+.stn:hover .lamp { stroke: var(--track-lit); }
+.post { stroke: var(--panel-soft); stroke-width: 2; }
+.sig-red { fill: var(--lamp-red); }
+.sig-amber { fill: var(--lamp-amber); }
+
+.under { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px 48px; margin-top: 26px; grid-template-areas: "sidings detail"; }
+.detail { grid-area: detail; min-width: 0; border-left: 5px solid var(--track-lit); padding: 4px 0 4px 20px; }
+.detail .name { font: 600 1.6rem/1.2 var(--mono); }
+.detail .where { font-size: .92rem; color: var(--panel-soft); margin-top: 2px; }
+.detail .what { margin-top: 12px; max-width: var(--measure); }
+.detail .gate { margin-top: 12px; display: flex; gap: 10px; align-items: baseline; font-size: .95rem; }
+.detail .gate i { flex: none; width: 11px; height: 11px; border-radius: 50%; transform: translateY(1px); }
+.sidings { grid-area: sidings; min-width: 0; }
+.sidings h3 { font-size: 1.05rem; font-weight: 600; }
+.sidings p { color: var(--panel-soft); font-size: .95rem; margin-top: 4px; }
+.sidings ul { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 16px; }
+.sid {
+  width: 100%; display: flex; align-items: center; gap: 12px; background: none; border: 0; color: var(--panel-ink);
+  font: 400 .95rem var(--mono); padding: 7px 4px; cursor: pointer; text-align: left; border-radius: 4px;
+}
+.sid::before { content: ""; flex: none; width: 22px; height: 5px; background: var(--track-dim); border-radius: 1px; }
+.sid .lamp { flex: none; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--track-dim); margin-left: -18px; background: var(--panel); transition: background .25s, border-color .25s; }
+.sid:hover .lamp { border-color: var(--track-lit); }
+.sid[aria-pressed="true"] .lamp { background: var(--track-lit); border-color: var(--track-lit); }
+.sid[aria-pressed="true"] { font-weight: 600; }
+.sid .s { width: 9px; height: 9px; border-radius: 50%; margin-left: auto; }
+
+.legend { list-style: none; padding: 18px 0 0; margin: 28px 0 0; border-top: 1px solid var(--track-dim); display: flex; flex-wrap: wrap; gap: 10px 28px; font-size: .9rem; color: var(--panel-soft); }
+.legend li { display: flex; gap: 10px; align-items: center; }
+.legend svg { flex: none; }
+
+/* body sections */
+section.plain { padding-block: 88px 0; }
+.plain > h2 { font-size: clamp(1.7rem, 2vw + 1rem, 2.4rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; max-width: 22ch; }
+.plain > .sub { margin-top: 12px; color: var(--ink-soft); max-width: var(--measure); }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 64px; margin-top: 40px; }
+.rules div { border-top: 3px solid var(--ink); padding-top: 14px; max-width: 52ch; }
+.rules h3 { font-size: 1.2rem; font-weight: 800; line-height: 1.3; letter-spacing: -.01em; }
+.rules p { margin-top: 8px; color: var(--ink-soft); }
+
+.tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 48px; margin-top: 36px; }
+.tools h3 { font-size: 1.15rem; font-weight: 800; }
+.tools p { margin-top: 8px; color: var(--ink-soft); }
+
+.steps { list-style: none; counter-reset: s; padding: 0; margin: 36px 0 0; display: grid; gap: 26px; max-width: 820px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; }
+.steps li::before { content: counter(s); grid-row: span 2; font: 800 1.9rem/1 var(--font); color: var(--accent); padding-top: 2px; }
+.steps h3 { font-size: 1.12rem; font-weight: 800; }
+.steps .opt { font-weight: 400; color: var(--ink-soft); }
+.code { display: flex; align-items: stretch; gap: 0; margin-top: 8px; border: 1px solid var(--rule); background: var(--paper); border-radius: 4px; min-width: 0; }
+.code pre { margin: 0; padding: 12px 14px 10px; overflow-x: auto; flex: 1; min-width: 0; font: 400 .9rem/1.5 var(--mono); }
+.copy { flex: none; border: 0; border-left: 1px solid var(--rule); background: none; color: var(--accent); font: 600 .9rem var(--font); padding: 0 16px; cursor: pointer; border-radius: 0 4px 4px 0; }
+.copy:hover { background: var(--ground); }
+.steps .then { margin-top: 10px; color: var(--ink-soft); }
+
+.other { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 64px; margin-top: 36px; }
+.other h3 { font-size: 1.15rem; font-weight: 800; }
+.other p { margin-top: 8px; color: var(--ink-soft); }
+
+footer { margin-top: 110px; border-top: 1px solid var(--rule); padding-block: 26px 44px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; font-size: .92rem; color: var(--ink-soft); }
+footer p { max-width: 60ch; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 28px 56px; }
+  .under { grid-template-columns: minmax(0, 1fr); grid-template-areas: "detail" "sidings"; }
+  .rules, .other { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .tools { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+@media (max-width: 520px) {
+  .tree { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .tree .n { padding: 0 0 8px 2.2ch; }
+  .listing { padding: 18px 16px; }
+  .box { border-radius: 8px; }
+  .sidings ul { grid-template-columns: minmax(0, 1fr); }
+  .top nav a:first-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lit, .stn .lamp, .sid .lamp { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="mark" href="#">ai-project-starter</a>
+    <nav aria-label="Page">
+      <a href="#loop">The loop</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/habr33/ai-project-starter">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>Start every project with the whole workflow already in it.</h1>
+      <p class="lede">One command creates the directory and installs 27 skills, from <code>ideate</code> to <code>monitor</code>. Open it in Claude Code, opencode or any AI tool, or work through the skills by hand.</p>
+      <div class="actions">
+        <a class="btn" href="#install">Install it</a>
+        <a href="https://github.com/habr33/ai-project-starter/blob/main/docs/walkthrough.md">Read the walkthrough</a>
+      </div>
+    </div>
+
+    <figure class="listing" aria-label="What new-project.sh creates" style="margin:0">
+      <div class="cmd"><span>$ </span>new-project.sh my-app</div>
+      <ul class="tree">
+        <li><span class="p"><b>my-app/</b></span><span class="n"></span></li>
+        <li><span class="p">├── README.md</span><span class="n">What it is and how to run it</span></li>
+        <li><span class="p">├── AGENTS.md</span><span class="n">The entry point every AI tool reads</span></li>
+        <li><span class="p">├── CLAUDE.md</span><span class="n">Imports AGENTS.md, so there is one text</span></li>
+        <li><span class="p">├── dev-notes/</span><span class="n">Why it is shaped this way, and where it stands</span></li>
+        <li><span class="p">├── blueprint/</span><span class="n">Plans, the current spec, findings, history and the design kit</span></li>
+        <li><span class="p">├── .agents/skills/</span><span class="n">The 27 skills, one copy every tool reads</span></li>
+        <li><span class="p">├── .claude/skills</span><span class="n">A link to .agents/skills, where Claude Code looks</span></li>
+        <li><span class="p">└── .opencode/command/</span><span class="n">A <code>/name</code> wrapper per skill</span></li>
+      </ul>
+      <p class="after">No source directory yet. <code>scaffold</code> creates it once <code>architect</code>, <code>stack</code> and <code>layout</code> have decided what it should be.</p>
+    </figure>
+  </section>
+
+  <section class="box" id="loop" aria-labelledby="loop-h">
+    <h2 id="loop-h">From a rough idea to a running product, in order</h2>
+    <p class="intro">Each stop is a skill you run by name. Select one to see what it does and what it will refuse to do.</p>
+
+    <div class="diagram" id="diagram"></div>
+
+    <div class="under">
+      <div class="detail" id="detail" aria-live="polite"></div>
+      <div class="sidings">
+        <h3>Called in when needed</h3>
+        <p>Off the main line. Each one joins when the situation calls for it.</p>
+        <ul id="sidings"></ul>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><svg width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="var(--track-lit)"/></svg>Route set to the selected skill</li>
+      <li><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" class="sig-red"/></svg>Can refuse to go on</li>
+      <li><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" class="sig-amber"/></svg>Stops for your approval</li>
+      <li><svg width="34" height="6" aria-hidden="true"><line x1="0" y1="3" x2="34" y2="3" class="aux"/></svg>Short path or feedback</li>
+    </ul>
+  </section>
+
+  <section class="plain" aria-labelledby="hold-h">
+    <h2 id="hold-h">What holds it together</h2>
+    <div class="rules">
+      <div>
+        <h3>Every piece of state is a file.</h3>
+        <p>Plans, the current spec with its ticked steps, and open findings load at the start of every session. A cold start is the normal case, and “continue” picks up at the first unchecked step.</p>
+      </div>
+      <div>
+        <h3>Findings block the merge.</h3>
+        <p><code>review</code> records each finding with a durable ID, a severity and a status. An open or fixed P0 or P1 stops <code>ship</code>. A repair is not done until a review has seen the result.</p>
+      </div>
+      <div>
+        <h3>Evidence, or it didn’t happen.</h3>
+        <p>“Passes” names a command, its output, or a screenshot. “I couldn’t verify that” is an accepted answer, and <code>verify</code> reports it per criterion.</p>
+      </div>
+      <div>
+        <h3>Every skill checks its inputs first.</h3>
+        <p>Each one opens by naming what must already be true and what to run when it is not. A skill that stops is refusing to build confident output on an empty file.</p>
+      </div>
+      <div>
+        <h3>Work only you can do is written down.</h3>
+        <p>An account, a card, a device, a decision: skills record it in <code>needs-you.md</code> with what it blocks and when. <code>prepare</code> lists it, and <code>preflight</code> treats anything required and open as a blocker.</p>
+      </div>
+      <div>
+        <h3>Your standards win.</h3>
+        <p>Conventions that hold on any stack belong to the pack and refresh on every install. Everything specific to your project is yours, is never overwritten, and takes precedence where the two disagree.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="plain" aria-labelledby="tools-h">
+    <h2 id="tools-h">Works in the tool you already use</h2>
+    <p class="sub">Skills refer to each other by plain name, never by one tool’s command syntax, so the same files read correctly everywhere.</p>
+    <div class="tools">
+      <div>
+        <h3>Claude Code</h3>
+        <p>Finds the skills through <code>.claude/skills</code>, a link to the one installed copy. Type <code>/spec</code>.</p>
+      </div>
+      <div>
+        <h3>opencode</h3>
+        <p>Reads <code>AGENTS.md</code> and the skills directly. The generated command wrappers let you type <code>/spec</code> there too.</p>
+      </div>
+      <div>
+        <h3>No AI tool at all</h3>
+        <p>Every skill is a numbered worksheet. Open <code>spec/SKILL.md</code> and work through Step 1, then Step 2.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="plain" id="install" aria-labelledby="install-h">
+    <h2 id="install-h">Install</h2>
+    <p class="sub">Nothing to build and no network calls. It needs bash, python3 and the usual Unix tools.</p>
+    <ol class="steps">
+      <li>
+        <h3>Clone the pack</h3>
+        <div class="code"><pre id="c1">git clone https://github.com/habr33/ai-project-starter.git ~/ai-project-starter</pre><button class="copy" type="button" data-for="c1">Copy</button></div>
+      </li>
+      <li>
+        <h3>Put it on your PATH <span class="opt">(optional)</span></h3>
+        <div class="code"><pre id="c2">echo 'export PATH="$HOME/ai-project-starter:$PATH"' &gt;&gt; ~/.bashrc &amp;&amp; exec bash</pre><button class="copy" type="button" data-for="c2">Copy</button></div>
+      </li>
+      <li>
+        <h3>Create a project</h3>
+        <div class="code"><pre id="c3">new-project.sh my-app &amp;&amp; cd my-app</pre><button class="copy" type="button" data-for="c3">Copy</button></div>
+        <p class="then">Open it with your AI tool and run <code>ideate</code>. To update later, <code>git pull</code> in the clone, then run <code>install.sh</code> in the project. Files you own are never touched.</p>
+      </li>
+    </ol>
+
+    <div class="other">
+      <div>
+        <h3>Already have a project?</h3>
+        <p>Run <code>install.sh</code> inside it, then <code>setup</code>. It reads the real repo, records the stack and commands that are actually there, and installs nothing.</p>
+      </div>
+      <div>
+        <h3>Building a backend and front ends in parallel?</h3>
+        <p><code>new-project.sh shop --parts web,api</code> gives each part its own loop and state. Most projects should stay single-part; the multi-part guide says when not to.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>The blueprint layout, the findings ledger and the plan-to-ship loop come from <a href="https://github.com/bradtraversy/ai-blueprint">ai-blueprint</a> by Brad Traversy, MIT licensed.</p>
+    <a href="https://github.com/habr33/ai-project-starter">github.com/habr33/ai-project-starter</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const LINE = [
+    { phase: "Plan", stations: ["ideate", "architect", "stack", "layout", "scaffold", "ci", "context"] },
+    { phase: "Design, for anything with a UI", stations: ["prototype"] },
+    { phase: "Build", stations: ["spec", "build", "verify", "review", "ship"] },
+    { phase: "Run", stations: ["preflight", "host", "deploy", "monitor"] },
+  ];
+  const SIDINGS = ["setup", "progress", "prepare", "debug", "docs", "migrate", "rollback", "integrate", "orchestrate", "autopilot"];
+  const S = {
+    ideate: ["Interviews you about what you are building, who it is for and what the first version must do, then writes the project plan and a starting build checklist. Pushes back on scope that is too big, and says so when an idea is not ready to build."],
+    architect: ["Turns the plan into a structure before any technology is chosen: routes or screens, the data model, where logic lives, the auth boundary, and any third-party service a feature actually needs."],
+    stack: ["Settles what it is built with. If you already know, that choice is used and only the gaps are filled; otherwise it proposes one stack and its closest runner-up."],
+    layout: ["Decides where the code physically lives, using the chosen framework’s own conventions rather than an imposed shape."],
+    scaffold: ["Creates the app from the recorded stack, into a directory that already holds the workflow files, then audits what landed against the plan and records the real installed versions."],
+    ci: ["Sets up checks on push and pull requests using the project’s own verification command. Runs them locally first to prove they pass.", "amber", "Stops before pushing or changing any remote setting."],
+    context: ["Checks the plans for placeholder text and contradictions, then generates the project overview that every session loads."],
+    prototype: ["Recommends a visual direction and navigation, mocks it as throwaway HTML from the pack’s design kit, and records the decisions and measured contrast values in design.md."],
+    spec: ["Turns one work item into a buildable spec. With --quick, a one- or two-file fix becomes a single test-first step that goes straight from build to ship."],
+    build: ["Builds the spec one small reviewed step at a time, runs the project’s checks, and ticks each step off so progress survives a fresh session."],
+    verify: ["Runs the real app against the spec’s done-when criteria and reports pass, fail or could-not-verify for each one, with evidence."],
+    review: ["A read-only audit. Findings go in the ledger with a durable ID, a severity from P0 to P3, and a status."],
+    ship: ["Archives the spec, checks the item off, makes one commit and squash-merges with your approval. Asks separately before pushing.", "red", "Refuses to merge while a P0 or P1 finding is open or fixed."],
+    preflight: ["The whole-project go-live audit, before the first release and again before anything major: security, data and backups, operations, accessibility and more.", "red", "Can say the product is not ready. It reports blockers and never fixes them."],
+    host: ["Provisions hosting, database, domain and storage for each environment, with the cost stated before anything is created. Owns the secret lifecycle.", "amber", "Never creates a paid resource without your explicit approval."],
+    deploy: ["Deploys to one named environment, checks it is actually serving, and rolls a bad release back.", "amber", "Production always needs its own approval. Approval for staging is never approval for production."],
+    monitor: ["Wires up the signals the architecture said would reveal each failure, and investigates live problems. What it learns goes back into the plan."],
+    setup: ["Tunes the workflow to a repository that already exists: the real stack, the real commands, and coding standards that match the code."],
+    progress: ["Where the project stands and the single next action to take. Writes nothing."],
+    prepare: ["Lists the work only a person can do, such as accounts, spend, devices and decisions, separating what blocks progress now from what is needed later."],
+    debug: ["Reproduces and isolates a failure without editing product code, then hands the evidence to spec or build for the repair."],
+    docs: ["A real README, API docs where there is an API, and the decision record. With --check, audits what is written against what is true."],
+    migrate: ["Changes the schema one environment at a time, works out backfills, and keeps the change reversible.", "amber", "A destructive change needs its own explicit approval."],
+    rollback: ["Plans a safe reversal of a shipped feature: finds the commit that introduced it and what has been built on top since. Stops before any code changes."],
+    integrate: ["Proves the parts of a multi-part project work together by exercising one real path across the boundary."],
+    orchestrate: ["Coordinates the parts through the board at the product root, detects deadlock, and caps how much unreviewed work can pile up."],
+    autopilot: ["Runs a named range unattended, such as autopilot spec..review, and stops at the first question the plan does not answer.", "red", "Opt-in only, and permanently blocked from anything git cannot undo."],
+  };
+  const PHASE_OF = {};
+  LINE.forEach(r => r.stations.forEach(s => PHASE_OF[s] = r.phase.split(",")[0]));
+  const ORDER = LINE.flatMap(r => r.stations);
+
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+
+  const holder = document.getElementById("diagram");
+  const detail = document.getElementById("detail");
+  let selected = "ship";
+  let geo = null; // { lit, total, lengths, groups }
+
+  function layout(vertical, w) {
+    // returns station positions, path pieces, and extras
+    const pts = []; let d = ""; const partial = {};
+    const extras = [];
+    if (!vertical) {
+      const xL = 120, xR = 930, top = 76, gap = 124, pad = 64, r = gap / 2;
+      LINE.forEach((row, ri) => {
+        const y = top + ri * gap, dir = ri % 2 ? -1 : 1, n = row.stations.length;
+        if (ri === 0) d = `M ${xL} ${y}`;
+        const xs = n === 1 ? [(xL + xR) / 2] : row.stations.map((_, i) => xL + pad + i * (xR - xL - 2 * pad) / (n - 1));
+        if (dir < 0) xs.reverse();
+        row.stations.forEach((s, i) => { d += ` L ${xs[i]} ${y}`; partial[s] = d; pts.push({ s, x: xs[i], y, dir }); });
+        const endX = dir > 0 ? xR : xL;
+        d += ` L ${endX} ${y}`;
+        if (ri < LINE.length - 1) d += ` A ${r} ${r} 0 0 ${dir > 0 ? 1 : 0} ${endX} ${y + gap}`;
+        extras.push({ kind: "phase", text: row.phase, x: dir > 0 ? xL + 6 : xR - 6, y: y - 46, anchor: dir > 0 ? "start" : "end" });
+      });
+      const y0 = top, y3 = top + 3 * gap, xRet = 30;
+      extras.push({ kind: "stop", x: xL, y: y0 });
+      extras.push({ kind: "ret", d: `M ${xL} ${y3} L ${xRet + 12} ${y3} Q ${xRet} ${y3} ${xRet} ${y3 - 12} L ${xRet} ${y0 + 12} Q ${xRet} ${y0} ${xRet + 12} ${y0} L ${xL - 14} ${y0}` });
+      extras.push({ kind: "retlbl", text: "monitor feeds back into the plan", x: xRet - 10, y: (y0 + y3) / 2 });
+      return { w: 1000, h: top + 3 * gap + 56, d, partial, pts, extras, vertical, labelSize: 14 };
+    }
+    const x = 58, step = 44, brk = 50, xRet = 16;
+    let y = 40;
+    d = `M ${x} ${y - 20}`;
+    LINE.forEach((row, ri) => {
+      if (ri > 0) y += brk - step;
+      extras.push({ kind: "phase", text: row.phase, x: x + 26, y: y - 16, anchor: "start" });
+      y += 12;
+      row.stations.forEach(s => { d += ` L ${x} ${y}`; partial[s] = d; pts.push({ s, x, y, dir: 0 }); y += step; });
+    });
+    const yEnd = y - step;
+    d += ` L ${x} ${yEnd + 18}`;
+    extras.push({ kind: "stop", x, y: 20, vertical: true });
+    extras.push({ kind: "ret", d: `M ${x} ${yEnd + 18} L ${x} ${yEnd + 26} Q ${x} ${yEnd + 34} ${x - 8} ${yEnd + 34} L ${xRet + 8} ${yEnd + 34} Q ${xRet} ${yEnd + 34} ${xRet} ${yEnd + 26} L ${xRet} 28 Q ${xRet} 20 ${xRet + 8} 20 L ${x - 12} 20` });
+    extras.push({ kind: "retlbl2", text: "monitor feeds back into the plan", x: x + 26, y: yEnd + 38 });
+    return { w, h: yEnd + 56, d, partial, pts, extras, vertical, labelSize: 15 };
+  }
+
+  function render() {
+    const width = holder.clientWidth || 800;
+    const vertical = width < 640;
+    const L = layout(vertical, Math.max(260, Math.floor(width)));
+    holder.textContent = "";
+    const svg = el("svg", { viewBox: `0 0 ${L.w} ${L.h}`, role: "group", "aria-label": "The workflow as a route, from ideate to monitor" }, holder);
+
+    // extras below tracks
+    for (const e of L.extras) {
+      if (e.kind === "ret") el("path", { d: e.d, class: "aux" }, svg);
+      if (e.kind === "retlbl") { const t = el("text", { x: e.x, y: e.y, class: "note", "text-anchor": "middle", transform: `rotate(-90 ${e.x} ${e.y})` }, svg); t.textContent = e.text; }
+      if (e.kind === "retlbl2") { const t = el("text", { x: e.x, y: e.y, class: "note" }, svg); t.textContent = e.text; }
+    }
+    const trk = el("path", { d: L.d, class: "trk" }, svg);
+    const lit = el("path", { d: L.d, class: "lit" }, svg);
+    for (const e of L.extras) {
+      if (e.kind === "stop") e.vertical
+        ? el("line", { x1: e.x - 11, y1: e.y, x2: e.x + 11, y2: e.y, class: "stop" }, svg)
+        : el("line", { x1: e.x, y1: e.y - 11, x2: e.x, y2: e.y + 11, class: "stop" }, svg);
+      if (e.kind === "phase") { const t = el("text", { x: e.x, y: e.y, class: "phase", "text-anchor": e.anchor }, svg); t.textContent = e.text; }
+    }
+
+    // spec --quick: build straight to ship
+    const pb = L.pts.find(p => p.s === "build"), ps = L.pts.find(p => p.s === "ship");
+    if (!L.vertical) {
+      const lift = 58, mx = (pb.x + ps.x) / 2;
+      el("path", { d: `M ${pb.x} ${pb.y} C ${pb.x + 50} ${pb.y - lift}, ${ps.x - 50} ${ps.y - lift}, ${ps.x} ${ps.y}`, class: "aux" }, svg);
+      const t = el("text", { x: mx, y: pb.y - lift + 8, class: "note", "text-anchor": "middle" }, svg); t.textContent = "spec --quick";
+    } else {
+      const bx = pb.x - 30;
+      el("path", { d: `M ${pb.x} ${pb.y} C ${bx} ${pb.y + 10}, ${bx} ${ps.y - 10}, ${ps.x} ${ps.y}`, class: "aux" }, svg);
+    }
+
+    const total = trk.getTotalLength();
+    const lengths = {};
+    const probe = el("path", {}, svg);
+    for (const s in L.partial) { probe.setAttribute("d", L.partial[s]); lengths[s] = probe.getTotalLength(); }
+    probe.remove();
+
+    const groups = {};
+    for (const p of L.pts) {
+      const g = el("g", { class: "stn", tabindex: "0", role: "button", "data-s": p.s }, svg);
+      el("circle", { cx: p.x, cy: p.y, r: 22, class: "hit" }, g);
+      el("circle", { cx: p.x, cy: p.y, r: 17, class: "ring" }, g);
+      el("circle", { cx: p.x, cy: p.y, r: 10, class: "lamp" }, g);
+      const t = L.vertical
+        ? el("text", { x: p.x + 26, y: p.y + 5, class: "lbl", style: `font-size:${L.labelSize}px` }, g)
+        : el("text", { x: p.x, y: p.y + 34, class: "lbl", "text-anchor": "middle" }, g);
+      t.textContent = p.s;
+      const gate = S[p.s][1];
+      if (gate) {
+        let sx, sy0, sy1;
+        if (L.vertical) { sx = p.x + 26 + t.getComputedTextLength() + 14; el("circle", { cx: sx, cy: p.y, r: 5, class: gate === "red" ? "sig-red" : "sig-amber" }, g); }
+        else {
+          sx = p.x + (p.dir < 0 ? -16 : 16); sy0 = p.y - 8; sy1 = p.y - 22;
+          el("line", { x1: sx, y1: sy0, x2: sx, y2: sy1, class: "post" }, g);
+          el("circle", { cx: sx, cy: sy1 - 5, r: 5.5, class: gate === "red" ? "sig-red" : "sig-amber" }, g);
+        }
+      }
+      g.addEventListener("click", () => select(p.s));
+      g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(p.s); } });
+      groups[p.s] = g;
+    }
+    geo = { lit, total, lengths, groups };
+    paint(false);
+  }
+
+  function paint(animate = true) {
+    const idx = ORDER.indexOf(selected);
+    const len = idx >= 0 ? geo.lengths[selected] : 0;
+    if (!animate) { geo.lit.style.transition = "none"; }
+    geo.lit.style.strokeDasharray = `${len} ${geo.total + 10}`;
+    if (!animate) { geo.lit.getBoundingClientRect(); geo.lit.style.transition = ""; }
+    ORDER.forEach((s, i) => {
+      const g = geo.groups[s];
+      g.classList.toggle("on", idx >= 0 && i <= idx);
+      g.classList.toggle("sel", s === selected);
+      g.setAttribute("aria-pressed", s === selected ? "true" : "false");
+      g.setAttribute("aria-label", `${s}${S[s][1] ? (S[s][1] === "red" ? ", can refuse to go on" : ", stops for your approval") : ""}`);
+    });
+    document.querySelectorAll(".sid").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === selected ? "true" : "false"));
+    const [what, gate, note] = S[selected];
+    const where = PHASE_OF[selected] ? `${PHASE_OF[selected]}, stop ${idx + 1} of ${ORDER.length} on the main line` : "Called in when needed";
+    detail.innerHTML = "";
+    const n = document.createElement("div"); n.className = "name"; n.textContent = selected; detail.appendChild(n);
+    const w = document.createElement("div"); w.className = "where"; w.textContent = where; detail.appendChild(w);
+    const p = document.createElement("p"); p.className = "what"; p.textContent = what; detail.appendChild(p);
+    if (gate) {
+      const gp = document.createElement("p"); gp.className = "gate";
+      const i = document.createElement("i"); i.style.background = `var(--lamp-${gate})`; gp.appendChild(i);
+      gp.appendChild(document.createTextNode(note)); detail.appendChild(gp);
+    }
+  }
+
+  function select(s) { selected = s; paint(true); }
+
+  const ul = document.getElementById("sidings");
+  for (const s of SIDINGS) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "sid"; b.dataset.s = s; b.setAttribute("aria-pressed", "false");
+    b.innerHTML = `<span class="lamp" aria-hidden="true"></span><span>${s}</span>`;
+    if (S[s][1]) { const g = document.createElement("span"); g.className = "s"; g.style.background = `var(--lamp-${S[s][1]})`; g.setAttribute("aria-hidden", "true"); b.appendChild(g); }
+    b.addEventListener("click", () => select(s));
+    li.appendChild(b); ul.appendChild(li);
+  }
+
+  let lastVertical = null, raf = 0;
+  const ro = new ResizeObserver(() => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const v = holder.clientWidth < 640;
+      if (v !== lastVertical || v) { lastVertical = v; render(); }
+    });
+  });
+  ro.observe(holder);
+  const start = () => render();
+  (document.fonts && document.fonts.ready) ? document.fonts.ready.then(start) : start();
+
+  document.querySelectorAll(".copy").forEach(btn => btn.addEventListener("click", () => {
+    const pre = document.getElementById(btn.dataset.for);
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1600); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = "Selected"; setTimeout(() => btn.textContent = "Copy", 1600); };
+    try { navigator.clipboard.writeText(pre.textContent).then(done, fallback); } catch (e) { fallback(); }
+  }));
+})();
+</script>
+</body>
+</html>

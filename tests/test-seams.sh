@@ -1,0 +1,3630 @@
+#!/usr/bin/env bash
+# Invariants that span files, which is where every serious defect in this pack
+# has come from. The linter checks files one at a time and cannot see any of
+# these; each one below is a bug that actually shipped here.
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+cd "$REPO" || exit 1
+
+section "the loop order agrees everywhere it is declared"
+# Reconciled across ten declaration sites when `ci` moved after `scaffold`, and
+# `host` still carried the old chain - missed because that sweep counted chains
+# containing `ideate` or `scaffold`, and host's starts at `ci`. A check whose
+# matching rule excludes the case it exists to find.
+chains=$(grep -rhoE '[`a-z]+ *(->|→)[ `a-z→>-]+' --include='*.md' skills/ template/ docs/ README.md 2>/dev/null \
+         | tr -d '`' | sed 's/  */ /g')
+assert_eq "nothing declares scaffold -> distill (ci is between them)" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'scaffold -> distill' || true)"
+assert_eq "nothing declares ship -> ci (ci moved before the build loop)" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'ship -> ci' || true)"
+assert_eq "nothing declares ci -> preflight" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'ci -> preflight' || true)"
+assert_eq "every ideate chain is the same one" "1" \
+  "$(printf '%s\n' "$chains" | grep -oE 'ideate -> architect -> stack -> layout -> scaffold -> ci -> distill' | sort -u | wc -l | tr -d ' ')"
+# The order changed: architecture before technology. Nothing may still declare
+# the old direction, in any file - a stale chain in one skill is how a reader
+# learns the wrong loop and never finds out.
+assert_eq "nothing still declares stack -> architect" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'stack -> architect' || true)"
+assert_eq "nothing declares stack -> scaffold (layout is between them)" "0" \
+  "$(printf '%s\n' "$chains" | grep -c 'stack -> scaffold' || true)"
+
+section "nothing claims architect decides the physical layout"
+# `layout` was split out of `architect` on 2026-09-08. Nine files still said
+# "the layout `architect` chose" afterwards - every one of them individually
+# readable, and together they teach a loop that no longer exists. The linter
+# cannot see it: each is a true-looking sentence about a skill that exists.
+#
+# The split is the point. `architect` decides how many deployable parts and why;
+# `layout` decides what the directories are called. A file that attributes the
+# second to `architect` sends the reader to the wrong skill to change it.
+stale=$(grep -rniE '(layout|directorie?s?) [^.]{0,40}`?architect`? (chose|chooses|decides|decided|recorded)|`?architect`? [^.]{0,30}(decides|decided|chose|chooses) [^.]{0,20}(code )?layout' \
+        --include='*.md' skills/ template/ docs/ README.md 2>/dev/null || true)
+assert_eq "no file attributes the directory layout to architect" "" "$stale"
+
+section "a cold session is told where to start and what is unverified"
+# The context that produced this pack's largest change lived only in a
+# conversation, and conversations are cleared. Two things had to survive it:
+#
+#   - CLAUDE.md is the first file a session reads, and it pointed at the README,
+#     anatomy and decisions - not at status.md, which is where "the tree is
+#     uncommitted, run the suite before touching anything" is written.
+#   - The reorder's headline result - a technology eliminated by the quality bar
+#     rather than by taste - was produced by a session that KNEW what the reorder
+#     was meant to demonstrate, and wrote the bar. Repeating that as evidence
+#     without the caveat is how a promising result becomes a settled one.
+# CLAUDE.md was a hand-kept paraphrase of AGENTS.md - the drift this repo warns
+# about, in its own entry points: the two had already diverged on how the test
+# suite is described. It now imports AGENTS.md, so there is one text to keep true.
+assert_ok "CLAUDE.md imports AGENTS.md" grep -qx '@AGENTS.md' CLAUDE.md
+assert_eq "and restates none of it" "0" \
+  "$(grep -cE 'Start with|check.sh|tests/run.sh|keeps biting' CLAUDE.md || true)"
+# AGENTS.md is the same file for every tool that is not Claude Code - opencode,
+# Codex, Cursor all read it first - and it still pointed at the README after
+# CLAUDE.md was fixed. Half a fix reads exactly like a whole one: the claim
+# "Claude Code reads CLAUDE.md, which says the same things" sits in AGENTS.md's
+# own opening, so nothing about the file looks stale.
+assert_ok "AGENTS.md sends a cold session to the checks first" \
+  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qF 'Start by checking what is uncommitted'"
+# dev-notes/ is the maintainer's local notes and is not published, so what
+# follows runs only where it exists - and says so out loud where it does not.
+if [ -f dev-notes/status.md ]; then
+  assert_ok "status.md says to check for uncommitted work before anything else" \
+    bash -c "sed -n '1,40p' dev-notes/status.md | grep -qF 'is not committed'"
+  assert_ok "and says what to run to confirm the tree is intact" \
+    bash -c "sed -n '1,40p' dev-notes/status.md | grep -qF 'tests/run.sh'"
+  # The first version of that instruction pinned an assertion COUNT, and went
+  # stale within the same session that wrote it - the suite grew by six before the
+  # day ended. A tripwire that fails on every commit is one people learn to skip.
+  # `[ -f ]` first: sed on a missing file feeds grep nothing, grep -c prints 0,
+  # and the assertion "no stale count" passes on a status file that is gone.
+  assert_eq "the tripwire is zero failures, not a total that goes stale" "0" \
+    "$([ -f dev-notes/status.md ] || echo missing; sed -n '1,40p' dev-notes/status.md 2>/dev/null | grep -cE '[0-9]{3} assertions' || true)"
+  # The confound was first recorded as "the same session wrote that bar". A later
+  # run showed the deciding phrase was architect's own example, which a session that
+  # did not know the argument copied too - so the caveat now names the skill.
+  assert_ok "the confound on the reorder's headline result is recorded" \
+    bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'deciding phrase came from the skill, not from the project'"
+  assert_ok "and says not to cite it as evidence the reorder works" \
+    bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'do not cite this as evidence'"
+  assert_ok "and records that the reorder traded seams rather than removing them" \
+    bash -c "tr '\n' ' ' < dev-notes/status.md | tr -s ' ' | grep -qF 'Better seams, not fewer'"
+else
+  printf '  skip status.md opens with the checks - dev-notes/ is local only and absent here\n'
+fi
+
+section "the public notes stand on their own"
+# The pack's working diary was gitignored because it names projects and a
+# domain - and this suite and both entry points read it. So a clone failed its
+# own tests and sent a cold session to a file that was not there, while every
+# check passed here, where the file existed. Found by running the
+# suite from a copy of the tree with the ignored files left out, never by
+# reading. The fix split the notes: status.md and decisions.md are public and
+# tracked, and everything about particular projects is local only - dev-notes/journal.md
+# and dev-notes/local/.
+_is_git=no
+git rev-parse --git-dir >/dev/null 2>&1 && _is_git=yes
+_ignored() {
+  if [ "$_is_git" = yes ]; then git check-ignore -q --no-index -- "$1"
+  else grep -qxF -- "$1" .gitignore; fi
+}
+# journal.md is the one deliberate exception: it is ignored on purpose, and read
+# below only when it exists.
+_ignored_reads=""
+for _p in $(grep -ohE '(dev-notes|docs)/[a-z-]+\.md' tests/test-*.sh AGENTS.md CLAUDE.md \
+            | sort -u | grep -v '^dev-notes/'); do
+  _ignored "$_p" && _ignored_reads="$_ignored_reads $_p"
+done
+assert_eq "nothing the suite or the entry points read is gitignored" "" "$_ignored_reads"
+
+# The other half: the public files must not carry what the diary was kept local
+# to hold back. The names can only be listed in the diary itself - a list here
+# would publish them - so this runs only where the diary exists, which is the
+# machine the pack is published from. Elsewhere it says it skipped, out loud.
+if [ -f dev-notes/journal.md ]; then
+  _names=$(awk '/^## Names kept out of the public files/{f=1; next}
+                f && /^#/{exit}
+                f && /^    [^ ]/{sub(/^    /, ""); print}' dev-notes/journal.md)
+  assert_eq "the journal declares the names to keep out" "yes" \
+    "$([ -n "$_names" ] && echo yes || echo no)"
+  if [ "$_is_git" = yes ]; then _public=$(git ls-files -co --exclude-standard)
+  else _public=$(find . -type f -not -path './.git/*' | sed 's|^\./||'); fi
+  _public=$(printf '%s\n' "$_public" | grep -vxF 'dev-notes/journal.md')
+  _leaks=""
+  for _n in $_names; do
+    # shellcheck disable=SC2086
+    _hits=$(grep -liwF -- "$_n" $_public 2>/dev/null | tr '\n' ' ')
+    [ -n "$_hits" ] && _leaks="$_leaks $_n: $_hits"
+  done
+  assert_eq "no public file names a private project" "" "$_leaks"
+else
+  printf '  skip no public file names a private project - dev-notes/journal.md is local only and absent here\n'
+fi
+
+section "adopting an already multi-part repository has a documented route"
+# Found by trying it on an existing npm workspace. The route existed and
+# worked, and nothing said so: `convert-to-parts.sh` is documented and is the
+# WRONG tool here - it converts a single project by moving everything into one
+# part - while the right one needs `seed-product-root.sh`, mentioned once in a
+# table of scripts and in no guide at all.
+assert_ok "multi-part.md documents adopting an existing repository" \
+  grep -q '^## Or adopt a repository that was already multi-part' docs/multi-part.md
+assert_ok "and says convert-to-parts is the wrong tool for it" \
+  bash -c "tr '\n' ' ' < docs/multi-part.md | tr -s ' ' | grep -qF 'is the wrong tool'"
+assert_ok "and names seed-product-root.sh, which no guide mentioned before" \
+  grep -q 'seed-product-root.sh' docs/multi-part.md
+assert_ok "and warns both scripts need the same paths" \
+  bash -c "tr '\n' ' ' < docs/multi-part.md | tr -s ' ' | grep -qF 'Pass the same paths to both scripts'"
+assert_ok "and says a single-part install may be the better answer" \
+  bash -c "tr '\n' ' ' < docs/multi-part.md | tr -s ' ' | grep -qF 'Consider whether you want this at all'"
+
+section "verify --all does not read the archive directory README as an archive"
+# The template ships a README.md in blueprint/history/{features,fixes,rollbacks}
+# explaining the naming convention. `verify --all` is told to read "each file
+# under" those directories - which includes it. An archive with no done-whens
+# reports as a silent extra or a could-not-verify against a feature that does
+# not exist, and neither invites a second look.
+#
+# Found by running `progress` and noticing the archive listing
+# had one more entry than there were items. `--all` has never been run.
+for d in features fixes rollbacks; do
+  assert_exists "the template really does ship a README in history/$d" \
+    "template/blueprint/history/$d/README.md"
+done
+assert_ok "verify --all is told to skip it" \
+  bash -c "tr '\n' ' ' < skills/verify.md | tr -s ' ' | grep -qF 'that is not an archive'"
+assert_ok "and names what an archive is actually called" \
+  grep -q 'named .NN-title.md. for a feature' skills/verify.md
+
+section "scaffold shapes the app for production, and preflight is not the first to ask"
+# Found by running preflight. Three things it
+# flagged were cheap at scaffold and retrofits by then, and none of them need a
+# server - so they are not `host`'s to provision, they are `scaffold`'s to shape:
+#
+#   - PORT, HOSTNAME and NODE_ENV were in no .env.example and no plan section.
+#     `preflight` mandates a three-source merge to build that list; `scaffold`
+#     did not, which GUARANTEES the gap rather than catching it.
+#   - `pino` sat installed with zero call sites. Step 7 audited presence, not
+#     use, so it passed every check the pack has.
+#   - No security headers at all, and only `preflight` even mentioned them.
+#
+# The line held deliberately: provisioning production stays `host`'s, because it
+# costs money and accounts. Shaping the app so it *can* be production does not.
+assert_ok "scaffold builds the env list from three places, like preflight" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'Build that list from three places'"
+assert_ok "and says doing it only in preflight guarantees the gap" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'guarantees the gap'"
+assert_ok "and names what a framework reads without appearing in source" \
+  grep -q 'PORT`, `HOSTNAME` and `NODE_ENV' skills/scaffold.md
+
+assert_ok "scaffold sets the security headers it can" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'set the security headers the framework has a place for'"
+assert_ok "and refuses to invent a CSP" \
+  grep -q 'Do not invent a Content-Security-Policy here' skills/scaffold.md
+assert_ok "and requires the unset one be recorded, not silent" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'look identical at the end and are not the same thing'"
+
+assert_ok "scaffold's audit checks use, not just presence" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'check each installed dependency has a call site'"
+assert_ok "and says nothing else in the workflow does" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -qF 'audits *use*, not presence, and nothing else'"
+
+# The line that must NOT move: provisioning stays host's.
+assert_eq "scaffold still does not provision a production environment" "0" \
+  "$(grep -ci 'scaffold.*provision.*production\|create the production environment' skills/scaffold.md || true)"
+assert_ok "and the development row is still the only environment scaffold writes" \
+  grep -q 'It is the only environment' skills/scaffold.md
+
+section "the pack says a mutation used to prove a test can itself be a no-op"
+# Found by doing it (2026-09-08). A new test was "proven" by reversing an input
+# array - but each element carried its own position and the query sorted by
+# position, so the data came back identical and the test passed against code
+# that was supposed to be broken. It looked exactly like a proven test.
+#
+# The runner already guards its own harness; nothing taught the practice. This
+# is the one place a green result is most trusted and least examined.
+assert_ok "AGENTS.md says to check the break was real" \
+  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qiF 'check the break was real'"
+assert_ok "and names the failure - a mutation that changes nothing" \
+  bash -c "tr '\n' ' ' < AGENTS.md | tr -s ' ' | grep -qF 'mutation that changes nothing is not'"
+assert_ok "build says a new test is not trusted until it has failed once" \
+  bash -c "tr '\n' ' ' < skills/build.md | tr -s ' ' | grep -qF 'not trusted until it has failed once'"
+assert_ok "and says to suspect the mutation before the test" \
+  bash -c "tr '\n' ' ' < skills/build.md | tr -s ' ' | grep -qF 'suspect the mutation before the test'"
+
+section "layout checks its decision against every tool that reads it"
+# layout's own first run: it proved `node --test` could not resolve the path
+# alias and chose colocated tests on that basis - correctly - then did not check
+# the typechecker, which rejects the extension the runner requires. `scaffold`
+# hit a second failure the same decision had caused.
+assert_ok "layout says one tool is half verified" \
+  bash -c "tr '\n' ' ' < skills/layout.md | tr -s ' ' | grep -qF 'verified against one tool is half verified'"
+assert_ok "and names which tools disagree" \
+  bash -c "tr '\n' ' ' < skills/layout.md | tr -s ' ' | grep -qF 'the runner, the typechecker, the bundler'"
+
+section "a half-built item can be handed to autopilot, and build says so"
+# Found by a user asking why build stops after every step when `spec` had
+# already done the thinking (2026-09-08). Two defects, and the second is the
+# one that bites:
+#
+#   - `build`'s post-step menu offered Continue / Commit / Walk me through /
+#     Stop, and never mentioned that unattended mode exists at all.
+#   - `autopilot` would not accept `build` as a range start, and `spec..review`
+#     cannot pick up a half-built item either, because `spec` correctly stops
+#     when current-work.md holds an unfinished spec.
+#
+# Together: the choice to go unattended could only be made BEFORE building
+# started, it was irreversible, and nothing said so. The option existed and was
+# invisible at the exact moment someone wanted it.
+# Range is the LIST ITSELF - to the first blank line, not to "Where it may end".
+# The wider range swept up the explanatory paragraphs below, which also say
+# `build`, so the assertion passed with `build` removed from the actual list.
+# Fifth time a check here has had a range too broad to fail; caught by reverting.
+assert_ok "autopilot accepts build as a range start" \
+  bash -c "sed -n '/Where the range may start/,/^\$/p' skills/autopilot.md | grep -q '\`build\`'"
+assert_ok "and says to resume from the first unchecked step" \
+  bash -c "tr '\n' ' ' < skills/autopilot.md | tr -s ' ' | grep -qF 'Resume from the first unchecked step'"
+assert_ok "and says why spec..review cannot do it instead" \
+  bash -c "tr '\n' ' ' < skills/autopilot.md | tr -s ' ' | grep -qF 'cannot pick up a half-built item'"
+assert_ok "build's post-step menu offers the unattended option" \
+  bash -c "sed -n '/Then offer a short choice/,/^## /p' skills/build.md | grep -q 'autopilot build..review'"
+assert_ok "and build says to offer it by name rather than on request" \
+  grep -q 'Offer the unattended option by name' skills/build.md
+
+section "no skill calls itself optional while another hard-stops without it"
+# `architect` said "Skipping it is fine for a small enough project" for a day
+# after the reorder made it mandatory: `stack` and `layout` both stop on a
+# placeholder Architecture section. The documented small-project path was a
+# false promise - skip it, and the very next skill refuses to run.
+#
+# The linter cannot see this: two files, both individually true, describing
+# opposite contracts. Check it the only way that works - if a skill's output is
+# somebody's hard precondition, that skill may not describe itself as skippable.
+# Whitespace-collapsed before matching. The phrase wraps as "stop and say to
+# run\n`architect` first", so a line-oriented grep finds nothing, the loop body
+# never runs, and the section reports green having asserted nothing. That is the
+# fourth time a check in this file has been defeated by its own line matching -
+# it is why every one of them normalises first.
+requires_count() {
+  local target="$1" n=0 f
+  for f in skills/*.md; do
+    [ "$f" = "skills/$target.md" ] && continue
+    grep -qF "say to run \`$target\` first" <<<"$(tr '\n' ' ' < "$f" | tr -s ' ')" && n=$((n+1))
+  done
+  echo "$n"
+}
+checked=0
+for s_ in architect stack layout scaffold distill; do
+  requires=$(requires_count "$s_")
+  if [ "${requires:-0}" -gt 0 ]; then
+    checked=$((checked+1))
+    assert_eq "$s_ is required, so it does not call itself skippable" "0" \
+      "$(grep -ci 'skipping it is fine\|skipping this is fine\|is optional for a small' "skills/$s_.md" || true)"
+  fi
+done
+# A loop that asserts nothing reports green. Prove it found something to check.
+assert_ok "the rule actually found required skills to check" test "$checked" -ge 2
+# And the replacement has to say what a short run looks like, or "required" just
+# reads as more ceremony for a project that needs none.
+assert_ok "architect says what a small project's run looks like" \
+  grep -q 'short is the correct outcome' skills/architect.md
+assert_ok "and that a six-no run is complete, not lazy" \
+  grep -q 'That is a complete run' skills/architect.md
+
+section "the six shape questions do not overstate what an answer settles"
+# Found by running the loop. Four files said
+# "consistent across more than one write eliminates a single-file database".
+# It does not: that is a transaction requirement and every relational database
+# provides transactions, single-file ones included. What bears on the storage
+# engine is concurrent writers - the *load* question.
+#
+# A rule stated too strongly is worse than a vague one. This one would have
+# rejected SQLite for a project whose own quality bar licensed it, and the
+# rejection would have read as rigour.
+assert_eq "no file claims that answer eliminates a single-file database" "" \
+  "$(grep -rln 'eliminates a single-file database\|rules out a single-file database' \
+     --include='*.md' skills/ docs/ template/ 2>/dev/null || true)"
+assert_ok "architect says a yes there settles no storage engine" \
+  grep -q 'On its own it rules out no storage engine' skills/architect.md
+assert_ok "and names concurrent writers as what does" \
+  grep -q 'concurrent writers' skills/architect.md
+assert_ok "stack reads the third and fifth answers together" \
+  grep -q 'Read the third and fifth together, never the third alone' skills/stack.md
+
+section "stack reads the quality bar rather than re-asking for it"
+# The reorder updated stack's preconditions to treat the bar as an input and
+# left Step 1 telling it to interview for the same information, ending with
+# "`architect` turns these answers into the recorded bar" - which describes the
+# order that no longer exists. One skill, two orders, both readable.
+assert_eq "stack never says architect writes the bar afterwards" "0" \
+  "$(grep -c 'turns these answers into the recorded bar' skills/stack.md || true)"
+assert_ok "stack Step 1 says to read the bar, not ask" \
+  grep -q 'do not ask this. Read it' skills/stack.md
+# Matched against whitespace-collapsed text: the sentence is line-wrapped, and a
+# naive grep reports absent for something that is present.
+assert_ok "and says what to do when the file is missing" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'not a licence to interview'"
+
+section "architect writes the system design inside the numbered section"
+# Step 3 produces a block long enough to feel like a section of its own. Written
+# as `## System design` it lands between plan sections 6 and 7 and silently
+# changes where section 6 ends - and `distill` addresses those sections by
+# heading. Found by doing exactly that.
+assert_ok "architect says sub-headings, not a new numbered section" \
+  bash -c "tr '\n' ' ' < skills/architect.md | tr -s ' ' | grep -qF 'section 6, under'"
+assert_ok "and says why - other skills address sections by number" \
+  grep -q 'other skills address them by' skills/architect.md
+
+section "ci proves the verify command from a clean checkout"
+# `npm run verify` passed in the working tree and failed on a clean checkout:
+# Next generates route types into a gitignored directory, so the runner had no
+# LayoutProps and tsc reported a missing symbol - which reads as broken code,
+# not a missing step. Any framework with generated types hits this.
+assert_ok "ci says clean checkout, not just 'right now'" \
+  grep -q 'from a clean checkout' skills/ci.md
+assert_ok "and names generated files as the cause" \
+  grep -q 'generated files are usually gitignored' skills/ci.md
+assert_ok "and puts the fix in the verify command, not the workflow" \
+  grep -q 'belongs in the verification command, not the pipeline' skills/ci.md
+assert_ok "and Step 4 re-checks it after the command may have changed" \
+  bash -c "sed -n '/^## Step 4/,/^## /p' skills/ci.md | grep -q 'clean checkout'"
+
+section "something reconciles the data model against what the stack owns"
+# A seam created by the reorder itself: the data model is now written before the
+# stack, so a library chosen later can own tables the plan also specifies by
+# hand. An auth library owning users is the common case, and `ideate` had
+# already written a User table with columns. Two of them drift silently.
+assert_ok "stack amends the data model when a library owns part of it" \
+  grep -q 'the data model in section 6, wherever the chosen stack owns part of it' skills/stack.md
+assert_ok "stack names auth as the usual case" \
+  grep -q 'Auth is the usual one' skills/stack.md
+assert_ok "stack says not to leave both descriptions standing" \
+  grep -q 'Do not quietly leave both descriptions standing' skills/stack.md
+assert_ok "distill checks stack actually did it" \
+  grep -q 'A data model the stack already owns' skills/distill.md
+
+section "every declared transition is a real handoff, not just a declaration"
+# Four transitions were broken at once: `stack`->`architect`, `scaffold`->`ci`,
+# `ci`->`distill` and `review`->`ship`. Every chain in every file agreed, and
+# following the loop the way a user does dead-ended at scaffold and again at ci.
+#
+# Cause: when `ci` moved from after `ship` to after `scaffold`, the sweep
+# reconciled the eight *declaration* sites - headers, README, guides - and not
+# the handoffs. A declaration says where a skill sits; a handoff is what makes
+# the next one get run. The linter cannot tell them apart: rule 7 is satisfied
+# by any mention, including one inside a chain diagram.
+#
+# So this checks the successor is named in prose, outside the "Where this sits"
+# block that every skill already has.
+broken=""
+while read -r from to where; do
+  [ -n "$from" ] || continue
+  # The handoff must be in the section that hands off - the last numbered step,
+  # unless the pair names its section as a third column. A mention anywhere in
+  # the file let spec's real handoff ("and that `build` is next", in its last
+  # step) be deleted while `build` named in the preconditions kept this green.
+  [ -n "$where" ] || where=$(grep -oE '^## Step [0-9]+' "skills/$from.md" | tail -1)
+  if [ -n "$where" ]; then
+    sect=$(awk -v h="$where" 'index($0, h) == 1 {f=1; next} f && /^## /{exit} f' "skills/$from.md")
+  else
+    sect=$(cat "skills/$from.md")
+  fi
+  [ -n "$sect" ] || { broken="$broken $from->$to(no-section)"; continue; }
+  # Strip the chain diagrams, not a line range. "Where this sits:" is followed
+  # by a BLANK line, so a /start/,/^$/ range ended before the diagram and left
+  # it in - the successor matched its own declaration and this test could not
+  # fail. Found by removing a real handoff and watching it stay green.
+  body=$(grep -vE '^[[:space:]]+.*(->|→)' <<< "$sect" | grep -v '^Where this sits:')
+  # Herestring, never a pipe into `grep -q`. grep -q exits on the first match and
+  # closes the pipe, the writer takes SIGPIPE, and `set -o pipefail` in lib.sh
+  # turns that into a failed pipeline *even though the match succeeded* - so this
+  # reported missing handoffs at random, three runs in ten, a different pair each
+  # time. Same shape as the rule 12 bug: correct logic, wrong exit status, and
+  # only visible because the assertion was run enough times to catch it.
+  #
+  # And a mention is not a handoff. spec's last step names `build` twice - "and
+  # that `build` is next", and "visible before `build` reaches it" - so deleting
+  # the real handoff left the second mention and this stayed green. A handoff has
+  # a recognisable shape: a bold-led bullet naming the skill (a list of what is
+  # next), or a mention within 200 characters after next / then / hand / point /
+  # run / "ready for" / "name the skill".
+  # ASCII only: grep -ob counts bytes and ${text:n} counts characters, so an em
+  # dash before the successor would shift the window.
+  text=$(tr '\n' ' ' <<< "$body" | LC_ALL=C tr -cd '\40-\176' | tr -s ' ')
+  handed=""
+  grep -qF -- "- **\`$to\`**" <<< "$text" && handed=1
+  for off in $(grep -ob -- "\`$to\`" <<< "$text" | cut -d: -f1); do
+    [ -z "$handed" ] || break
+    start=$((off > 200 ? off - 200 : 0))
+    grep -qE '(next|[Tt]hen|[Hh]and|[Pp]oint|[Rr]un|ready for|[Nn]ame the skill)' \
+      <<< "${text:$start:$((off - start))}" && handed=1
+  done
+  [ -n "$handed" ] || broken="$broken $from->$to"
+#
+# The population is the whole declared loop, not only the plan-and-build path.
+# It stopped at `review ship` when it was written, so the operate phase and the
+# multi-part path were never checked - and both had a broken transition sitting
+# in them: `ship` never named `preflight` at all, while the README diagram,
+# template/AGENTS.md, `preflight` and `host` all declared `ship -> preflight`,
+# and `deploy` gates production on preflight having returned go. `integrate`
+# declared `-> deploy` and ended without pointing anywhere.
+#
+# That is the third time a check here has had a matching rule that excluded the
+# case it exists to find, after `host`'s chain starting at `ci` and the backtick
+# sweep. When a transition is added to any chain, add it here too.
+done <<'PAIRS'
+setup ci
+ideate architect
+architect stack
+stack layout
+layout scaffold
+scaffold ci
+ci distill
+distill prototype
+distill spec
+prototype spec
+spec build
+build verify
+build ship
+verify review ## Step 4
+review ship
+ship preflight
+preflight host
+host deploy
+deploy monitor
+monitor debug ## Investigating a live problem
+architect orchestrate ## Step 2
+ship integrate
+integrate deploy
+PAIRS
+assert_eq "every loop transition hands off in prose" "" "$broken"
+
+# The pair check above is satisfied by a mention anywhere in the file, and
+# setup.md named `ci` in Step 5 - so `setup ci` passed while Step 7, the step that
+# actually names the next action, said "running `distill`" and never named `ci`.
+# The file declared `setup -> ... -> ci -> distill` at the top and told the
+# reader the opposite at the end. An adoption can follow Step 7;
+# `progress` can find later that neither had run. So the report step
+# itself must name what the chain names, in the chain's order.
+_chain=$(grep -E '^ +install -> setup ->' skills/setup.md | grep -oE '`[a-z-]+`' | tr -d '`' \
+         | grep -vx spec | tr '\n' ' ' | sed 's/ *$//')
+_step7=$(awk '/^## Step 7/{f=1; next} f && /^## /{exit} f' skills/setup.md | tr '\n' ' ' \
+         | grep -oE '`[a-z-]+`' | tr -d '`' | awk '!seen[$0]++' \
+         | while read -r n; do case " $_chain " in *" $n "*) echo "$n" ;; esac; done \
+         | tr '\n' ' ' | sed 's/ *$//')
+assert_eq "setup's chain still names what follows it" "ci distill prototype" "$_chain"
+assert_eq "setup's report names the chain's next skills, in the chain's order" "$_chain" "$_step7"
+
+section "no skill refers to state without naming a path"
+# Eight skills said "the plan", "the standards", "the findings ledger" with no
+# path. In a multi-part product "the plan" is the product's and "the standards"
+# are the part's own, and the wrong answer is silently plausible.
+#
+# The file must carry THAT state file's path, not any blueprint/ path: every skill
+# names some blueprint/ file, so "Check it against the quality bar" appended to
+# rollback.md passed while naming no bar at all.
+while IFS=$'\t' read -r phrase path; do
+  hits=$(grep -rln "$phrase" skills/ 2>/dev/null | while read -r f; do
+           grep -qF "$path" "$f" || echo "$f"
+         done | wc -l | tr -d ' ')
+  assert_eq "\"$phrase\" always appears with $path" "0" "$hits"
+done <<'PHRASES'
+the findings ledger	blueprint/context/findings.md
+the coding standards	blueprint/context/coding-standards.md
+the quality bar	blueprint/context/quality-bar.md
+PHRASES
+
+section "every skill is named in at least one document"
+missing=""
+for f in skills/*.md; do
+  n=$(basename "$f" .md)
+  grep -rqlF "\`$n\`" README.md docs/ template/AGENTS.md 2>/dev/null || missing="$missing $n"
+done
+assert_eq "no skill is undocumented" "" "$missing"
+
+section "every markdown link resolves"
+# Scoped to the documents meant to be navigated. dev-notes/ is excluded on
+# purpose: it quotes paths as prose - including `../../../etc/passwd` from the
+# traversal test - and a link checker that reads those as links reports a false
+# positive, which is exactly the defect the link checker itself was fixed for.
+broken=""
+for src in README.md docs/*.md; do
+  base=$(dirname "$src")
+  for target in $(grep -oE '\]\([^)]+\)' "$src" 2>/dev/null | sed 's/^](//; s/)$//' \
+                  | grep -vE '^https?:|^#|^mailto:' | sed 's/#.*//'); do
+    [ -n "$target" ] || continue
+    [ -e "$base/$target" ] || [ -e "$target" ] || broken="$broken $src->$target"
+  done
+done
+assert_eq "no broken relative links in README or docs" "" "$broken"
+
+section "the counts in the docs match reality"
+# Retargeted from the pack's own build notes, which are not in this repo - they
+# are a working diary naming projects and hosts. A test that reads a file
+# only the author has passes for them and fails for everyone else, which is
+# worse than no test.
+assert_eq "README's skill count is right" \
+  "$(ls skills/*.md | wc -l | tr -d ' ')" \
+  "$(grep -oE 'the [0-9]+ skills - the one copy' README.md | grep -oE '[0-9]+')"
+# docs/ is in this list because leaving it out is how the miss happened:
+# docs/anatomy.md - the file CLAUDE.md sends you to *before changing the
+# workflow's shape* - said "check.sh has twelve rules" while every other file
+# said 15, and its table stopped at rule 12.
+assert_eq "the linter rule count in the docs is right" \
+  "$(grep -oE '^# [0-9]+ ?[.-] ' check.sh | grep -oE '[0-9]+' | sort -n | tail -1)" \
+  "$(grep -ohE '[0-9]+ rules' README.md AGENTS.md CLAUDE.md docs/*.md | grep -oE '[0-9]+' | sort -u)"
+# ...and the count above can only be checked where it is written in digits. The
+# stale one was spelled "twelve", which the assertion could not see at all.
+assert_eq "no doc spells the rule count as a word" "" \
+  "$(grep -rlniE '\b(six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|twenty) rules\b' \
+       README.md AGENTS.md CLAUDE.md docs/*.md | tr '\n' ' ')"
+
+section "no doc still calls a class unlintable that has a rule"
+# The path that resolves to the wrong directory was the pack's standing example
+# of something a linter could never catch - until declaring the product-level
+# files made it rule 13. README and CLAUDE.md were updated; AGENTS.md still said
+# "**The path one is not**" and docs/anatomy.md still said "Two classes are not
+# lintable and never will be". Both are load-bearing: they tell the next person
+# not to try, which is exactly the conclusion that was wrong for six recurrences.
+unlintable=""
+for f in README.md AGENTS.md CLAUDE.md docs/*.md; do
+  tr '\n' ' ' < "$f" | tr -s ' ' \
+    | grep -qE 'classes are not lintable|path one is \*{0,2}not\b' \
+    && unlintable="$unlintable $f"
+done
+assert_eq "no doc claims the path class cannot be linted" "" "$unlintable"
+assert_eq "every guide in docs/ is named in the entry points" "" \
+  "$(for g in docs/*.md; do n=$(basename "$g"); grep -qF "$n" README.md AGENTS.md CLAUDE.md || echo " $n"; done)"
+
+# status.md carries a tree listing with a count per directory, and three lines
+# under it the instruction **Keep these counts current** - which is what was
+# there while the listing said "26 files, one per skill" and the same file's own
+# opening paragraph said 27 skills. An instruction to keep a number current is
+# not a mechanism for keeping it current; this is.
+if [ -f dev-notes/status.md ]; then
+  assert_eq "status.md's skill count is right" \
+    "$(ls skills/*.md | wc -l | tr -d ' ')" \
+    "$(grep -oE '^skills/ +[0-9]+ files' dev-notes/status.md | grep -oE '[0-9]+')"
+  assert_eq "status.md's template file count is right" \
+    "$(find template -type f | wc -l | tr -d ' ')" \
+    "$(grep -oE '^template/ +[0-9]+ files' dev-notes/status.md | grep -oE '[0-9]+')"
+  assert_eq "status.md's guide count is right" \
+    "$(ls docs/*.md | wc -l | tr -d ' ')" \
+    "$(grep -oE '^docs/ +[0-9]+ guides' dev-notes/status.md | grep -oE '[0-9]+')"
+else
+  printf '  skip the listing counts in status.md - dev-notes/ is local only and absent here\n'
+fi
+
+# The same listing names the test suites, and AGENTS.md names them a second
+# time. A suite added without updating either is invisible to a reader deciding
+# what to run - and `tests/run.sh` finds its files by glob, so nothing else in
+# the repo would ever mention the new one. That is rule 8's case exactly: the
+# fourth suite failed the linter on the day it was written, for having no
+# reference anywhere, which is how this assertion came to exist.
+# The entry, not its first line: these listing rows wrap, and a grep for one
+# line reported the last-named suite missing purely because it had been pushed
+# onto the continuation. Read from `tests/` to the next row or the block's end.
+suite_line=$(awk '/^tests\/ +run\.sh/{f=1} f&&/^[a-z]/&&!/^tests\//{exit} f&&/^```/{exit} f' dev-notes/status.md 2>/dev/null)
+unnamed=""
+for t in tests/test-*.sh; do
+  n=$(basename "$t" .sh); n="${n#test-}"
+  [ -f dev-notes/status.md ] && case "$suite_line" in *"$n"*) ;; *) unnamed="$unnamed $n(status.md)" ;; esac
+  grep -qF "tests/test-$n.sh" AGENTS.md || unnamed="$unnamed $n(AGENTS.md)"
+done
+assert_eq "every test suite is named in status.md's listing and in AGENTS.md" "" "$unnamed"
+
+section "the retired list covers every rename"
+# Renaming without adding the old name to `retired` is what leaves the gap;
+# the rule is not the gap.
+# The list lives in lib/retired-names - check.sh (rule 5) and install.sh
+# (pruning a project's old skills on upgrade) both read it from there.
+RETIRED=$(grep -v '^#' lib/retired-names | grep -v '^[[:space:]]*$')
+assert_ok "'idea' is retired" bash -c 'grep -qx idea lib/retired-names'
+assert_eq "no retired name is also a live skill" "0" \
+  "$(for r in $RETIRED; do [ -f "skills/$r.md" ] && echo x; done | wc -l | tr -d ' ')"
+assert_fails "the list is not empty" bash -c '[ -z "$(grep -v "^#" lib/retired-names | grep -v "^[[:space:]]*$")" ]' 
+
+section "the standards split by ownership"
+# One file with a pack-owned half and a project-owned half is a file with two
+# writers. install.sh only ever wrote a template file when absent, so the
+# fundamentals never reached a project that already existed - `setup` found none
+# and invented a thinner list of its own.
+fu=template/blueprint/context/fundamentals.md
+cs=template/blueprint/context/coding-standards.md
+assert_ok "the pack owns fundamentals.md"      test -f "$fu"
+assert_ok "it says edits there are overwritten" grep -qi 'overwritten' "$fu"
+assert_ok "the project owns coding-standards"  grep -qi 'overwrites this file' "$cs"
+assert_ok "each points at the other"           bash -c 'grep -q "coding-standards.md" '"$fu"' && grep -q "fundamentals.md" '"$cs"
+assert_ok "the heading review audits exists"   grep -q '^## Standards this project follows' "$cs"
+assert_ok "install.sh refreshes fundamentals"  grep -q 'blueprint/context/fundamentals.md' install.sh
+
+# An existing project usually has standards already - a linter config, a
+# CONTRIBUTING.md, an .editorconfig. setup merges with those rather than deriving
+# a confident second version from the code that quietly disagrees with the team's
+# own written rules.
+assert_ok "setup looks for standards already written down" \
+  bash -c "tr '\n' ' ' < skills/setup.md | grep -q 'CONTRIBUTING.md'"
+assert_ok "setup defers to a tool over restating its rule" \
+  bash -c "tr '\n' ' ' < skills/setup.md | tr -s ' ' | grep -q 'never restate the rule in prose'"
+assert_ok "the template records where a rule came from" \
+  grep -q '^## Where these rules come from' "$cs"
+assert_ok "review follows the file out to what it references" \
+  bash -c "tr '\n' ' ' < skills/review.md | tr -s ' ' | grep -q 'Follow the standards file out to what it points at'"
+assert_eq "no duplicate section headings" "0" \
+  "$([ -f "$cs" ] || echo missing; grep '^## ' "$cs" 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')"
+assert_ok "scaffold writes the standards heading" grep -q 'Standards this project follows' skills/scaffold.md
+# Matched against whitespace-collapsed text: the phrase is line-wrapped in
+# setup.md, and a naive grep reports absent for something that is present. That
+# is the backtick-sweep failure again - normalise before matching, or the check
+# silently excludes the shape it is looking for.
+assert_ok "setup writes it too" \
+  bash -c "tr '\n' ' ' < skills/setup.md | tr -s ' ' | grep -q 'Standards this project follows'"
+
+section "the honest-limits section names no skill as unrun"
+# It went stale by a day once, naming three skills as never run after all three
+# had run - and it is the section a reader trusts most, because a caveat that is
+# out of date is indistinguishable from a current one.
+#
+# This used to assert the list was empty, on the premise that every skill had
+# run. `layout` broke that premise on 2026-09-08 by being split out of
+# `architect` after the other skills were already run. So the premise is now a
+# declared list rather than a constant: name here every skill the section is
+# allowed to call unrun, and the assertion fails the moment the prose and this
+# list disagree - in either direction. **Run `layout` for real and this test
+# fails until the caveat comes out**, which is exactly the alarm it existed for.
+unproven=$(sed -n '/^## What is still unproven/,/^## /p' docs/anatomy.md \
+  | awk '/^- /{if(b)print b; b=$0; next}
+         /^[[:space:]]+[^[:space:]]/{b=b" "$0; next}
+         {if(b)print b; b=""} END{if(b)print b}' | tr -s ' ')
+# The skills the caveat may call unrun, and only these. Empty since 2026-09-08,
+# when `layout` ran against a real Next.js project - and this line is what forced the prose to
+# be updated in the same change rather than staying stale.
+unrun_ok=""
+assert_eq "only the declared skills are described as never run" "$unrun_ok" \
+  "$(grep -i 'never been run\|never run' <<< "$unproven" | grep -oE '`[a-z-]+`' | tr -d '`' \
+     | while read -r n; do [ -f "skills/$n.md" ] && echo "$n"; done | sort -u | tr '\n' ' ' | sed 's/ *$//')"
+# Counted into a variable first. Interpolating $unproven into a `bash -c` string
+# hangs: the text contains backticked skill names, which bash then treats as
+# command substitution and waits on stdin for. Third time a test here has been
+# broken by its own shell mechanics rather than by what it checks.
+partly=$(grep -ci 'only part' <<< "$unproven") || partly=0
+assert_ok "the section still says what is only partly proven" test "$partly" -ge 1
+
+section "ci proves a pipeline the way CI will see it"
+# A project's .env supplies variables the runner will not have, so a local proof
+# run with it present says nothing about whether the pipeline works - the same
+# shape as a test that passes because the fixture was already there. A hand-written workflow can
+# set variables nothing reads at build time, beyond what `npm run verify` needs.
+assert_ok "ci proves without the local .env" \
+  bash -c "tr '\n' ' ' < skills/ci.md | tr -s ' ' | grep -q 'without the local'"
+assert_ok "ci proves from a clean install" \
+  bash -c "tr '\n' ' ' < skills/ci.md | tr -s ' ' | grep -q 'from a clean dependency install'"
+assert_ok "ci caches the dependency install" \
+  bash -c "tr '\n' ' ' < skills/ci.md | tr -s ' ' | grep -qi 'Cache the dependency install'"
+
+section "a configured check that gates nothing is reported"
+# One project had ESLint configured and `npm run lint` outside `verify`, so
+# no lint rule blocked anything. Twelve skills referenced "the verification
+# command" and none asked whether it ran what the project actually had. The
+# session found it by accident while writing a standards table.
+assert_ok "ci checks the verify command is complete" \
+  bash -c "tr '\n' ' ' < skills/ci.md | tr -s ' ' | grep -q 'runs what the project has configured'"
+assert_ok "ci does not wire it in itself" \
+  bash -c "tr '\n' ' ' < skills/ci.md | tr -s ' ' | grep -q 'do not wire it in from here'"
+assert_ok "preflight names checks that exist but do not gate" \
+  bash -c "tr '\n' ' ' < skills/preflight.md | tr -s ' ' | grep -q 'exist but do not gate'"
+
+section "rollback's stop is a decision point, not the end of the skill"
+# Step 2 said "stop" when a later feature depends on the target; Step 3 said
+# "write the guarded spec". Nothing said which won - so for any entangled
+# feature, which is the case the skill exists for, its headline deliverable was
+# unreachable. A feature with no dependents barely needs a dependency review.
+assert_ok "the stop is for a decision" \
+  bash -c "tr '\n' ' ' < skills/rollback.md | tr -s ' ' | grep -q 'stop for a decision, not the end of the skill'"
+assert_ok "and abandoning is a real outcome" \
+  bash -c "tr '\n' ' ' < skills/rollback.md | tr -s ' ' | grep -q 'an unusable spec is worse than none'"
+assert_ok "unrelated work in the same commit is excluded" \
+  bash -c "tr '\n' ' ' < skills/rollback.md | tr -s ' ' | grep -q 'more than its headline'"
+assert_ok "the data question is asked separately from the code" \
+  bash -c "tr '\n' ' ' < skills/rollback.md | tr -s ' ' | grep -q 'Reversing code and reversing a schema are different'"
+assert_ok "and it routes the schema half to migrate" \
+  bash -c "tr '\n' ' ' < skills/rollback.md | tr -s ' ' | grep -q '.migrate. owns this'"
+
+section "needs-you lines can be closed, not only opened"
+# Six skills wrote to needs-you.md, three read it, and nothing ever closed a
+# line - the mirror of the `Blocked on:` bug, which had readers and no writer.
+# The file could only grow, so every item stayed open forever and `preflight`
+# treats an open required line as a blocker: a requirement met months ago would
+# have failed a release permanently.
+ny=template/blueprint/context/needs-you.md
+assert_ok "the file says who closes a line"      grep -q '^## Closing a line' "$ny"
+assert_ok "the closer is the skill that needed it" \
+  bash -c "tr '\n' ' ' < $ny | tr -s ' ' | grep -q 'skill that would have needed it closes it'"
+assert_ok "prepare is excluded from closing" \
+  bash -c "tr '\n' ' ' < $ny | tr -s ' ' | grep -q '.prepare. never closes anything'"
+assert_ok "preflight verifies before calling a line a blocker" \
+  bash -c "tr '\n' ' ' < skills/preflight.md | tr -s ' ' | grep -q 'check each open line is still open'"
+assert_ok "progress reports the person's side too" \
+  bash -c "tr '\n' ' ' < skills/progress.md | tr -s ' ' | grep -q 'Report both sides of the work'"
+
+section "scaffold checks the component, not just the toolchain"
+# `dotnet --version` reported 10.0.110, `dotnet new console` built, and
+# `dotnet new webapi` created a project that could not build - ASP.NET Core is a
+# separate package. The scaffolder exited 0 while producing something broken,
+# which is the Vite lesson in a different ecosystem five days later.
+assert_ok "it says an SDK is not one thing" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'An SDK is not one thing'"
+assert_ok "it distinguishes running from building" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'running and building need different ones'"
+assert_ok "it covers python having no pip" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'working interpreter and no .pip.'"
+assert_ok "and states the generic form" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'in the shape the project will actually take'"
+
+section "OWASP is cited by edition, not from memory"
+# An agent recalling the 2021 list never looks for A03 Software Supply Chain
+# Failures or A10 Mishandling of Exceptional Conditions - both new in 2025.
+assert_eq "no unversioned 'OWASP Top 10' outside review's own explanation" "0" \
+  "$(grep -rn 'OWASP Top 10' skills/ template/ | grep -vc 'Top 10:2025\|Top 10 2025\|renumbered')"
+
+section "every test file runs all of itself"
+# `finish` prints the summary and exits, so anything appended after it never
+# runs - and the suite still reports green, because the assertions that would
+# have failed were never reached. Hit while adding tests to this suite: 16 new
+# assertions sat below `finish` and the count did not move.
+#
+# A test that cannot run is the same defect as a rule that cannot fail, which
+# this repo has now recorded four times.
+for tf in tests/test-*.sh; do
+  last=$(grep -vE '^\s*(#.*)?$' "$tf" | tail -1 | tr -d ' ')
+  assert_eq "$(basename "$tf") ends with finish" "finish" "$last"
+done
+
+section "the plan template has a home for everything ideate is told to write"
+# `ideate` Step 3 named five things to write into project-plan.md and the
+# template had sections for three. Constraints and the deferred list had nowhere
+# to go - and `stack` Step 1 asks for the constraints next, so the answer was
+# re-asked in the same sitting and lost entirely between sessions. A writer with
+# nowhere to write is the reader-without-writer defect from the other side.
+plan="template/blueprint/project-plan.md"
+assert_ok "the template has a Constraints section" \
+  grep -qE '^## [0-9]+\. Constraints' "$plan"
+assert_ok "and a deliberately-deferred section" \
+  grep -qE '^## [0-9]+\. Deliberately deferred' "$plan"
+assert_ok "ideate points at the constraints section by number" \
+  bash -c "tr '\n' ' ' < skills/ideate.md | tr -s ' ' | grep -q 'constraints\*\* (section 10)'"
+assert_ok "ideate points at the deferred section by number" \
+  bash -c "tr '\n' ' ' < skills/ideate.md | tr -s ' ' | grep -q '(section 11)'"
+# The other half: stack must read what ideate wrote instead of asking again.
+assert_ok "stack reads the recorded constraints rather than re-asking" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'Read section 10 of'"
+# And every numbered section a skill names must exist in the template.
+tmpl=$(grep -oE '^## [0-9]+\.' "$plan" | grep -oE '[0-9]+' | tr '\n' ' ')
+missing=""
+for n in $(grep -ohE 'section [0-9]+' skills/*.md | grep -oE '[0-9]+$' | sort -un); do
+  grep -qw "$n" <<< "$tmpl" || missing="$missing $n"
+done
+assert_eq "every plan section a skill names exists" "" "$missing"
+
+section "a version is checked against the runtime that is installed"
+# `stack` settled "the runtime" as a choice and never compared it to the machine.
+# `scaffold` compares it as a fact - one skill after the user approved a stack.
+# A runtime can be one patch below what the current framework and its tooling
+# require, so a stack that names "current stable" reads perfectly and cannot be
+# built.
+assert_ok "stack checks the named version against the installed runtime" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'Check the version you are about to name against the runtime that is actually installed'"
+assert_ok "and offers both remedies rather than picking one silently" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'upgrade the runtime'"
+# scaffold's own remedies do not cover the case where the plan named the
+# impossible version - pinning "to what the plan said" is then the bug.
+assert_ok "scaffold routes back to stack when the plan named an unrunnable version" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'Route back to .stack.'"
+assert_ok "and does not pick a replacement version itself" \
+  bash -c "tr '\n' ' ' < skills/scaffold.md | tr -s ' ' | grep -q 'Do not choose a replacement version'"
+
+section "product-level state is named as such wherever it is read"
+# `architect` runs at the product root and writes quality-bar.md there. `spec`,
+# `verify`, `review`, `preflight` and `monitor` all run *inside a part*, where an
+# unqualified `blueprint/` means that part's own directory - so all five read a
+# file nothing wrote, and all five guard with "if it exists", which turns it into
+# silence rather than an error. The unlintable path class, sixth instance.
+#
+# The fix reuses the mechanism that already handles project-plan.md: one note
+# naming what lives at the product root, carried by everything that touches it.
+for n in spec verify review preflight monitor architect setup; do
+  assert_ok "$n names quality-bar as product-root state" \
+    grep -q 'the bar the whole product is held to' "skills/$n.md"
+done
+assert_ok "architect writes the qualified path, not a copy per part" \
+  grep -q 'product root>/blueprint/context/quality-bar.md' skills/architect.md
+assert_ok "and says explicitly not to write one per part" \
+  bash -c "tr '\n' ' ' < skills/architect.md | tr -s ' ' | grep -q 'do not write a copy into each part'"
+
+section "splitting a project across parts leaves nothing without a writer"
+# `ideate` writes the only initial item set and runs once, at the product root.
+# The conversion moves it into --existing and seeds the others empty, so the
+# other part's build-plan has four readers and no writer - `spec` run there
+# reports "nothing is queued" while its whole surface is unbuilt.
+assert_ok "architect says the build plan must be split per part" \
+  bash -c "tr '\n' ' ' < skills/architect.md | tr -s ' ' | grep -q 'split the build plan across the parts'"
+assert_ok "and says why nothing else will do it" \
+  bash -c "tr '\n' ' ' < skills/architect.md | tr -s ' ' | grep -q 'only skill that writes an initial item set'"
+assert_ok "the converter reports what it moved" \
+  grep -q 'written before there were parts' convert-to-parts.sh
+assert_ok "and does not try to split it itself" \
+  grep -q 'Nothing here splits these' convert-to-parts.sh
+
+section "needs-you lines land where prepare will read them"
+# `stack` writes needs-you.md and, in the normal flow, runs before parts exist -
+# so the conversion carries the file into --existing and the other part never
+# sees it. Run at an already-split product root it is worse: `prepare`,
+# `progress` and `preflight` only read the part they are run in, so a line at
+# the root is written to nobody.
+assert_ok "stack says where a needs-you line goes in a split product" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'needs-you.md. is part-local'"
+assert_ok "and names who would otherwise never see it" \
+  bash -c "tr '\n' ' ' < skills/stack.md | tr -s ' ' | grep -q 'only ever read the part they are run in'"
+
+section "an existing project can be adopted all the way to distill"
+# `setup` proposes both plans for a project with shipped features, then says to
+# run `distill` - which stops while plan sections 5 (Tech) and 6 (Architecture)
+# still hold their seeded instruction text. On that route `stack` and `architect`
+# never run, so nothing filled them: the adoption route could not reach its own
+# next step. And `setup` wrote both plans without being declared their writer.
+_setup=$(tr '\n' ' ' < skills/setup.md | tr -s ' ')
+assert_ok "setup's proposal fills section 5, Tech" grep -qF '5. Tech' <<< "$_setup"
+assert_ok "and section 6, Architecture" grep -qF '6. Architecture' <<< "$_setup"
+assert_ok "and replaces the seeded instruction text distill checks for" grep -qi 'seeded instruction' <<< "$_setup"
+
+section "verify --all does not re-prove a feature that was rolled back"
+# ship keeps a rolled-back feature's archive under history/features and unchecks
+# its build-plan item. verify --all read every archive there, so it re-proved
+# behaviour removed on purpose and reported the rollback as a regression.
+_verify=$(tr '\n' ' ' < skills/verify.md | tr -s ' ')
+assert_ok "verify --all skips an archive whose build-plan item is unchecked" \
+  grep -qi 'skip an archive whose build-plan item is unchecked' <<< "$_verify"
+assert_ok "and names what it skipped with its rollback archive" grep -qF 'history/rollbacks' <<< "$_verify"
+
+section "stack reconciles the data model where architect wrote it"
+# architect writes the data model - entities, fields, relations - into section 6,
+# Architecture, and migrate reads it there. stack amended section 4, which only
+# lists what is stored, so the hand-written columns a library now owns stayed in
+# section 6: the two descriptions the paragraph exists to prevent.
+_stack=$(tr '\n' ' ' < skills/stack.md | tr -s ' ')
+assert_ok "architect writes the data model into Architecture" \
+  bash -c "tr '\n' ' ' < template/blueprint/project-plan.md | grep -qi 'Architecture.*the data model in enough detail'"
+assert_ok "stack amends the data model in section 6" grep -qF 'the data model in section 6' <<< "$_stack"
+assert_eq "and no longer calls section 4 the data model" "0" "$(grep -cF 'section 4, the data model' skills/stack.md || true)"
+
+section "an item in flight can be abandoned or parked"
+# spec stops while current-work holds an unfinished spec, and called abandoning
+# it "the user's call" - but no skill carried that call out. The only ways
+# forward were to finish it or hand-edit current-work, which destroys the ticked
+# steps the whole resume mechanism rests on.
+_ship=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
+assert_ok "ship declares an --abandon mode" grep -qE '^\| `--abandon' skills/ship.md
+assert_ok "ship archives an abandoned spec under history/abandoned" grep -qF 'blueprint/history/abandoned/' <<< "$_ship"
+assert_ok "and keeps the branch, so the work is parked rather than lost" grep -qi 'keep the branch' <<< "$_ship"
+assert_ok "and leaves the plan item unchecked" grep -qi 'leave the item unchecked' <<< "$_ship"
+assert_exists "the template ships the abandoned directory's README" template/blueprint/history/abandoned/README.md
+_spec=$(tr '\n' ' ' < skills/spec.md | tr -s ' ')
+assert_ok "spec routes an unwanted item in flight to ship --abandon" grep -qF 'ship --abandon' <<< "$_spec"
+assert_ok "and offers to resume an abandoned spec for the same item" grep -qF 'history/abandoned' <<< "$_spec"
+assert_lacks "verify no longer counts the history directories" skills/verify.md 'one in all three'
+
+section "preflight runs where its files are"
+# The product root's AGENTS.md listed preflight under "Run these here", but
+# preflight reads the overview, the standards, the ledger and history - all of
+# them a part's own - and writes its blockers to the part's ledger. A product
+# root has none of them.
+assert_eq "the product root does not list preflight among its own skills" "0" \
+  "$(sed -n '/^## Run these here/,/^## /p' template/product/AGENTS.md | grep -c '^- \*\*`preflight`' || true)"
+assert_ok "and says preflight runs in each part" \
+  bash -c "tr '\n' ' ' < template/product/AGENTS.md | tr -s ' ' | grep -qi 'preflight. runs in each part'"
+assert_ok "preflight stops at a product root and names the parts to run it in" \
+  bash -c "tr '\n' ' ' < skills/preflight.md | tr -s ' ' | grep -qi 'at a product root'"
+
+section "verify agrees with itself"
+# Its preconditions stopped on "no spec" while Step 1 verified the most recent
+# archive when there was no spec, --all has no spec by design, and ship points at
+# verify right after resetting the spec. And it called itself read-only while it
+# raises findings and writes needs-you lines.
+_vpre=$(sed -n '/^## Before you start/,/^## /p' skills/verify.md | tr '\n' ' ' | tr -s ' ')
+assert_ok "verify's preconditions allow no spec: the most recent archive, or --all" \
+  bash -c 'grep -qi "most recently archived" <<< "$1" && grep -qF -- "--all" <<< "$1"' _ "$_vpre"
+assert_lacks "verify no longer calls itself read-only" skills/verify.md 'this skill is read-only'
+assert_ok "and says what it does write" \
+  bash -c "tr '\n' ' ' < skills/verify.md | tr -s ' ' | grep -qi 'never edits the product'"
+
+section "nothing here pipes a file into grep -q"
+# `grep -v ... "$f" | grep -q` under `set -o pipefail`: grep -q exits on its first
+# match, the writer still reading the file takes SIGPIPE, and the pipeline reports
+# failure although the match succeeded. Rule 12 printed "declares it writes
+# blueprint/project-plan.md, but nothing else in the skill names it" for
+# architect.md - which names it a dozen times - once, then passed on the next
+# run. tests/lib.sh already forbids this shape for the same reason.
+assert_eq "no file-reading pipeline in check.sh ends in grep -q" "" \
+  "$(grep -nE '"\$(HERE|f)[^"]*" *\| *grep -q' check.sh || true)"
+# **The rule read only check.sh, and the suites are where it was still live.**
+# Two of them sat in this very file - the `requires_count` loop and the anatomy
+# reader-count loop - each joining a whole skill file and gating a counter on
+# `&& n=$((n+1))`, so a SIGPIPE silently UNDERCOUNTS and the assertion fails
+# with a plausible off-by-one rather than an error. Seven clean full runs and
+# one failure; forced with a 60k-line file, the shape gave 40 false failures
+# out of 40 and the herestring 0. A rule scoped to one file is not the rule its
+# own comment claims - `tests/lib.sh` says *every* assertion must be immune.
+# `bash -c` is exempt on purpose: pipefail is not inherited by a child shell,
+# which was checked rather than assumed.
+assert_eq "nor in any suite that runs under pipefail" "" \
+  "$(grep -nE '(< *"\$[A-Za-z_]|(grep|sed|awk|tr|cat)[^|]*"\$[A-Za-z_])[^|]*\| *([a-z]+[^|]*\| *)*grep -q' \
+       check.sh tests/*.sh | grep -v 'bash -c' | grep -vE ':[0-9]+: *#' || true)"
+# **`grep -q` was one reader of a wider class: anything that stops reading early.**
+# `sed '/x/q'`, `head` and `grep -m` quit the same way, and in check.sh - the one
+# script here under `set -e` - an assignment whose pipeline takes SIGPIPE ends the
+# whole run: exit 141, no output. Rule 1's `fm=$(tail ... | sed '/^---$/q' | ...)`
+# did exactly that, in roughly one lint fixture in fifteen, for a week after the
+# rule above was declared closed. The suites are not under `set -e`, so there it
+# costs a value, not the run, and the rule above already covers their gates.
+# `|| true` is the escape: the status is discarded, and the value is complete.
+assert_eq "no assignment in check.sh pipes into a reader that quits early" "" \
+  "$(grep -nE '=\$\(.*\| *(head|sed [^|]*/q'"'"'|grep -[a-zA-Z]*[qm])' check.sh \
+       | grep -v '|| true' | grep -vE ':[0-9]+: *#' || true)"
+
+section "one skill applies a migration to an environment"
+# Both migrate (Step 4, production last) and deploy ("Run migrations before the
+# code that needs them") applied migrations to production. A destructive
+# migration run by deploy went out under a release approval - skipping migrate's
+# backup-first rule and its approval that names what is lost.
+assert_lacks "deploy no longer runs migrations itself" skills/deploy.md 'Run migrations \*\*before\*\* the code'
+assert_ok "deploy stops on a pending migration and routes to migrate" \
+  bash -c "tr '\n' ' ' < skills/deploy.md | tr -s ' ' | grep -qi 'pending migration.*\`migrate\`'"
+assert_ok "including one a platform's release step would run" \
+  bash -c "tr '\n' ' ' < skills/deploy.md | tr -s ' ' | grep -qi 'release command'"
+
+section "anatomy has a row for every skill"
+# The Plan, Build and Operate tables covered the loop and left out the eight
+# skills around it - autopilot, debug, docs, orchestrate, prepare, progress,
+# rollback, setup - so the file read before changing the workflow's shape said
+# nothing about what they read or write. rollback and setup both write state.
+missing=""
+for f in skills/*.md; do n=$(basename "$f" .md); grep -qE "^\| \`$n\` \|" docs/anatomy.md || missing="$missing $n"; done
+assert_eq "every skill has a row in docs/anatomy.md" "" "$missing"
+
+section "anatomy's state table counts match the skills"
+# Two reader counts in that table said "10 skills" - one meant 13 and the other
+# meant everything touching the file rather than its readers - and multi-part.md
+# disagreed with anatomy about the same file. A count nobody can check is the
+# drift this repo has now recorded five times, and the state table is the thing
+# a maintainer reads to decide where a new file belongs.
+#
+# Blockquote lines are stripped first: the product-root note names project-plan
+# and quality-bar, so every skill carrying it would otherwise count as a reader.
+bad=""
+while IFS= read -r row; do
+  file=$(sed 's/^| `\([^`]*\)`.*/\1/' <<< "$row")
+  claim=$(grep -oE '\| [0-9]+ skills \|' <<< "$row" | grep -oE '[0-9]+')
+  [ -n "$claim" ] || continue
+  writers=$(awk -F'|' '{print $4}' <<< "$row" | grep -oE '`[a-z-]+`' | tr -d '`')
+  real=0
+  for sk in skills/*.md; do
+    n=$(basename "$sk" .md)
+    grep -qx "$n" <<< "$writers" && continue
+    grep -qF -- "$file" <<<"$(grep -v '^>' "$sk")" && real=$((real + 1))
+  done
+  [ "$claim" = "$real" ] || bad="$bad $file(says $claim, is $real)"
+done <<< "$(grep -E '^\| `blueprint/[^`]*` \|.*\| [0-9]+ skills \|' docs/anatomy.md)"
+assert_eq "every \"N skills\" reader count in anatomy is real" "" "$bad"
+
+# And the two documents must not disagree about the same file.
+assert_eq "multi-part.md agrees on how many skills touch current-work" \
+  "$(grep -lF 'current-work.md' skills/*.md | wc -l | tr -d ' ')" \
+  "$(grep -oE 'current-work\.md` is read or written by [0-9]+' docs/multi-part.md | grep -oE '[0-9]+$')"
+
+section "coverage.md is the only place the coverage numbers are written"
+# The table exists because this exact question was reconstructed wrong three
+# times inside status.md - "13 skills unrun" in one bullet, "23" in another, and
+# "every skill has run" in the header. It fixed that file and nothing held the
+# two documents that quote it: status.md sat a skill behind (26, written before
+# `layout` existed) and anatomy.md listed `autopilot` among the partly-run when
+# the table marks it yes, on a full unattended `spec..review` over a real
+# two-part product. One declared source, two readers drifting from it, every
+# file individually valid - the same shape as every other defect in this pack.
+# The table is the maintainer's record of runs on particular projects, so it is
+# local (dev-notes/local/, gitignored) and this runs only where it exists - the
+# same arrangement as the journal's name guard. Elsewhere it says it skipped.
+_cov=dev-notes/local/coverage.md
+if [ -f "$_cov" ]; then
+  cov_total=$(grep -cE '^\| `[a-z-]+` \| (yes|partial|no) \|' "$_cov")
+  cov_partial=$(grep -cE '^\| `[a-z-]+` \| partial \|' "$_cov")
+  cov_names=$(grep -E '^\| `[a-z-]+` \| partial \|' "$_cov" \
+    | sed 's/^| `//; s/`.*//' | sort | tr '\n' ' ' | sed 's/ *$//')
+
+  # The NAMES, not the count. Counting rows passes a table that has the right
+  # number of them and the wrong ones in it - a row left behind by a rename reads
+  # as coverage for a skill that no longer exists, which is the same stale-entry
+  # failure check.sh already lints for in its own declared lists. Caught by
+  # mutating `layout` to `layout-x` and watching a row-count assertion pass.
+  assert_eq "coverage.md has a row for every skill and no others" \
+    "$(ls skills/*.md | xargs -n1 basename | sed 's/\.md$//' | sort | tr '\n' ' ' | sed 's/ *$//')" \
+    "$(grep -oE '^\| `[a-z-]+` \| (yes|partial|no) \|' "$_cov" \
+       | sed 's/^| `//; s/`.*//' | sort | tr '\n' ' ' | sed 's/ *$//')"
+
+  # status.md is a chronological log: its dated entries record what was true on
+  # the day they were written and must NOT be rewritten to today's numbers. Only
+  # the "Open / not done" section speaks in the present tense, so only it is held
+  # to the table. Scanning the whole file instead matched a 2026-09-07 entry and
+  # reported a stale claim that was in fact a correct record of the past.
+  _claim_text() {
+    case "$1" in
+      dev-notes/status.md) awk '/^## Open \/ not done/{f=1; next} f && /^## /{exit} f' "$1" ;;
+      *) cat "$1" ;;
+    esac | tr '\n' ' ' | tr -s ' '
+  }
+
+  # Both readers wrap the claim across lines, so the text is flattened to one line
+  # first - a line-based grep matches neither and reports them both absent.
+  _w2n() { case "$1" in one) echo 1;; two) echo 2;; three) echo 3;; four) echo 4;;
+                        five) echo 5;; six) echo 6;; seven) echo 7;; *) echo "none";; esac; }
+  for _doc in dev-notes/status.md docs/anatomy.md; do
+    _flat=$(_claim_text "$_doc")
+    assert_eq "$_doc states the table's skill count" "$cov_total" \
+      "$(grep -oE 'All [0-9]+ skills have now been run' <<< "$_flat" | grep -oE '[0-9]+' | head -1)"
+    assert_eq "$_doc states the table's partial count" "$cov_partial" \
+      "$(_w2n "$(grep -oE '(one|two|three|four|five|six|seven) (of them )?only partly' <<< "$_flat" \
+                | grep -oE '^[a-z]+' | head -1)")"
+  done
+else
+  printf '  skip the coverage counts agree with the table - %s is local only and absent here\n' "$_cov"
+fi
+
+# ==== seams-G: the rule count, spread across five files by rule 17 (2026-09-23) ====
+section "the linter's rule count agrees everywhere it is written down"
+# Adding rule 17 meant editing the number in five files, and nothing checked that
+# they agreed - the same shape as the file listing above, which is read against
+# the tree for exactly this reason. A count is a claim about check.sh, so it is
+# taken from check.sh: the highest `# <n> -` or `# <n>.` rule comment in it.
+# Written down in four prose files and one status line, it is four chances to
+# update three of them.
+_rules=$(grep -oE '^[[:space:]]*# ([0-9]+)[ .-]' check.sh | grep -oE '[0-9]+' | sort -n | tail -1)
+assert_eq "check.sh's rule comments are numbered and readable" "yes" \
+  "$([ -n "$_rules" ] && [ "$_rules" -ge 10 ] && echo yes || echo no)"
+# The rules are numbered from 1 with no gaps, so the highest number IS the count.
+# Without this a deleted rule leaves the maximum unchanged and every prose file
+# agreeing with a number that is one too high.
+_seq=$(grep -oE '^[[:space:]]*# ([0-9]+)[ .-]' check.sh | grep -oE '[0-9]+' | sort -n -u | tr '\n' ' ')
+assert_eq "the rule numbers run 1..$_rules with no gaps" \
+  "$(seq 1 "$_rules" | tr '\n' ' ')" "$_seq"
+for _doc in AGENTS.md README.md docs/anatomy.md $([ -f dev-notes/status.md ] && echo dev-notes/status.md); do
+  _flat=$(tr '\n' ' ' < "$_doc" | tr -s ' ')
+  assert_eq "$_doc states check.sh's rule count" "$_rules" \
+    "$(grep -oE '\*?\*?[0-9]+ rules\*?\*?' <<< "$_flat" | grep -oE '[0-9]+' | sort -u | head -1)"
+  assert_eq "$_doc states it only once, and consistently" "1" \
+    "$(grep -oE '[0-9]+ rules' <<< "$_flat" | grep -oE '[0-9]+' | sort -u | wc -l | tr -d ' ')"
+done
+# The OK line is what a person actually reads after a run, and it listed every
+# rule but the new one for as long as it took to notice. Grepping for the new
+# rule's own phrase could not see that happen again: with rule 12's clause cut
+# out of the OK line, this whole file still reported zero failures. So the
+# phrases are declared, one per rule, and the list is held to check.sh's own
+# numbering - a rule 18 with nothing said about it here fails, which is the
+# moment the question "what does the OK line say about this rule?" gets asked.
+# Rules 2, 3, 5 and 7 are declared silent rather than left out: an omission
+# reads exactly like a forgotten rule. They report per skill when they fail,
+# and naming each in a line people skim would cost more than it tells them.
+_ok_clause() {
+  case "$1" in
+    1)  echo "frontmatter valid" ;;
+    2|3|5|7) echo "" ;;
+    4)  echo "no tool-specific references" ;;
+    6)  echo "steps in order" ;;
+    8)  echo "every script referenced" ;;
+    9)  echo "every board field written" ;;
+    10) echo "every skill states its preconditions" ;;
+    11) echo "frontmatter within host limits" ;;
+    12) echo "every state file a writer" ;;
+    13) echo "every product-root file named as one" ;;
+    14) echo "every decision skill says what happens when its decision already exists" ;;
+    15) echo "every declared mode named in its description" ;;
+    16) echo "no script refusing after it has written" ;;
+    17) echo "every contract field written and read" ;;
+    18) echo "the loaded context within budget" ;;
+    *)  echo "«rule $1 has no declared clause in test-seams.sh»" ;;
+  esac
+}
+# The clauses wrap across lines in the source, so the run's output is flattened
+# to one line first - matched line by line, four of them are absent.
+_ok_line=$(./check.sh | tr '\n' ' ' | tr -s ' ')
+_ok_missing=""
+for _n in $(seq 1 "$_rules"); do
+  _phrase=$(_ok_clause "$_n")
+  [ -z "$_phrase" ] && continue
+  case "$_ok_line" in
+    *"$_phrase"*) ;;
+    *) _ok_missing="$_ok_missing $_n" ;;
+  esac
+done
+assert_eq "check.sh's OK line carries the declared clause for every rule" "" \
+  "$(echo $_ok_missing)"
+
+# anatomy names them as well as counting them. A correct count naming the wrong
+# skills is the version of this that reads as right.
+_named=$(tr '\n' ' ' < docs/anatomy.md | tr -s ' ' \
+  | grep -oE 'only partly[^.]*' | grep -oE '`[a-z-]+`' | tr -d '`' \
+  | while read -r n; do [ -f "skills/$n.md" ] && echo "$n"; done | sort -u | tr '\n' ' ' | sed 's/ *$//')
+if [ -f "$_cov" ]; then
+  assert_eq "anatomy names exactly the table's partly-run skills" "$cov_names" "$_named"
+else
+  printf '  skip anatomy names the table\x27s partly-run skills - %s is local only and absent here\n' "$_cov"
+fi
+
+section "autopilot never requires what its own range produces"
+# A precondition satisfied by a skill inside the range is circular: it blocks the
+# run at a state the run itself would fix. autopilot had carved this out twice -
+# the overview that `distill` regenerates, the verification command that only
+# exists once `scaffold` has run - and missed the third. `build` Step 2 creates
+# the feature branch, and `ship` deletes it on merge, so the normal state between
+# items is a clean `main`. The unconditional "on a branch, not `main`" gate made
+# `autopilot spec..review`, the skill's own headline usage, unreachable from
+# exactly the state the loop leaves you in.
+# The carve-outs wrap across lines, so this matches against the file flattened to
+# one line - a line-based grep silently missed two of the three and reported the
+# skill broken when the pattern was.
+flat=$(tr '\n' ' ' < skills/autopilot.md | tr -s ' ')
+uncarved=""
+for producer in distill scaffold build; do
+  case "$flat" in
+    *"only when \`$producer\` is not in the range"*) ;;
+    *) uncarved="$uncarved $producer" ;;
+  esac
+done
+assert_eq "each circular precondition names the skill in range that satisfies it" "" "$uncarved"
+
+assert_ok "the branch gate is conditional, not absolute" \
+  grep -q 'on a branch, not `main` - \*\*only when `build` is not in the range' skills/autopilot.md
+assert_ok "and says why refusing there breaks the documented usage" \
+  grep -q 'makes the documented usage unreachable' skills/autopilot.md
+# The half that must stay unconditional - an unattended run still cannot tell its
+# own work from someone else's if the tree was dirty when it started.
+assert_ok "while unrelated uncommitted changes still always stop it" \
+  grep -q '^- no unrelated uncommitted changes' skills/autopilot.md
+
+section "what the template ships, its writer knows to keep"
+# template/README.md points a human at AGENTS.md - the only signpost a person
+# gets, since the project README is a stub and AGENTS.md is named for agents.
+# But `docs` owns the README and rewrites it, and its Step 2 listed everything
+# the README must cover without mentioning that pointer. The first `docs` run
+# would have removed it, and nothing would have reported that.
+assert_ok "the template README points a human at AGENTS.md" \
+  grep -q 'New here? Read `AGENTS.md` first' template/README.md
+# Matched against the file flattened to one line - the instruction wraps, and a
+# line-anchored pattern would be testing my line breaks rather than the meaning.
+docs_flat=$(tr '\n' ' ' < skills/docs.md | tr -s ' ')
+case "$docs_flat" in
+  *"point a newcomer at \`AGENTS.md\`"*) _name="and docs, which rewrites that README, is told to keep it"; _ok ;;
+  *) _name="and docs, which rewrites that README, is told to keep it"; _no "docs Step 2 never names AGENTS.md as the pointer to preserve" ;;
+esac
+
+# The general shape: docs is the README's writer, so anything the template puts
+# there permanently needs docs to know about it.
+assert_eq "docs is still the only skill that writes the project README" "1" \
+  "$(grep -lE '^## Step [0-9]+ - the README' skills/*.md | wc -l | tr -d ' ')"
+
+section "what AGENTS.md says is loaded is what CLAUDE.md loads"
+# AGENTS.md opens with a table headed "These are already loaded, before you read
+# anything else". CLAUDE.md is the file that does the loading, via @-imports.
+# They disagreed: `fundamentals.md` and `needs-you.md` were promised and never
+# imported. needs-you.md is touched by ten skills and is the whole basis on
+# which `prepare`, `progress` and `preflight` decide whether a person is
+# blocked - so the entry point told every cold session it had that context, and
+# it did not. Every file was individually valid and all 13 rules passed.
+#
+# Checked in BOTH directions: a file imported but not listed is the same defect
+# seen from the other end - context loaded that the entry point never explains.
+awk '/These are already loaded/{f=1} /These are not loaded/{f=0} f' template/AGENTS.md \
+  | grep -oE 'blueprint/context/[a-z-]+\.md' | sort -u > "$TEST_TMP/claimed.txt"
+grep -oE 'blueprint/context/[a-z-]+\.md' template/CLAUDE.md | sort -u > "$TEST_TMP/imported.txt"
+
+assert_eq "every file AGENTS.md calls auto-loaded is imported by CLAUDE.md" "" \
+  "$(comm -23 "$TEST_TMP/claimed.txt" "$TEST_TMP/imported.txt" | tr '\n' ' ' | sed 's/ *$//')"
+assert_eq "and CLAUDE.md imports nothing AGENTS.md does not list" "" \
+  "$(comm -13 "$TEST_TMP/claimed.txt" "$TEST_TMP/imported.txt" | tr '\n' ' ' | sed 's/ *$//')"
+
+# The table is only worth trusting if it is not empty - an awk range that stops
+# matching would make both assertions above pass vacuously.
+assert_ok "the claimed-loaded list is non-empty, so the check is not vacuous" \
+  test -s "$TEST_TMP/claimed.txt"
+
+section "every placeholder in AGENTS.md names the skill that fills it"
+# AGENTS.md is the entry point every tool reads, and ships with sections left
+# blank for the project to fill. Three of the four placeholders named the skill
+# that fills them; `## What this is` said only "Replace this with..." - and no
+# skill wrote it, so the entry point opened with an empty section in projects
+# whose plans had been finished for weeks. The convention existed; writing it
+# down is what makes it checkable.
+#
+# Both entry points are covered - the single-part template and the product root.
+# A comment is allowed to name no skill ONLY if it is a structural marker that a
+# script consumes, and that is verified rather than assumed: an exemption list
+# nobody checks is how a dead marker survives.
+unnamed=""
+for tpl in template/AGENTS.md template/product/AGENTS.md; do
+  while IFS= read -r block; do
+    named=no
+    for sk in skills/*.md; do
+      n=$(basename "$sk" .md)
+      case "$block" in *"\`$n\`"*) named=yes; break ;; esac
+    done
+    if [ "$named" = no ]; then
+      # not a placeholder then - it must be a marker some script replaces
+      # trailing separators are part of the character class, so strip back to
+      # the last capital - "MULTI-PART MARKER -" is not a marker anyone greps for
+      marker=$(grep -oE '[A-Z][A-Z -]{3,}' <<< "$block" | head -1 | sed 's/[^A-Z]*$//')
+      if [ -n "$marker" ] && grep -rqF "$marker" lib/*.sh install.sh new-project.sh convert-to-parts.sh 2>/dev/null; then
+        continue
+      fi
+      unnamed="$unnamed [$tpl: ${block:0:44}...]"
+    fi
+  done < <(awk '/<!--/{c=1; b=""} c{b=b" "$0} /-->/{if(c){print b; c=0}}' "$tpl")
+done
+assert_eq "no placeholder is left without a named filler" "" "$unnamed"
+
+# Guard against the loop matching nothing and passing vacuously.
+assert_ok "and there are placeholders to check" \
+  test "$(cat template/AGENTS.md template/product/AGENTS.md | grep -c '<!--')" -ge 4
+
+# The specific one this rule was written for. Matched on the instruction itself,
+# flattened - "AGENTS.md" and "What this is" both occur elsewhere in distill.md
+# (a Product root read, and a bullet of project-overview.md), so looser patterns
+# pass with the fix removed. A weak assertion here is the same defect one level up.
+ctx_flat=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
+case "$ctx_flat" in
+  *"Then fill \`AGENTS.md\`'s \`## What this is\`"*)
+    _name="distill declares itself the writer of 'What this is'"; _ok ;;
+  *) _name="distill declares itself the writer of 'What this is'"
+     _no "distill.md never says it fills AGENTS.md's What this is section" ;;
+esac
+case "$ctx_flat" in
+  *"leave it alone if someone has already written prose"*)
+    _name="and will not overwrite prose a person put there"; _ok ;;
+  *) _name="and will not overwrite prose a person put there"
+     _no "no rule protecting a hand-written description in a user-owned file" ;;
+esac
+
+section "distill will not generate from sections that are still template"
+# Its own preamble called Step 2 "the real gate", but Step 2 stops only on a
+# CONTRADICTION - and an unfinished plan is a gap, not a contradiction. So
+# placeholder Tech and Architecture were reported and then generated from
+# anyway, producing exactly the "authoritative-looking file full of nothing"
+# the step opens by warning about. Found by running it against plans written by
+# someone else, which is the only way this shows up.
+ctx=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
+_has() { case "$ctx" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_has "Tech is a precondition filled by stack"          "**5. Tech** - filled by \`stack\`"
+_has "Architecture is one filled by architect"         "**6. Architecture** - filled by \`architect\`"
+_has "and it says why a gap needed its own gate"       "a gap is not a contradiction"
+
+# The detection rule. Got right once by wording and nowhere written down - a
+# length or non-empty test reads a section as filled when it holds the seeded
+# sentence PLUS real content added underneath. That shape is the careful case:
+# a plan can carry genuine stack constraints below the seeded
+# text in a section where no stack has been chosen.
+_has "unfilled is defined by the seeded sentence surviving" \
+  "the seeded instruction sentence is still present"
+_has "and length is ruled out explicitly" "Do not use length or"
+
+# One stop, not one per section - they are unfilled together in the normal case.
+_has "every unfilled section is reported in one stop" "in a single stop"
+_has "in loop order"                                  "in loop order"
+
+# A stop still costs a round trip, so it should carry what Step 2 already sees.
+_has "the stop still carries Step 2's findings" "alongside the stop"
+
+# The rule detects "unfilled" by the seeded sentence surviving - so the template
+# has to HAVE a recognisable seeded sentence in exactly the sections distill
+# gates on, and it has to name the skill that fills it. Reword the template and
+# the gate silently stops detecting, with every file still valid on its own.
+plan=template/blueprint/project-plan.md
+for pair in "5:stack" "6:architect"; do
+  num=${pair%%:*}; sk=${pair##*:}
+  seeded=$(awk -v n="$num" '$0 ~ "^## "n"\\." {f=1; next} /^## [0-9]+\./{f=0} f' "$plan" \
+           | grep -c "Filled in by the \`$sk\` skill")
+  assert_eq "the plan template seeds section $num naming \`$sk\`" "1" "$seeded"
+done
+
+section "rescoping a live project cannot silently erase what was built"
+# `ideate` assumed greenfield: Step 4 handed off to `stack` and `scaffold`, and
+# nothing said what happens when the plan is already filled. Run on a project
+# with four shipped items it would propose a fresh build plan - and approving one
+# in good faith erases the `- [x]` marks that ARE the resume mechanism, then send
+# a project that has code to `stack`, which refuses it. A dead end that destroys
+# state on the way in.
+id_flat=$(tr '\n' ' ' < skills/ideate.md | tr -s ' ')
+_ideate() { case "$id_flat" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_ideate "a filled plan stops instead of being overwritten" "stop and report what exists"
+_ideate "and says why the checkboxes matter"               "entire resume mechanism"
+_ideate "the destructive path needs an explicit argument"  "Never rewrite a filled plan without that argument"
+_ideate "completed items keep their checkbox and history"  "Completed items keep their checkbox and their history"
+_ideate "work in flight is not silently dropped"           "never silently dropped"
+# The one that stops the plan and the code drifting apart.
+_ideate "cutting a SHIPPED item routes to rollback"        "is \`rollback\`'s question"
+
+# The hand-off was the dead end: a live project sent to a skill that refuses it.
+_ideate "rescope hands off to setup and distill" "Hand off to \`setup\` and \`distill\`"
+_ideate "and says explicitly not stack and scaffold" "not \`stack\` and \`scaffold\`"
+
+# ideate was exempt from stating preconditions as a greenfield entry point. That
+# claim died with the mode; check.sh fails if the heading and the exemption ever
+# coexist, so this asserts the direction that matters.
+assert_ok "ideate now states its preconditions" \
+  grep -q '^## Before you start' skills/ideate.md
+assert_fails "and is no longer on the exemption list" \
+  grep -qE '^exempt_preconditions=.*[" ]ideate[" ]' check.sh
+
+# A mode nothing documents is unreachable exactly like a skill nothing routes to -
+# rule 7's problem wearing different clothes, and invisible to rule 7.
+assert_ok "the walkthrough tells a reader the mode exists" \
+  grep -q 'ideate --rescope' docs/walkthrough.md
+assert_ok "and answers the stack question it sits next to" \
+  grep -q 'Changing the stack after there is code' docs/walkthrough.md
+
+section "the workflow graph holds together"
+# Rule 7 requires every skill be routed to by another, which a closed cluster of
+# skills citing only each other satisfies while being unreachable from the start.
+# Reachability from an entry point is a different property and the one that
+# matters: a skill nobody can arrive at is a skill nobody runs.
+assert_eq "every skill is reachable from an entry point" "" "$(python3 - <<'GRAPH'
+import pathlib, re, collections
+skills = {p.stem for p in pathlib.Path('skills').glob('*.md')}
+edges = collections.defaultdict(set)
+for p in pathlib.Path('skills').glob('*.md'):
+    body = re.sub(r'^description:.*$', '', p.read_text(), flags=re.M)
+    for m in re.findall(r'`([a-z-]+)`', body):
+        if m in skills and m != p.stem:
+            edges[p.stem].add(m)
+seen, queue = {'ideate', 'setup'}, ['ideate', 'setup']
+while queue:
+    for m in edges.get(queue.pop(), ()):
+        if m not in seen:
+            seen.add(m); queue.append(m)
+print(" ".join(sorted(skills - seen)), end="")
+GRAPH
+)"
+
+# Every skill orients the reader the same way. Two had no such line at all, which
+# is a small thing until it is the file you opened first.
+assert_eq "every skill says where it sits in the loop" "" \
+  "$(for f in skills/*.md; do grep -q 'Where this sits' "$f" || printf ' %s' "$(basename "$f" .md)"; done)"
+
+section "anatomy's copy of a declared list matches the declared list"
+# anatomy.md names the precondition exemption by hand. Taking `ideate` off that
+# list in check.sh left the doc naming a skill that is no longer exempt AND
+# missing one that is - a stale copy of config, which is the same defect as a
+# stale entry IN the config, one file further out. check.sh validates its own
+# lists; nothing was validating the prose that repeats them.
+declared=$(grep '^exempt_preconditions=' check.sh | sed 's/^[^"]*"//; s/"$//' | tr ' ' '\n' | sort | tr '\n' ' ')
+documented=$(sed -n 's/.*rule 10: \(.*\) — the entry.*/\1/p' docs/anatomy.md \
+             | grep -oE '`[a-z-]+`' | tr -d '`' | sort | tr '\n' ' ')
+assert_eq "anatomy lists exactly the skills check.sh exempts" "$declared" "$documented"
+
+# And the count in the same sentence, which is the half that reads as fact.
+assert_eq "and its stated count is right" \
+  "$(grep '^exempt_preconditions=' check.sh | sed 's/^[^"]*"//; s/"$//' | wc -w | tr -d ' ')" \
+  "$(sed -n 's/.*\([A-Z][a-z]*\) skills are exempt.*/\1/p' docs/anatomy.md | head -1 | sed 's/Six/6/; s/Five/5/; s/Seven/7/; s/Four/4/; s/Eight/8/')"
+
+section "a shipped feature's done-whens have a reader after ship"
+# `verify` proved each item's done-whens once, at build time, and `ship` archived
+# them under blueprint/history/. Seven skills touch that directory - none re-read
+# the claims. So item 5 could break item 2's screen and nothing in the workflow
+# would notice unless a test happened to cover it, while `verify`'s whole premise
+# is that running the real app proves things tests do not. An archived record with
+# no reader, which is this pack's signature defect one level up.
+v=$(tr '\n' ' ' < skills/verify.md | tr -s ' ')
+_v() { case "$v" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_v "--all reads every archive, not the latest"  "the source is every archive"
+_v "and says nothing has looked at them since"  "nothing in this workflow has looked at them since"
+# A cut feature is not a regression - the link back to ideate --rescope.
+_v "a feature cut by a rescope is not a regression" "no longer applicable"
+_v "and names the rescope that cut it"             "ideate --rescope"
+# A regression has no spec, so it cannot go back to build the way a failure does.
+_v "regressions go to findings, not build"         "Raise it in \`blueprint/context/findings.md\`"
+_v "and the run states its own cost"               "the most expensive check in this workflow"
+
+# preflight is the gate that claims "whole project, not a diff" - it has to be
+# the thing that requires this, or --all is a mode nobody runs.
+pf=$(tr '\n' ' ' < skills/preflight.md | tr -s ' ')
+case "$pf" in
+  *"\`verify --all\`"*) _name="preflight requires the shipped features still work"; _ok ;;
+  *) _name="preflight requires the shipped features still work"
+     _no "preflight never names verify --all" ;;
+esac
+case "$pf" in
+  *"never a pass"*) _name="and not-run counts as could-not-verify"; _ok ;;
+  *) _name="and not-run counts as could-not-verify"; _no "no could-not-verify verdict for it" ;;
+esac
+
+section "something that renders has a way to be seen"
+# `stack` chose a unit test runner and never asked how a web app gets LOOKED at.
+# So `verify` had no way to observe a rendered page and every visual claim became
+# could-not-verify - honest, and useless every time. The fallback was a person,
+# and a person is not always there. An app can be built
+# and verified with nobody having seen a single page.
+#
+# The fix spans three skills, each doing its own job. This asserts the seam,
+# because any one of them alone leaves the gap open.
+st=$(tr '\n' ' ' < skills/stack.md | tr -s ' ')
+vf=$(tr '\n' ' ' < skills/verify.md | tr -s ' ')
+sc=$(tr '\n' ' ' < skills/scaffold.md | tr -s ' ')
+_seam() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_seam "stack settles a browser tool for what renders" "browser automation tool" "$st"
+_seam "it is asked, not imposed"                       "ask whether they want a browser automation tool" "$st"
+_seam "and recommends Playwright with its reasons"    "it is Playwright" "$st"
+_seam "and takes no-harness as a real answer"         "no harness** as a real answer" "$st"
+_seam "scaffold proves a browser actually launched"   "prove one browser launched" "$sc"
+_seam "verify uses what the stack settled on"         "the browser automation tool the stack settled on" "$vf"
+_seam "and still refuses to install one itself"       "Do not add one from this skill" "$vf"
+_seam "and names where that decision belongs"         "name \`stack\` as where that gets decided" "$vf"
+# The half that makes it more than tooling: a deferred human check is not a pass.
+_seam "a deferred manual check never becomes a pass"  "Never let a deferred manual check quietly become a pass" "$vf"
+
+section "ci does not promise more coverage than its triggers give"
+# ci said "the only one that runs on every push" while prescribing triggers of
+# pull requests plus pushes to the default branch. On a feature branch that is
+# no runs at all - so an entire item can be built and
+# pushed with CI having seen none of it. A branch with no red marks is not a
+# branch that passed.
+ci=$(tr '\n' ' ' < skills/ci.md | tr -s ' ')
+case "$ci" in
+  *"is not \"on every push\""*) _name="ci says what its triggers do not cover"; _ok ;;
+  *) _name="ci says what its triggers do not cover"; _no "the every-push claim is unqualified" ;;
+esac
+case "$ci" in
+  *"a feature branch gets nothing until a pull request exists"*)
+    _name="and names the case that surprises people"; _ok ;;
+  *) _name="and names the case that surprises people"; _no "not stated" ;;
+esac
+
+section "ship's branch delete matches the merge it prescribes"
+# ship squash-merges, then said "delete the branch after a clean merge". After a
+# squash git does not record the branch as merged, so `git branch -d` refuses on
+# work that is fully in main. It bites at the moment of shipping,
+# which is the worst time to be guessing whether -D is safe.
+sh=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
+case "$sh" in
+  *"squash-merge needs \`git branch -D\`"*) _name="ship names -D for a squash-merge"; _ok ;;
+  *) _name="ship names -D for a squash-merge"; _no "not stated" ;;
+esac
+case "$sh" in
+  *"do not reach for \`-D\` just because \`-d\` complained"*)
+    _name="and guards against forcing a delete for the wrong reason"; _ok ;;
+  *) _name="and guards against forcing a delete for the wrong reason"; _no "not stated" ;;
+esac
+
+section "making configuration required is a change to every environment"
+# Removing a SECRET_KEY fallback was the correct repair and it broke CI, because
+# the pipeline had been relying on the default without anyone noticing. The local
+# run could not show it - the person making the change had the value exported.
+# Found by shipping: green locally, red on the runner, two minutes later.
+bd=$(tr '\n' ' ' < skills/build.md | tr -s ' ')
+_b() { case "$bd" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_b "build names the required-config shape"        "makes configuration *required*"
+_b "and that the local run is where it hides"     "the one place it will not show"
+_b "and sends it to the Environments table"       "Environments table in \`AGENTS.md\`"
+_b "and treats the pipeline as an environment"    "A pipeline is an environment"
+_b "and requires saying so in the handoff"        "This now requires"
+# Naming a variable and assigning the work of producing one are different things.
+# A project can name a secret key in .env.example, the plan and AGENTS.md - and in
+# none of them was it a thing a person had to DO. needs-you.md is that list.
+_b "a value only a person can supply goes to needs-you" "If a person has to supply the value"
+_b "and says naming is not assigning"                   "Naming a variable is not the same as assigning"
+
+section "how many env files, and when splitting earns it"
+# Asked directly: should config be split per service? The honest answer has a
+# condition attached, and without it "one file per service" reads as tidiness.
+ho=$(tr '\n' ' ' < skills/host.md | tr -s ' ')
+case "$ho" in
+  *"One per environment is the default"*) _name="one file per environment is the default"; _ok ;;
+  *) _name="one file per environment is the default"; _no "not stated" ;;
+esac
+case "$ho" in
+  *"Split when the boundary exists"*) _name="splitting needs a boundary, named"; _ok ;;
+  *) _name="splitting needs a boundary, named"; _no "not stated" ;;
+esac
+case "$ho" in
+  *"a new way to have exactly one of them missing"*)
+    _name="and the cost of splitting is stated"; _ok ;;
+  *) _name="and the cost of splitting is stated"; _no "not stated" ;;
+esac
+
+section "the overview is refreshed by whatever makes it stale"
+# `ship` ticks an item off build-plan.md and resets the spec on EVERY item, so
+# the overview's Current state is wrong the moment it finishes - wrong item
+# count, wrong next item. Its handoff named integrate, preflight, deploy and
+# spec, never distill; and distill's re-run list named `spec` as an editor and
+# not `ship`. Both halves missing, so the file every cold session loads went
+# stale once per item. Caught by autopilot's precondition -
+# a check most people never reach.
+sp=$(tr '\n' ' ' < skills/ship.md | tr -s ' ')
+cx=$(tr '\n' ' ' < skills/distill.md | tr -s ' ')
+_pair() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+# D24: ship now runs distill itself, before its work commit - routing to it
+# afterwards made a second commit on main after every item.
+_pair "ship runs distill before its work commit"   "Run \`distill\` now" "$sp"
+_pair "and says why it is not left for afterwards" "became a second commit on \`main\` after every item" "$sp"
+_pair "distill lists ship as a reason to re-run"  "After every \`ship\`" "$cx"
+_pair "and says ship runs it itself"              "\`ship\` runs this itself" "$cx"
+_pair "and that run from ship it commits nothing" "Run from \`ship\`, commit nothing" "$cx"
+
+section "the lessons a real deployment taught"
+# Every one of these came from taking one project from ideate to a live, backed
+# up, TLS-terminated deployment. None was visible from inside the pack.
+sc=$(tr '\n' ' ' < skills/scaffold.md | tr -s ' ')
+st=$(tr '\n' ' ' < skills/stack.md | tr -s ' ')
+ho=$(tr '\n' ' ' < skills/host.md | tr -s ' ')
+_l() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+# Three wirings failed the same way in one project; the third was a P0 that put
+# the database inside the release directory. A formatter then hid all three.
+_l "scaffold warns against anchoring on a quoted string" "never on a quoted string" "$sc"
+_l "and that a formatter erases the evidence"            "erase the evidence" "$sc"
+_l "and says to verify by asking the program"            "asking the program, not by reading the file" "$sc"
+
+# import venv passes on a box where venv cannot create anything.
+_l "importing a module is not the module working" "is not \`venv\` working" "$sc"
+
+# The version check was run against the build machine, not the target.
+_l "stack checks the runtime of the machine it will run on" "not only this one" "$st"
+
+# cp on a live SQLite file yields something that opens and is wrong.
+_l "host says copying a live database file is not a backup" "is not a backup of a database that is running" "$ho"
+_l "and that restoring means starting the app on it"        "starting the application against the copy" "$ho"
+_l "and that a box ships less than a laptop"                "What is actually installed on it?" "$ho"
+
+section "a finished plan is not the end of the project"
+# A project can ship every plan item, and the question "how do I add a delete feature"
+# has no answer. `spec` could add a plan item only from a `monitor` observation,
+# so a plain feature request fell into ad-hoc fix mode - which says "not a plan
+# item", so the work lands and the plan quietly stops describing the product.
+# And section 11, the deferred list, had a writer and no reader at all.
+sp=$(tr '\n' ' ' < skills/spec.md | tr -s ' ')
+pr=$(tr '\n' ' ' < skills/progress.md | tr -s ' ')
+_f() { case "$3" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_f "spec takes a new feature as a plan addition" "a new feature described in prose" "$sp"
+_f "and distinguishes it from an ad-hoc fix"     "A new feature is a plan addition, not an ad-hoc fix" "$sp"
+_f "and reads the deferred list before adding"   "Check the deferred list first" "$sp"
+_f "and says a finished plan is normal here"     "A finished plan is the normal case" "$sp"
+
+# The deferred table needs a reader, or a decision to postpone becomes a deletion.
+_f "progress surfaces what was deferred"         "what \`ideate\` deferred and when" "$pr"
+_f "and the open findings as half-written specs" "specs half-written" "$pr"
+_f "and says why an unread deferral rots"        "quietly became a deletion" "$pr"
+
+section "deploy will not quietly ship an unmerged branch"
+# A real deployment went live from a feature branch: `main` had neither the P0
+# database repair, nor the error pages, nor the login lockout. Every gate in
+# deploy's readiness list passed - it asks that the commit be identified, and
+# never that it be merged. CI then tested something other than what was running.
+dp=$(tr '\n' ' ' < skills/deploy.md | tr -s ' ')
+_d() { case "$dp" in *"$2"*) _name="$1"; _ok ;; *) _name="$1"; _no "not stated: $2" ;; esac; }
+
+_d "deploy checks the commit is on the default branch" "that commit is on the default branch"
+_d "and names CI drifting from production"             "CI is testing something other than what is live"
+_d "and that the next deploy silently reverts"         "next deploy silently reverts production"
+# A hotfix ahead of the merge is legitimate; the rule is a stop, not a refusal.
+_d "it stops and asks rather than refusing"            "Not a refusal - a stop and a question"
+_d "and requires recording the exception"              "then record it"
+
+# ==== BEGIN seams-C: board across worktrees, non-code findings, autopilot's packet ====
+
+section "one board across git worktrees"
+# `orchestrate` advised a worktree per subagent, and every board writer resolved
+# `Product root: ..` - which inside a worktree is the worktree's own copy. Ran it:
+# a packet posted from a worktree never reached the main checkout, so
+# `orchestrate` saw every part idle and autopilot's cap counted zero packets.
+# The resolution is run here exactly as orchestrate states it, not paraphrased.
+w=$(workdir)
+(cd "$w" && "$REPO/new-project.sh" wtp --parts web,api >/dev/null 2>&1)
+main=$(cd "$w/wtp" && pwd -P)
+(cd "$main" && git worktree add -q -b feat/web "$w/wtp-web" >/dev/null 2>&1)
+board_cmd=$(sed -n '/^    cd "<product root>"$/,/^    fi$/p' skills/orchestrate.md \
+            | sed 's/^    //; s|<product root>|..|')
+assert_ok "orchestrate states the board resolution as a command" test -n "$board_cmd"
+assert_exists "the fixture really is a worktree of a --parts product" "$w/wtp-web/web/AGENTS.md"
+wt_board=$(cd "$w/wtp-web/web" && bash -c "$board_cmd" 2>/dev/null)
+assert_eq "from a part in a worktree, the board is the main checkout's" "$main/blueprint" "$wt_board"
+assert_eq "from a part in the main checkout, the same board" "$main/blueprint" \
+  "$(cd "$main/web" && bash -c "$board_cmd" 2>/dev/null)"
+if [ -d "$wt_board/status" ]; then
+  printf '**Review packet:** posted-from-worktree\n' >> "$wt_board/status/web.md"
+fi
+assert_ok "a packet posted from the worktree is on the board orchestrate reads" \
+  grep -q 'posted-from-worktree' "$main/blueprint/status/web.md"
+# Outside git nothing changes: the board is where `Product root:` says.
+cp -R "$main" "$w/nogit" && rm -rf "$w/nogit/.git"
+assert_eq "outside git, the board is the product root's, as before" \
+  "$(cd "$w/nogit" && pwd -P)/blueprint" "$(cd "$w/nogit/web" && bash -c "$board_cmd" 2>/dev/null)"
+
+# The resolution assumed an ordinary clone. In a submodule the shared git
+# directory is `.git/modules/<name>` inside the superproject, so its parent is
+# `.git/modules` - a board nobody else reads. Ran it; that is where it landed.
+sup="$w/super"; git init -q "$sup"
+git -C "$sup" -c protocol.file.allow=always submodule add -q "$main" wtp >/dev/null 2>&1
+git -C "$sup/wtp" worktree add -q -b feat/sub "$w/sub-web" >/dev/null 2>&1
+assert_exists "the fixture really is a worktree of a submodule" "$w/sub-web/web/AGENTS.md"
+sub_main=$(cd "$sup/wtp" && pwd -P)
+assert_eq "in a submodule, the board is the submodule's checkout" "$sub_main/blueprint" \
+  "$(cd "$sup/wtp/web" && bash -c "$board_cmd" 2>/dev/null)"
+assert_eq "and from a worktree of that submodule, the same board" "$sub_main/blueprint" \
+  "$(cd "$w/sub-web/web" && bash -c "$board_cmd" 2>/dev/null)"
+# A bare repository's worktrees have no main checkout. Its parent directory was
+# the answer, which is simply wherever the bare repo happens to sit.
+git clone -q --bare "$main" "$w/bare.git" && git -C "$w/bare.git" worktree add -q "$w/bare-web" >/dev/null 2>&1
+assert_exists "the fixture really is a worktree of a bare repository" "$w/bare-web/web/AGENTS.md"
+assert_refuses "in a worktree of a bare repository, it stops and says why" "No main checkout" \
+  bash -c 'cd "$1" && bash -c "$2" >/dev/null' _ "$w/bare-web/web" "$board_cmd"
+assert_eq "and prints no board path to act on" "" \
+  "$(cd "$w/bare-web/web" && bash -c "$board_cmd" 2>/dev/null)"
+
+section "shipping from a git worktree"
+# Found by running a multi-part product: `ship` said to squash-merge into main, and
+# in a worktree `git switch main` refuses because the main checkout has it; then
+# `git branch -D` refused the branch the worktree still held. And `build` made a
+# second branch inside a worktree that already had one, left dangling afterwards.
+# The procedure is run here as ship states it, in an ordinary repo and a submodule
+# - git's own "already used by worktree at" names .git/modules/ in a submodule.
+_ship_from_worktree() {  # $1 repo (main checkout), $2 worktree path
+  local repo="$1" wt="$2" top mc f
+  f="$(basename "$wt").txt"   # the submodule is cloned from the first repo, so each run needs its own file
+  git -C "$repo" worktree add -q -b spare "$wt" >/dev/null 2>&1 || return 1
+  git -C "$wt" branch -m spare feature/demo || return 1
+  echo demo > "$wt/$f" && git -C "$wt" add "$f" && git -C "$wt" -c user.name=t -c user.email=t@t commit -qm wip || return 1
+  git -C "$wt" switch main >/dev/null 2>&1 && return 1   # must refuse, or the fixture proves nothing
+  top=$(git -C "$wt" rev-parse --show-toplevel)
+  # board_cmd was extracted with `cd ".."` for a part; here it runs at the top.
+  mc=$(cd "$top" && bash -c "$(tail -n +2 <<< "$board_cmd")" 2>/dev/null) || return 1
+  mc=$(dirname "$mc")
+  [ -z "$(git -C "$mc" status --porcelain)" ] || return 1
+  git -C "$mc" merge --squash feature/demo >/dev/null && git -C "$mc" -c user.name=t -c user.email=t@t commit -qm "feat: demo" || return 1
+  git -C "$mc" worktree remove "$wt" && git -C "$mc" branch -D feature/demo >/dev/null || return 1
+  [ -f "$mc/$f" ] && [ -z "$(git -C "$mc" branch --list spare feature/demo)" ]
+}
+ws=$(workdir); git init -q -b main "$ws/plain" && (cd "$ws/plain" && touch a && git add a && git -c user.name=t -c user.email=t@t commit -qm i)
+assert_ok "from a worktree, ship's merge and cleanup land on main and leave no branch" \
+  _ship_from_worktree "$ws/plain" "$ws/plain-wt"
+git init -q -b main "$ws/sup" && git -C "$ws/sup" -c protocol.file.allow=always submodule add -q "$ws/plain" plain >/dev/null 2>&1
+git -C "$ws/sup/plain" checkout -q -B main
+assert_ok "and the same from a worktree of a submodule" _ship_from_worktree "$ws/sup/plain" "$ws/sub-wt"
+assert_ok "ship merges from the main checkout when run in a worktree" \
+  bash -c '_f=$(tr "\n" " " < skills/ship.md | tr -s " "); grep -qi "in a git worktree, merge from the main checkout" <<< "$_f"'
+assert_ok "and removes the worktree before deleting its branch" grep -qF 'git worktree remove' skills/ship.md
+# A shipped project showed four merged branches as unmerged and a worktree whose
+# directory was gone: the host deleted the branches, and nothing cleared the records.
+assert_ok "ship clears tracking refs for branches the host deleted" grep -qF '`git fetch --prune`' skills/ship.md
+assert_ok "and worktree records whose directory is gone" grep -qF '`git worktree prune`' skills/ship.md
+# The checker says "fix with setup" for one finding, and setup read as a
+# seven-step first-run survey with no way in for it.
+assert_ok "setup has a way in for one finding" grep -qF 'do that one thing and stop' skills/setup.md
+assert_ok "and its description says so, where an agent matches" \
+  bash -c 'sed -n "3p" skills/setup.md | grep -q "sent here by the project checker"'
+assert_ok "the one finding the checker sends to setup is named there, with its step" \
+  bash -c 'awk "/^\*\*Sent here for one finding/{f=1} f&&/^The Rules below/{exit} f" skills/setup.md | grep -q "Verify command. section.*checker names" && grep -q "\"standards-verify\", \"setup\"" lib/check-project.sh'
+assert_ok "build renames a worktree's branch instead of making a second" grep -qF 'git branch -m' skills/build.md
+
+section "the board's status files are working state, never committed"
+# Tracked, `ship` cleared its packet after its one commit and left the main
+# checkout dirty on every ship; its stage-all swept other parts' state into a
+# feature commit; and autopilot refused on "unrelated uncommitted changes" that
+# another part had written. The contract line is a decision and stays tracked.
+assert_exists "a --parts product has status files on disk" "$main/blueprint/status/web.md"
+assert_eq "none of them is committed" "" "$(git -C "$main" ls-files -- 'blueprint/status/*.md')"
+# Ignoring the whole directory left a fresh clone without one: `spec` claiming a
+# part in a clone failed with "No such file or directory" on its first write.
+# Found by running spec in a clone, not by any test here.
+git clone -q "$main" "$w/fresh-clone" >/dev/null 2>&1
+assert_ok "a fresh clone still has the status directory to write into" test -d "$w/fresh-clone/blueprint/status"
+assert_ok "and a part's first status write there succeeds" \
+  bash -c 'printf "**State:** spec'"'"'ing\n" > "$1/blueprint/status/web.md"' _ "$w/fresh-clone"
+assert_eq "and leaves the clone clean" "" "$(git -C "$w/fresh-clone" status --porcelain)"
+assert_ok "orchestration.md is committed" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- blueprint/orchestration.md)"' _ "$main"
+printf '**State:** idle\n**Item:** -\n**Blocked on:** -\n**Review packet:** -\n**Updated:** today\n' \
+  > "$main/blueprint/status/web.md"
+assert_eq "a part clearing its packet leaves the main checkout clean" "" \
+  "$(git -C "$main" status --porcelain -- blueprint)"
+w3=$(workdir); (cd "$w3" && "$REPO/new-project.sh" one --no-git >/dev/null 2>&1)
+(cd "$w3/one" && git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -qm init)
+(cd "$w3/one" && "$REPO/convert-to-parts.sh" --parts web,api --existing web >/dev/null 2>&1)
+assert_ok "a converted product ignores them too" git -C "$w3/one" check-ignore -q blueprint/status/api.md
+for n in orchestrate; do
+  assert_ok "$n reads a missing status file as idle" \
+    bash -c "tr '\n' ' ' < skills/$n.md | tr -s ' ' | grep -qi 'missing status file reads as .idle.'"
+done
+assert_ok "orchestrate commits the contract line by naming its one file" \
+  grep -qF -- '-- blueprint/orchestration.md`' skills/orchestrate.md
+
+assert_ok "status/ is declared product-root state, so rule 13 checks it" \
+  grep -q '^ *<product root>/blueprint/status/' template/AGENTS.md
+for n in spec build ship autopilot progress; do
+  assert_ok "$n resolves the board under the main checkout" \
+    bash -c "tr '\n' ' ' < skills/$n.md | tr -s ' ' | grep -qi 'resolve [a-z ]*under the main checkout'"
+done
+
+section "every status write has the board's shape"
+# Found by running a multi-part product: `spec` and `autopilot` claimed a part
+# without `Review packet:`, the `blocked` blocks set two fields, and `ship`'s
+# "reset the whole file" dropped the heading and note the seed wrote - so a status
+# file's shape depended on which skill touched it last, and on a fresh clone (no
+# file yet) a claim created one with a field missing. And `build` never set
+# `building`, so a hand-driven build read `spec'ing` until the packet.
+board_fields=$(sed -n '/^Each status file:$/,/^\*\*States/p' template/blueprint/orchestration.md \
+  | grep -oE '^    \*\*[A-Za-z ]+:\*\*' | sed 's/^    //' | tr '\n' '|')
+assert_ok "the board's example block is found" test -n "$board_fields"
+short=""
+for f in skills/*.md; do
+  n=$(basename "$f" .md)
+  short="$short$(awk -v F="$n" -v want="$board_fields" '
+    /^    \*\*State:\*\*/ { b=1; line=NR; got="" }
+    b && /^    \*\*[A-Za-z ]+:\*\*/ { x=$0; sub(/^    /,"",x); sub(/:\*\*.*/,":**",x); got=got x "|"; next }
+    b { if (got != want) printf " %s:%d", F, line; b=0 }
+    END { if (b && got != want) printf " %s:%d", F, line }' "$f")"
+done
+assert_eq "every status block in a skill sets the board's fields, in order" "" "$short"
+assert_ok "the board says a write leaves the rest of the file alone" \
+  bash -c 'tr "\n" " " < template/blueprint/orchestration.md | tr -s " " | grep -qi "leaves the rest of the file alone"'
+assert_ok "and says what to create when the file is missing" \
+  bash -c 'tr "\n" " " < template/blueprint/orchestration.md | tr -s " " | grep -qi "if the file is missing"'
+assert_lacks "ship no longer resets the whole file" skills/ship.md 'resetting the whole file'
+assert_ok "build marks the part building" grep -qx '    \*\*State:\*\* building' skills/build.md
+assert_ok "the board declares build as a building writer" \
+  grep -qE '^\| `State` \| [^|]*`build`[^|→]*→ `building`' template/blueprint/orchestration.md
+
+section "ship resets the working files to the template, not to its own wording"
+# ship quoted a findings stub of its own - "_No findings recorded. `review`
+# appends findings here..._" - so every ship replaced the template's ledger,
+# header and all. The header is where `docs`, `ci`, `deploy` and `monitor` learn
+# how a non-code finding closes; after the first ship it was gone.
+_quoted() {  # the indented block in ship.md that starts with the heading $1
+  awk -v h="    $1" '$0==h {f=1} f && /^    / {sub(/^    /,""); print; next} f && /^$/ {print; next} f {exit}' skills/ship.md \
+    | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
+}
+assert_eq "ship's findings stub is the template's file" \
+  "$(cat template/blueprint/context/findings.md)" "$(_quoted '# Findings')"
+assert_eq "ship's current-work stub is the template's file" \
+  "$(cat template/blueprint/context/current-work.md)" "$(_quoted '# Current work')"
+
+section "a contract can be frozen before the owner's whole plan ships"
+# Found by running a multi-part product: the contract held only the routes of the
+# owner's first item, so `orchestrate` rightly refused to freeze - items 2 and 3
+# would still add routes - and the consuming part would have waited for the
+# owner's entire plan. Nothing told `architect` to write the planned boundary up
+# front, and nothing said what to do while `Owner:` was still a placeholder.
+_one() { tr '\n' ' ' < "$1" | tr -s ' '; }
+assert_ok "architect writes every planned boundary into the contract" \
+  bash -c 'tr "\n" " " < skills/architect.md | tr -s " " | grep -qi "every boundary the plan.s features cross"'
+assert_ok "and says how a generated contract gets whole early" \
+  bash -c 'tr "\n" " " < skills/architect.md | tr -s " " | grep -qi "stubs every planned route"'
+assert_ok "orchestrate stops on a placeholder Owner and routes to architect" \
+  bash -c 'tr "\n" " " < skills/orchestrate.md | tr -s " " | grep -qi "If .Owner:. is still the placeholder"'
+assert_ok "orchestrate names an owner item extending the contract as the cause of a refused freeze" \
+  bash -c 'tr "\n" " " < skills/orchestrate.md | tr -s " " | grep -qi "items that add to the contract"'
+
+section "autopilot posts its review packet the way build does"
+# The cap counts `Review packet:` lines, and only `build` wrote one. autopilot's
+# Step 5 reported the packet in the conversation and left the part `building`,
+# so two finished unattended runs counted as zero and a third started - the
+# state the cap exists to make unreachable.
+_packet() {  # the status block that follows "post the packet", fields and values
+  awk '/post the packet/{f=1} f&&/^    \*\*[A-Za-z ]+:\*\*/{print; g=1; next} g{exit}'
+}
+_fields() { sed 's/:\*\*.*/:**/'; }
+bp=$(_packet < skills/build.md)
+ap=$(sed -n '/^## Step 5/,/^## [^S]/p' skills/autopilot.md | _packet)
+assert_ok "build's packet block is found (the extraction works)" test -n "$bp"
+assert_ok "autopilot's Step 5 posts a status block" test -n "$ap"
+assert_eq "with exactly the fields build posts" "$(_fields <<< "$bp")" "$(_fields <<< "$ap")"
+assert_ok "setting State to waiting" grep -qx '    \*\*State:\*\* waiting' <<< "$ap"
+assert_ok "and a Review packet that is not '-'" \
+  bash -c 'grep "^    \*\*Review packet:\*\*" <<< "$1" | grep -qv ":\*\* -$"' _ "$ap"
+assert_ok "the board declares autopilot as a Review packet writer" \
+  grep -qE '^\| `Review packet` \| [^|]*`autopilot`' template/blueprint/orchestration.md
+
+section "autopilot hands off its steps and its two checks, and the docs say where a session ends"
+# An unattended range is the largest single consumer
+# of a session, `verify` and `review` start with the whole run already in
+# context, and a build can run every step inline because Step 3 said only
+# "following build's rules" - the handoff lived in another skill's text.
+# Each assertion reads one step, flattened, so a phrase that moves to the wrong
+# step fails rather than passing from wherever it landed.
+_step() { sed -n "/^## Step $1 /,/^## /p" "$2" | tr '\n' ' ' | tr -s ' '; }
+a3=$(_step 3 skills/autopilot.md); a4=$(_step 4 skills/autopilot.md); a5=$(_step 5 skills/autopilot.md)
+v4=$(_step 4 skills/verify.md)
+assert_ok "the step extraction works" test -n "$a3" -a -n "$a4" -a -n "$a5" -a -n "$v4"
+assert_ok "Step 3 names the build handoff itself" \
+  grep -qF 'Hand each step off the way `build` does' <<< "$a3"
+assert_ok "and takes the run as the user's request for it" \
+  grep -qF 'Running `autopilot` is the user asking for this handoff' <<< "$a3"
+# A step's subagent can die on a limit and the session finish the step itself,
+# and the closing step - full suite, screenshots - run inline too, at the
+# session's largest context.
+assert_ok "a handoff that dies is handed off again" \
+  grep -qF 'A handoff that dies is handed off again, not finished here' <<< "$a3"
+assert_ok "and dying twice on one step stops the run" \
+  grep -qF 'A second death on the same step is a stop' <<< "$a3"
+assert_ok "a step that only checks is still handed off" \
+  grep -qF 'A step with no code to write is handed off like any other' <<< "$a3"
+assert_ok "and brings back results, not the log" \
+  grep -qF 'the result line and each failure, never the log' <<< "$a3"
+assert_ok "Step 4 hands verify and review to subagents" \
+  grep -qF 'Hand each of the two to a subagent where the host supports one' <<< "$a4"
+assert_ok "review is never given a weaker model" \
+  grep -qF "a model no weaker than this session's" <<< "$a4"
+assert_ok "a partly-read review is not taken as a pass" \
+  grep -qF '`PARTLY READ` or `NOT READ`, is not a pass' <<< "$a4"
+assert_ok "and a host without subagents still has a route" \
+  grep -qF 'run the skill in this session' <<< "$a4"
+assert_ok "Step 5 reports which path the work took" \
+  grep -qF 'which path the work took' <<< "$a5"
+assert_ok "verify sends review to a fresh session" \
+  grep -qF '`review` reads best from a fresh session' <<< "$v4"
+tiers=$(sed -n '/^### Where to start a fresh session/,/^## /p' docs/walkthrough.md)
+assert_eq "the walkthrough gives every loop stage a session and a model" \
+  "build review ship spec" \
+  "$(grep -oE '^\| `(spec|build|review|ship)`' <<< "$tiers" | tr -d '|` ' | sort | tr '\n' ' ' | sed 's/ $//')"
+assert_ok "and says to choose the model when the session starts" \
+  grep -qF 'Choose the model when the session starts' <<< "$tiers"
+
+section "spec stops when the last item never reached main"
+# An item can be closed out and never merged, `spec` writes the
+# next one on its branch, and only `build` noticed. The unbuilt spec then had to
+# be parked outside the repository so `ship` would not archive it under the
+# wrong item.
+sp=$(sed -n '/^## Before you start/,/^## Input/p' skills/spec.md | tr '\n' ' ' | tr -s ' ')
+assert_ok "the precondition section is found" test -n "$sp"
+assert_ok "spec checks the branch for work main does not have" \
+  grep -qF 'The current branch holds work `main` does not' <<< "$sp"
+assert_ok "by a command, not by eye" grep -qF '`git log main..HEAD`' <<< "$sp"
+assert_ok "and routes to ship for that item" grep -qF 'Run `ship` for it first' <<< "$sp"
+assert_ok "a worktree's empty branch still passes" \
+  grep -qF 'A branch with no commits of its own passes' <<< "$sp"
+
+section "the spec in flight is read, not loaded"
+# Measured with an item in flight: the spec was the largest file a project
+# loaded into every session - and into every subagent handed a packet
+# that already held its step. The table test above holds CLAUDE.md to
+# AGENTS.md; these hold the move itself, and the sentence that replaces what a
+# cold session used to be given.
+assert_eq "the template's CLAUDE.md does not import current-work.md" 0 \
+  "$(grep -c 'current-work.md' template/CLAUDE.md)"
+assert_ok "AGENTS.md lists it among the files read on demand" \
+  bash -c "awk '/These are not loaded/{f=1} f' template/AGENTS.md | grep -q '^| \`blueprint/context/current-work.md\` |'"
+assert_ok "and tells a cold session to read it before changing code" \
+  grep -qF '**Read `blueprint/context/current-work.md` before changing any code.**' template/AGENTS.md
+for n in spec build verify review ship progress autopilot rollback; do
+  assert_ok "$n names the file itself, so it never relied on the import" \
+    grep -qF 'blueprint/context/current-work.md' "skills/$n.md"
+done
+
+section "a finding no code fixes can still close"
+# `preflight` files "no backups" as a P1 and `host` sets backups up - but only
+# `build` set `fixed`, only `review` closed, and `review` closes only code it
+# re-examined. The P1 stayed `open` forever and blocked every `ship` in the part.
+# The route: the repairing skill marks it `fixed`, the auditor re-checks and closes.
+# The join runs inside a command substitution and the match reads a herestring:
+# as a pipeline ending in `grep -q` under `set -o pipefail`, grep exits on its
+# first match, `tr` takes SIGPIPE, and the pipeline reports failure for a phrase
+# that is present. That is a false FAIL, and it is timing-dependent - it showed
+# up once in a full run and never when the file ran alone. Forced with a large
+# input it is 40 failures out of 40.
+_says() { grep -qF -- "$2" <<<"$(tr '\n' ' ' < "$1" | tr -s ' ')"; }
+# Every skill preflight routes a non-code blocker to repairs it, so each must say
+# so itself - the review found ci, docs, deploy and monitor learning it only from
+# the ledger's header, which ship used to overwrite. migrate is routed too.
+for n in host docs ci deploy monitor migrate; do
+  assert_ok "$n marks a finding it repaired fixed"   _says skills/$n.md 'set it to `fixed`'
+  assert_ok "and $n never closes its own repair"     _says skills/$n.md 'Never `closed`'
+done
+assert_ok "preflight re-checks and closes non-code repairs" _says skills/preflight.md 'this skill is the one that closes it'
+assert_ok "review names the auditor as closer for those"   _says skills/review.md 'the auditor closes it'
+assert_ok "the ledger's own header carries the route"      _says template/blueprint/context/findings.md '`preflight` re-checks and closes it'
+assert_fails "preflight no longer calls itself read-only"  grep -q 'Read-only' skills/preflight.md
+assert_fails "nor does anatomy"                            grep -q '^| `preflight` |.*nothing — read-only' docs/anatomy.md
+# Every skill that writes the ledger is a declared writer, in both declarations.
+for n in review build ship verify preflight host docs ci deploy monitor migrate; do
+  assert_ok "template/AGENTS.md declares $n as a ledger writer" \
+    grep -qE "^\| \`blueprint/context/findings.md\` \|[^|]*\|[^|]*\`$n\`" template/AGENTS.md
+  assert_ok "anatomy declares $n as a ledger writer" \
+    grep -qE "^\| \`blueprint/context/findings.md\` \|[^|]*\|[^|]*\`$n\`" docs/anatomy.md
+done
+
+# ==== END seams-C ====
+
+# ==== seams-D: found by running the whole loop on a multi-part product ====
+# Of the findings from that run, one is tested in test-scripts.sh rather than
+# here. The last three sections below were closed later and kept under this
+# banner because they came from the same run.
+
+section "prototype writes the durable record after the user has seen the mockups"
+# design.md was Step 4 and looking at the mockups Step 5, which never said to
+# update design.md. Any iteration on theme.css left the measured contrast table
+# describing colours that no longer existed - and review measures the built UI
+# against that file.
+_look=$(grep -n '^## Step [0-9] - look at them' skills/prototype.md | cut -d: -f1)
+_rec=$(grep -n '^## Step [0-9] - write the durable design record' skills/prototype.md | cut -d: -f1)
+assert_ok "the review-and-iterate step comes before the design record" \
+  test "${_look:-999}" -lt "${_rec:-0}"
+assert_ok "and contrast is measured against the tokens after the last iteration" \
+  _says skills/prototype.md 'after the last iteration'
+
+section "throwaway mockups are kept out of the project's checks"
+# prototypes/ sat inside the linter's globs: placeholder href="#" links failed
+# `npm run verify`, and would have failed CI once committed. build excluded the
+# directory in a step whose spec never mentioned it.
+assert_ok "scaffold excludes prototypes/ from the tools it configures" \
+  _says skills/scaffold.md "keep the pack's own directories out of every check you configure"
+assert_ok "and prototype runs the check once and excludes the directory if it trips" \
+  _says skills/prototype.md 'If the check now fails on files under prototypes'
+
+section "a standard the quality bar hands to design.md is pointed at, not marked missing"
+# scaffold writes "Standards this project follows" before prototype writes
+# design.md, so accessibility read "not recorded yet" beside a design.md recording
+# WCAG 2.2 AA - and review decides what its accessibility lens checks from that line.
+assert_ok "scaffold points the accessibility standard at design.md" \
+  _says skills/scaffold.md 'Accessibility: as recorded in `blueprint/context/design.md`'
+
+section "a step built but not yet approved is recorded in the file, not only the conversation"
+# build showed step 4, unticked, awaiting a yes; the user started autopilot
+# build..review instead. Its preflight ticked step 4 unannounced - and the run's
+# own stop mid-step 10 left the same shape. build resumes from the first unchecked
+# step and autopilot refuses unrelated uncommitted changes, so a cold session
+# meets written files under an unticked step and rebuilds or refuses.
+assert_ok "build marks a step waiting for approval in current-work" \
+  _says skills/build.md 'add `_(built, awaiting approval)_` right after its bold title'
+assert_ok "and a resume shows that step's diff instead of rebuilding it" \
+  _says skills/build.md 'Never build it again over itself'
+assert_ok "and knows a partly built step from a stopped run" \
+  _says skills/build.md '`_(partly built, stopped: <reason>)_`'
+assert_ok "autopilot asks before accepting a step still awaiting approval" \
+  _says skills/autopilot.md 'ask once, before the run starts'
+assert_ok "and marks the step it stops in" \
+  _says skills/autopilot.md 'gets `_(partly built, stopped: <reason>)_`'
+assert_ok "and the cold-start instructions name both markers" \
+  _says template/AGENTS.md '`_(built, awaiting approval)_`'
+
+section "a decision made during an item reaches decisions.md"
+# The spec, build and two reviews settled UUID ids, the password hash cost, NFC
+# normalisation, logout on every device, a cookie path, a request-size cap and a
+# folder the layout never named. decisions.md still ended at the planning entries:
+# spec and build never write it, and ship only suggested docs.
+assert_ok "the spec template has a Decisions section" \
+  grep -qE '^    ## Decisions$' skills/spec.md
+assert_ok "build adds a choice the spec did not make to that section" \
+  _says skills/build.md "add it under the spec's \`## Decisions\` now"
+assert_ok "ship records the item's decisions in decisions.md" \
+  _says skills/ship.md "Record the item's decisions in \`dev-notes/decisions.md\`"
+assert_ok "ship declares decisions.md in its Writes line" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/decisions.md`' skills/ship.md
+assert_ok "and template/AGENTS.md names ship as a decisions.md writer" \
+  grep -qE '^\| `dev-notes/decisions.md` \|[^|]*\|[^|]*`ship`' template/AGENTS.md
+
+section "ship offers to merge through CI when CI exists"
+# ship squash-merged into local main; the item branch was never pushed, so CI -
+# configured on pull requests - never ran on the item before it reached main.
+assert_ok "ship offers the pull-request route when there is a remote and CI" \
+  _says skills/ship.md 'CI that runs on pull requests, offer that route first'
+assert_ok "and says so when the item merges without CI having seen it" \
+  _says skills/ship.md 'say that CI has not seen this item'
+
+section "the plans are committed before anything installs"
+# ideate, architect, stack and layout each wrote files and none committed; four
+# skills of decisions sat only in the working tree until scaffold, unprompted,
+# committed them - its own text never said to.
+assert_ok "scaffold commits the planning files as part of its approval gate" \
+  _says skills/scaffold.md 'Commit the plans first, as part of that yes'
+
+section "a change to a server is host's, and a removal is shown before it happens"
+# A hosting question during layout became removing an app, its Caddy block and
+# sixty packages (apt autoremove, unsimulated) from a shared server - approved
+# by the user, with no skill in charge and nothing asking what autoremove takes.
+assert_ok "the project's standing rules route server changes to host" \
+  _says template/AGENTS.md 'Changes to a server go through `host`'
+assert_ok "host asks what else already runs on a managed server" \
+  _says skills/host.md 'What else already runs on it?'
+assert_ok "and simulates a package change before making it" \
+  _says skills/host.md 'simulate the package change first'
+
+section "distill reports the plan against the repository, and never fixes the overview first"
+# The plan said PostgreSQL was installed on the server (stack had found it was
+# not) and named an image tag scaffold did not use. distill reported "no
+# contradictions", then generated the overview with the corrections while the
+# plan edits waited for approval - so the overview disagreed with its source.
+assert_ok "distill checks the plan against the repository" \
+  _says skills/distill.md 'The plan against the repository.'
+assert_ok "distill never writes a correction into the overview before the plan" \
+  _says skills/distill.md 'Never write a correction into the overview before it is in the plan'
+assert_ok "and the standing rules say a false plan line is corrected when found" \
+  _says template/AGENTS.md 'A plan line you have found to be false gets corrected in the same change'
+
+section "ci asks which host when there is no remote, and names the tests it leaves out"
+# With no remote, ci wrote a GitHub Actions file and never said which host it
+# assumed - the skill only told it to "say" so. And stack chose Playwright, but
+# the pipeline ran only verify; nothing required saying so where it would be read.
+assert_ok "ci stops and asks for the host when there is no remote" \
+  _says skills/ci.md 'stop and ask which host the repository will live on'
+assert_ok "ci reports every test command the pipeline does not run" \
+  _says skills/ci.md 'every test command the project has that the pipeline does not run'
+
+section "stack ties each choice to a bar line, and declares the decisions it writes"
+# stack ruled out a framework on install size and memory, and its decision entry
+# never named a quality-bar line - the instruction to do so lived only in Step 1
+# prose. Its Step 4 also wrote decisions.md entries while neither its Writes line
+# nor the state table named it as a writer.
+assert_ok "stack names the bar line beside each choice at its approval gate" \
+  _says skills/stack.md 'name the line of `blueprint/context/quality-bar.md` it answers'
+assert_ok "and in each decision entry" \
+  _says skills/stack.md 'which bar line it answers, or that none did'
+assert_ok "stack declares decisions.md in its Writes line" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/decisions.md`' skills/stack.md
+assert_ok "and template/AGENTS.md names stack as a decisions.md writer" \
+  grep -qE '^\| `dev-notes/decisions.md` \|[^|]*\|[^|]*`stack`' template/AGENTS.md
+
+section "architect asks where performance is measured instead of supplying the answer"
+# Both of architect's bar examples said "measured server-side". An independent
+# session copied it into a new project's bar - the phrase that can rule out a
+# client-rendered SPA. The example was deciding where
+# to measure for every project.
+assert_eq "no architect example fixes performance as server-side" "" \
+  "$(grep -nE '"[^"]*measured server-side[^"]*" is (a bar|a requirement)' skills/architect.md || true)"
+assert_ok "architect tells the agent to ask where the numbers are measured" \
+  _says skills/architect.md 'ask the user which they mean'
+
+section "a finding put off has a status that says so, and survives ship"
+# preflight raised "nothing alerts when the live system breaks"; the user deferred
+# it to monitor. No status meant that, so ship's gate refused the merge until it
+# was marked `accepted` - "not fixing" - and archived. monitor repaired it an hour
+# later, by which time the finding was gone from the ledger.
+assert_ok "the ledger has a deferred status that gates nothing" \
+  grep -qE '^\| `deferred` \|.*\| No \|$' skills/review.md
+assert_ok "and it must name what will do the work" \
+  _says skills/review.md 'only with a target'
+assert_ok "review sets it only on the user's decision, like accepted" \
+  _says skills/review.md 'Set `deferred` the same way'
+assert_ok "build never sets it" _says skills/build.md 'Never set `accepted`, `deferred` or `invalid`'
+assert_ok "ship names deferred as a way past its gate" _says skills/ship.md 'past without more code are `deferred`'
+assert_ok "and keeps a deferred finding in the ledger instead of archiving it" \
+  _says skills/ship.md 'is not resolved and stays in the ledger'
+assert_ok "preflight reports every deferred finding at every audit" \
+  _says skills/preflight.md 'Deferred, and to what'
+assert_ok "the ledger template explains the status to the skills that read it" \
+  _says template/blueprint/context/findings.md '`Deferred to:` line naming the skill that will do it'
+
+section "preflight checks the app against the proxy that will front it"
+# The first deploy served every page and rejected every form post: Caddy
+# terminates TLS and proxies over http, so the framework compared its own http
+# origin against the browser's https one. Tests, CI and verify all talk to the
+# app directly, where the schemes match, so nothing earlier could see it.
+assert_ok "preflight asks whether the app is built to sit behind its proxy" \
+  _says skills/preflight.md 'a proxy terminates TLS in front of the app'
+assert_ok "and wants evidence through the proxy, not just a health check" \
+  _says skills/preflight.md 'reaches a state-changing action'
+
+section "ship deletes only the mockups no unbuilt item still needs"
+# ship said it deletes prototypes/ "once the look is built", but a look is built
+# over several items: item 1 consumed the theme and the login screen while
+# design.md still pointed items 2-4 at the editor, list and public page. The
+# session kept the directory and explained why, against this skill's own text.
+assert_ok "ship checks remaining mockups against unchecked build-plan items" \
+  _says skills/ship.md 'Delete only the mockups nothing unbuilt still needs'
+assert_ok "and says which files stayed and for which item" \
+  _says skills/ship.md 'which files stayed and which item holds each'
+
+section "a process on a production machine is stopped by PID, not by pattern"
+# A restore drill's cleanup ran pkill -f 'node server.js', which matched the live
+# server; SIGTERM reads as a clean exit, so Restart=on-failure left production
+# down for a minute, and nothing alerted.
+assert_ok "host says to kill the PID you started" \
+  _says skills/host.md 'Stop a process by the PID you started, never by a pattern'
+assert_ok "and treats a drill against production as a production change" \
+  _says skills/host.md 'A drill against production is a production change'
+
+section "a done-when names where its test runs, and that place can run it"
+# A spec asked for database-backed unit tests, but `npm test` sits inside
+# `verify`, which is what CI runs - with no database. Nothing in spec asked where
+# a new kind of test would run, so the done-when could not be met where it was
+# checked.
+assert_ok "spec asks where a new kind of test runs" \
+  _says skills/spec.md 'say which command runs it and where that command runs'
+assert_ok "and its red-team checks the done-when against that environment" \
+  _says skills/spec.md 'Can the command that checks it actually run there?'
+
+section "a finding's test reproduces that finding and is proven by reverting the repair"
+# A P1 was "fixed" and its test passed while the defect stood: the test never
+# submitted down the failing path, so it asserted the repair, not the failure.
+assert_ok "build writes a repair's test from the finding's own reproduction" \
+  _says skills/build.md "written from that finding's own reproduction"
+assert_ok "and proves it by reverting the repair, not by some other break" \
+  _says skills/build.md 'revert the repair and watch that test fail'
+# The generalization: test-first is not only for repairs. Every step whose
+# done-when is behavioural is seen failing before it is claimed - the same
+# failure mode, one step up the chain, where a step's own test was never run
+# against the broken thing.
+assert_ok "build proves every behavioural done-when test-first, not just repairs" \
+  _says skills/build.md 'proven test-first'
+# The first wording called it test-first and then described breaking the code
+# after the fact - a copy of the mutation paragraph below it - and required a
+# test for every behavioural done-when while the same item said UI steps ride
+# on a screenshot and never to invent a test runner.
+assert_ok "test-first means the test is written and seen red before the code" \
+  _says skills/build.md 'write the test from the done-when **before** the code'
+assert_ok "and where no test can observe the claim, the running app is the evidence" \
+  _says skills/build.md 'Where no test can observe the claim, the evidence is the running app'
+assert_fails "the after-the-fact wording is gone" \
+  _says skills/build.md 'considered done — break the thing it covers'
+
+section "build's subagent packet carries every standard by path"
+# The packet named coding-standards and the quality bar. fundamentals.md stopped
+# being loaded every session in the same week, and principles.md had just been
+# added - so the subagent writing the code saw neither, while review and
+# preflight audit against both.
+# One phrase, not four: build.md names two of these elsewhere, so a check per
+# file passes on mentions outside the packet.
+assert_ok "the packet lists all four standards together" \
+  _says skills/build.md 'by path, all four**: `blueprint/context/fundamentals.md`, `blueprint/context/coding-standards.md`, `blueprint/context/quality-bar.md` and `blueprint/context/principles.md`'
+assert_ok "and says why: a subagent loads none of them by itself" \
+  _says skills/build.md 'A subagent loads none of them by itself'
+
+section "a changed file git shows as binary is reported, not silently skipped"
+# A regex can hold raw NUL/DEL bytes instead of escapes, so git calls
+# the item's core new file binary. `git diff` and the pull request showed
+# "Binary files differ" - the item's main change reached a reviewer as nothing
+# at all, and no skill in the loop noticed.
+assert_ok "review checks the changed set for a file git calls binary" \
+  _says skills/review.md 'git diff --numstat'
+assert_ok "and reads that file whole instead of skipping it" \
+  _says skills/review.md 'Read that file whole'
+assert_ok "and records it, because the diff is all a PR reviewer sees" \
+  _says skills/review.md 'the only thing a pull-request reviewer sees'
+
+# ==== seams-E: found by running the five unverified paths (2026-09-22) ====
+# `ship --abandon` and `spec`'s resume first, then `layout` moving a seeded
+# part, `setup` filling plan sections 5 and 6, and the contract block
+# `architect` writes - seven defects, which emptied the unverified list. An
+# eighth was in the harness: `_says` was a pipeline ending in `grep -q` under
+# pipefail, reporting failure for a phrase that is present.
+# A real park-and-resume on a scratch project: two steps ticked, one half-built
+# in a new file, a four-entry ledger. Every one of these was seen happening.
+
+section "parking an item commits the new files too, not just the modified ones"
+# `git commit -am` reported "1 file changed" and left the half-built step - a new,
+# untracked file - behind, to be carried onto main by the next step. The step
+# exists precisely so the branch does not lose it.
+assert_ok "ship stages new files when parking work" \
+  _says skills/ship.md 'git add -A`, never `git commit -a'
+assert_ok "and checks the tree is clean before it moves off the branch" \
+  _says skills/ship.md 'Check `git status` is clean before moving on'
+
+section "an abandoned item's findings are read from the branch that holds them"
+# Step 2 moves to main, where the ledger is the stub; the entries are on the
+# branch. Reading the ledger from where you stand archives an empty section and
+# removes nothing, and both read as success - a P1 stayed on a parked branch.
+assert_ok "ship reads the abandoned findings from the branch" \
+  _says skills/ship.md 'git show <branch>:<path to findings.md>'
+assert_ok "and says why standing on main is the wrong place to read it" \
+  _says skills/ship.md 'archives an empty section and reports it as done'
+assert_ok "and leaves the branch ledger for the resume to bring back" \
+  _says skills/ship.md "Leave the branch's own ledger as it is"
+
+section "an archived finding's ID stays unique once it leaves the ledger"
+# The normal path prefixes archived IDs (12/F-03); abandoning did not, so the
+# next item's first finding is F-01 again and the abandon reason cites an F-01
+# that now means two things.
+assert_ok "ship prefixes an abandoned finding with the archive name" \
+  _says skills/ship.md 'each ID prefixed with the archive name'
+# The normal path said "the archive name" and showed an item number, 12/F-03.
+# Under the 2026-09-28 pressure pilot two archives of nine wrote 1/F-01 and the
+# rest 01/F-01 for the same item - and a fix has no item number at all.
+assert_ok "ship's example prefix is the archive name, as its rule says" \
+  _says skills/ship.md '`features/12-checkout.md` becomes `12-checkout/F-03`'
+
+section "resuming an abandoned item checks out the branch before restoring"
+# Following the written order, git refused: "Your local changes to
+# blueprint/context/current-work.md would be overwritten by checkout".
+assert_ok "spec checks out the branch first" \
+  _says skills/spec.md 'check out the branch before restoring anything'
+assert_ok "and says the branch already carries the spec and the ledger" \
+  _says skills/spec.md 'brings the spec back with its ticks'
+assert_ok "and strips the abandon record from a spec restored from the archive" \
+  _says skills/spec.md 'that is the record of the attempt, not part of the spec'
+
+section "moving a seeded part keeps what the listing said the part was"
+# The move deletes the part's line from the root AGENTS.md and lets seed-part.sh
+# write a fresh one, which is the template's `<what this part is>`. Run on a
+# product whose line read "the reader-facing site: article pages, search, and
+# the home feed", the move put the placeholder back and reported success.
+assert_ok "layout keeps the listing line's text before deleting it" \
+  _says skills/layout.md 'keep the text of its line in the root `AGENTS.md` listing'
+assert_ok "and writes the description back after seeding the new path" \
+  _says skills/layout.md "write the part's description back onto its new listing line"
+
+section "an adopted plan has no seeded text left for distill to stop on"
+# Sections 5 and 6 each carry a second seeded paragraph below the obvious one -
+# the note that 5 is filled after 6, and the note that `layout` adds the tree.
+# Replacing only "the seeded instruction sentence" leaves them, `distill` reads
+# seeded text as unfilled "whatever has been added around it", and it routes to
+# `architect` and `stack` - the two skills this route says never run.
+assert_ok "setup replaces every seeded paragraph, not just the first" \
+  _says skills/setup.md 'not only the first one'
+assert_ok "and names the two that are easy to leave behind" \
+  _says skills/setup.md 'those go too'
+assert_ok "and says what leaving one costs" \
+  _says skills/setup.md 'for a section that is in fact filled'
+
+section "every field in the product root's contract block has a writer"
+# `Kind:` appeared exactly once in the whole pack - in the template. No skill
+# wrote it and no skill read it, in a block whose own text says "These are read,
+# not decorative". It is also the field ci branches on: "if a contract is
+# generated between them". Rule 9 covers the coordination board's fields; this
+# block is a different file and nothing covered it.
+for field in 'Owner' 'File' 'Kind' 'Regenerate' 'Generate clients'; do
+  assert_ok "the contract block still declares $field" \
+    grep -qE "^- $field:" template/product/AGENTS.md
+done
+# The wording moved into a per-field list when rule 17 was written, which is the
+# rule that now enforces the binding itself. This still holds the part rule 17
+# cannot see: that the two legal VALUES are named. `Kind: yes` satisfies a rule
+# checking the field is mentioned and tells `ci` nothing.
+assert_ok "architect sets the contract's Kind" \
+  _says skills/architect.md '`Kind:` - `generated` or `hand-written`'
+assert_ok "and says a hand-written one is recorded, not left blank" \
+  _says skills/architect.md 'say `hand-written` rather than leaving the line empty'
+assert_ok "ci reads Kind rather than inferring it" \
+  _says skills/ci.md '`Kind:` in the product root'
+
+# ==== seams-F: found by reviewing the principles branch against the tree ====
+# Unlike D and E, these came from reading a handoff and checking its claims
+# against what the commands print - not from running a skill. That is the
+# weaker provenance this pack warns about, and it still found a broken route.
+
+section "an unrecorded principles file has a route that actually writes it"
+# The reader/writer class again, and it lints clean from either end. `setup`
+# refuses to write `blueprint/context/principles.md` - a commitment cannot be
+# read off code - and sends the user to `ideate --rescope` as its only writer.
+# The rescope path said "leave `principles.md` alone unless the user raises it",
+# which is right for a settled commitment and wrong for one that was never
+# recorded: every adopted project was routed to a skill instructed not to do the
+# thing it was routed there for. Rule 8 cannot see it, because the writer row
+# exists; the declining sentence is inside the writer.
+assert_ok "setup refuses to infer a principles file" \
+  _says skills/setup.md 'Do not write `blueprint/context/principles.md`, and say so'
+assert_ok "and names ideate as its only writer" \
+  _says skills/setup.md 'point at `ideate`, which is the only skill that writes one'
+# `--rescope` alone was the wrong door for an adopted project whose plans are
+# still empty: rescope reconciles a filled plan against built work, and there
+# is none. Plain `ideate` writes the file with the plans.
+assert_ok "plain ideate while the plans are empty, --rescope once they are filled" \
+  _says skills/setup.md 'plain `ideate` while the plans are still empty'
+# Step 3 said it; the report that names every next action did not, and a next
+# step the report leaves out is dropped - the reason Step 7 says to name them all.
+assert_ok "and setup's report names it among the next actions" \
+  _says skills/setup.md 'name it in that list, not only in Step 3'
+assert_ok "ideate --rescope writes one when there is none" \
+  _says skills/ideate.md 'When there is no `principles.md` at all, ask Step 1'
+assert_ok "and says why leaving it alone would strand setup's pointer" \
+  _says skills/ideate.md 'this skill is its only writer'
+# The leave-alone rule has to stay, but scoped to a file that exists - an
+# unqualified "leave `principles.md` alone" is exactly the sentence that broke
+# the route, and reads as correct.
+assert_ok "leaving it alone is scoped to an existing file" \
+  _says skills/ideate.md 'Leave an existing `principles.md` alone'
+assert_fails "and is not stated unqualified" \
+  _says skills/ideate.md '**Leave `principles.md` alone'
+
+section "build's packet names verify when a done-when was never run live"
+# The packet said "next action, usually `review` then `ship`". `verify` exists
+# to run a behavioral done-when against the running app, so a step whose proof
+# was a green unit check could go to `review` and `ship` with the spec's actual
+# promise never exercised - and nothing in the packet recorded which kind of
+# proof each done-when had, so the next skill could not tell either.
+assert_ok "the packet separates live proof from a green check" \
+  _says skills/build.md 'proven live against the running app in Step 3 versus only by a green check'
+assert_ok "verify is named first when any proof was only a check" \
+  _says skills/build.md '`verify` first, when any behavioral done-when was proven only by a green check'
+assert_ok "and review directly when every one was run live" \
+  _says skills/build.md 'already run live in Step 3, say so and name `review` directly'
+assert_fails "the old unconditional handoff is gone" \
+  _says skills/build.md 'next action, usually `review` then `ship`'
+
+# ==== seams-H: the always-loaded context and the state files that feed it (2026-09-23) ====
+# Rule 18 holds the seed to the budget; these hold the prose that keeps a
+# project inside it once it grows, and the routes that keep state from piling up.
+section "a file moved out of the loaded set is read by the skills that need it"
+# fundamentals.md was imported every session. Dropping the import without
+# sending its readers to it would remove it from every session instead.
+for n in spec build review; do
+  assert_ok "$n reads fundamentals.md itself" \
+    _says skills/$n.md '`blueprint/context/fundamentals.md` - the pack'"'"'s conventions; not loaded by default, so read it here'
+done
+assert_fails "and CLAUDE.md no longer imports it" \
+  grep -qF '@blueprint/context/fundamentals.md' template/CLAUDE.md
+
+section "closed needs-you lines leave the loaded file"
+# Done lines used to be kept "rather than deleting them" in a file every
+# session loads, so it only grew.
+assert_ok "ship moves Done lines to history" \
+  _says skills/ship.md 'Append every line under its `## Done` heading to `blueprint/history/needs-you-done.md`'
+assert_ok "and leaves open lines alone" _says skills/ship.md 'Open lines are never touched.'
+assert_ok "the file itself says where Done goes" \
+  _says template/blueprint/context/needs-you.md '`ship` moves Done to `blueprint/history/needs-you-done.md`'
+assert_ok "progress reports the loaded context against the budget" \
+  _says skills/progress.md 'Always-loaded context over its budget.'
+assert_ok "and progress takes the budget from where AGENTS.md states it" \
+  _says template/AGENTS.md '`progress` reports when they exceed it'
+
+section "the overview orients, it does not restate"
+# An overview that restates the ledger and needs-you.md goes stale whenever
+# either changes. "This file replaces reading everything else" was the
+# instruction that made it restate them.
+assert_ok "distill caps the overview" _says skills/distill.md 'at most 8 KB'
+assert_ok "and says to link rather than restate" _says skills/distill.md 'Link, never restate.'
+assert_ok "and measures before reporting" _says skills/distill.md 'Measure it before reporting'
+assert_fails "the instruction that grew it is gone" \
+  _says skills/distill.md 'this file replaces reading everything else'
+assert_ok "AGENTS.md states the cap where the file is listed" \
+  _says template/AGENTS.md 'at most 8 KB; it links, never restates'
+
+section "what production needs travels from spec to deploy"
+# The spec knows an item needs a new variable or a migration; nothing carried
+# that to the deploy, so merged items could reach production without them.
+assert_ok "spec has a Production needs section" _says skills/spec.md '## Production needs'
+assert_ok "ship carries it to production-pending.md" \
+  _says skills/ship.md 'Carry the spec'"'"'s `## Production needs` to `blueprint/production-pending.md`'
+assert_ok "deploy blocks on an unmet line" \
+  _says skills/deploy.md 'every open line in `blueprint/production-pending.md`'
+assert_ok "and only a production release ticks them" \
+  _says skills/deploy.md 'After a production release, tick every line'
+assert_ok "staging checks them and clears nothing" _says skills/deploy.md 'Staging checks them too, and clears nothing.'
+assert_ok "progress reports how far production is behind" \
+  _says skills/progress.md 'What production is behind by'
+
+section "a needs-you line can be closed by whoever sees it met, and a check cannot widen forever"
+# A satisfied line could stay open because the skill that saw it met did not
+# own it; and a manual check could be widened by every item, then accepted as
+# a risk all at once.
+assert_ok "any writer may close any line, with evidence" \
+  _says template/blueprint/context/needs-you.md 'any of them may close any line'
+assert_ok "and records which skill closed it" \
+  _says template/blueprint/context/needs-you.md 'recording which skill closed it and the evidence'
+assert_ok "verify counts how often a manual check was widened" _says skills/verify.md '`Widened: N`'
+assert_ok "and forces the decision at three" _says skills/verify.md 'At 3, stop widening and ask'
+
+section "browser tests gate something"
+# ci treated browser tests as an optional cost and ran the unit suite, so the
+# tests most likely to catch what matters gated nothing.
+assert_ok "ci runs browser tests by default" _says skills/ci.md 'Browser tests run by default, database and all.'
+assert_ok "with a database service container" _says skills/ci.md 'a database service container for the tests that need one'
+assert_ok "and leaving them out is asked for, not defaulted" \
+  _says skills/ci.md 'never the default because it is more work'
+
+section "the findings ledger is an index, and findings have an end state"
+# The ledger loaded every finding's full prose every session, and nothing ever
+# removed an unresolved P3, so it only grew.
+assert_ok "review writes a heading and a File: line to the index" \
+  _says skills/review.md 'it is the heading and one `File:` line, nothing more'
+assert_ok "and the full entry to its own file" \
+  _says skills/review.md '**The entry** goes in `blueprint/findings/F-03.md`'
+assert_ok "status lives in one place, so the two cannot disagree" \
+  _says template/blueprint/context/findings.md '**status lives only here**'
+assert_ok "ship archives an entry file's body, not only the heading" \
+  _says skills/ship.md 'followed by the body of its entry file'
+assert_ok "ship moves unresolved P3s out of the index" \
+  _says skills/ship.md 'Every P3 still `open`, `fixed` or `unverified` moves its index heading'
+assert_ok "and names each one it moved" _says skills/ship.md 'Name each one moved in the report.'
+assert_ok "spec brings the backlog back as a tidy item" \
+  _says skills/spec.md 'offer a tidy item first'
+assert_ok "review can still close what is in the backlog" \
+  _says skills/review.md 'Findings in `blueprint/findings/backlog.md` are still live.'
+# The one relaxation of "a repair never closes itself", and its fence.
+assert_ok "build may close a P2 or P3 only on a test seen failing first" \
+  _says skills/build.md 'saw it fail with the repair reverted'
+assert_ok "and a P0 or P1 repair still never closes itself" \
+  _says skills/build.md 'A P0 or P1 repair never closes itself.'
+assert_fails "the unconditional rule is gone, since it no longer holds" \
+  _says skills/build.md '`closed`. A repair never closes itself.'
+
+# ==== seams-I: the design kit holds to its own promises (2026-09-23) ====
+# The kit is two files saying the same thing - tokens.json for tools and
+# non-web platforms, tokens.css for the web - plus components that promise to
+# use nothing but the tokens. Written by hand, the two token files drifted on
+# the first edit: the dark `data-theme` block lost a role and every hover fell
+# back to its light value. Nothing but a comparison would have seen it.
+section "the design kit: tokens.json and tokens.css are the same set"
+DK=template/blueprint/design-kit
+_kit_check() {
+python3 - "$DK" "$1" <<'KIT'
+import json, re, sys, pathlib
+dk = pathlib.Path(sys.argv[1]); what = sys.argv[2]
+t = json.loads((dk / "tokens.json").read_text())
+css = (dk / "tokens.css").read_text()
+def leaves(node, path):
+    for k, v in node.items():
+        if k.startswith("$"): continue
+        if "$value" in v: yield path + [k], v
+        else: yield from leaves(v, path + [k])
+def cssval(v, typ):
+    if isinstance(v, str):
+        m = re.fullmatch(r"\{primitive\.([a-z]+)\.(\d+)\}", v)
+        return f"var(--{m.group(1)}-{m.group(2)})" if m else v
+    if typ == "fontFamily": return ", ".join(f'"{x}"' if " " in x else x for x in v)
+    if typ == "cubicBezier": return "cubic-bezier(%s)" % ", ".join(str(x) for x in v)
+    return str(v)
+def block(start):
+    i = css.index(start); j = css.index("{", i) + 1; depth = 1; k = j
+    while depth:
+        depth += {"{": 1, "}": -1}.get(css[k], 0); k += 1
+    body = css[j:k - 1]
+    if "@media" in start:                       # the rules inside the query
+        body = body[body.index("{") + 1:body.rindex("}")]
+    return dict(re.findall(r"(--[a-z0-9-]+):\s*([^;]+);", body))
+root = block(":root {")
+exp_root = {}
+for p, v in leaves(t["primitive"], []): exp_root[f"--{p[0]}-{p[1]}"] = cssval(v["$value"], v["$type"])
+for g in ["font", "space", "radius", "shadow", "motion", "size", "breakpoint", "z"]:
+    for p, v in leaves(t[g], [g]): exp_root["--" + "-".join(p)] = cssval(v["$value"], v["$type"])
+for p, v in leaves(t["color"]["light"], []): exp_root[f"--color-{p[0]}"] = cssval(v["$value"], v["$type"])
+exp_dark = {f"--color-{p[0]}": cssval(v["$value"], v["$type"]) for p, v in leaves(t["color"]["dark"], [])}
+problems = []
+def compare(name, got, exp):
+    for k in sorted(set(exp) | set(got)):
+        if k not in got: problems.append(f"{name}: {k} missing from tokens.css")
+        elif k not in exp: problems.append(f"{name}: {k} in tokens.css but not tokens.json")
+        elif got[k].strip() != exp[k]: problems.append(f"{name}: {k} is {got[k].strip()}, tokens.json says {exp[k]}")
+if what == "parity":
+    compare(":root", root, exp_root)
+    compare("prefers-color-scheme dark", block("@media (prefers-color-scheme: dark)"), exp_dark)
+    compare('data-theme="dark"', block(':root[data-theme="dark"]'), exp_dark)
+    if set(t["color"]["light"]) != set(t["color"]["dark"]):
+        problems.append("color roles differ between light and dark: " + " ".join(sorted(set(t["color"]["light"]) ^ set(t["color"]["dark"]))))
+elif what == "defined":
+    defined = set(re.findall(r"(--[a-z0-9-]+)\s*:", css))
+    for f in ["components.css", "components.html"]:
+        for v in sorted(set(re.findall(r"var\((--[a-z0-9-]+)", (dk / f).read_text()))):
+            if v not in defined: problems.append(f"{f} uses {v}, which tokens.css does not define")
+elif what == "literals":
+    lit = re.compile(r"#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|:\s*(?:white|black)\b")
+    comp = re.sub(r"/\*.*?\*/", "", (dk / "components.css").read_text(), flags=re.S)
+    for n, line in enumerate(comp.splitlines(), 1):
+        if lit.search(line): problems.append(f"components.css:{n}: colour literal: {line.strip()[:60]}")
+    html = (dk / "components.html").read_text()
+    styles = re.findall(r"<style>(.*?)</style>", html, re.S) + re.findall(r'style="([^"]*)"', html)
+    for st in styles:
+        if lit.search(st): problems.append(f"components.html: colour literal in a style: {st.strip()[:60]}")
+elif what == "contrast":
+    def res(v):
+        m = re.fullmatch(r"\{primitive\.([a-z]+)\.(\d+)\}", v)
+        return t["primitive"][m.group(1)][m.group(2)]["$value"] if m else v
+    def lum(h):
+        h = h.lstrip("#")[:6]; rgb = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+        f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = map(f, rgb); return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    def cr(a, b):
+        x, y = sorted([lum(a), lum(b)], reverse=True); return (x + 0.05) / (y + 0.05)
+    # Every pair a component actually draws, text at 4.5:1 and control
+    # boundaries and focus at 3:1 (WCAG 1.4.3, 1.4.11).
+    text = [("text","bg"),("text","surface"),("text","surface-hover"),("text-muted","bg"),("text-muted","surface"),
+            ("text-muted","surface-sunken"),("primary","surface"),("primary","bg"),("primary","primary-subtle"),
+            ("on-primary","primary"),("on-primary","danger"),("danger","surface"),("success","success-subtle"),
+            ("warning","warning-subtle"),("danger","danger-subtle"),("text","info-subtle"),("text","success-subtle"),
+            ("text","warning-subtle"),("text","danger-subtle")]
+    ui = [("focus-ring","bg"),("focus-ring","surface"),("border-strong","surface")]
+    for mode in ("light", "dark"):
+        c = {k: res(v["$value"]) for k, v in t["color"][mode].items()}
+        for pairs, need in ((text, 4.5), (ui, 3.0)):
+            for a, b in pairs:
+                r = cr(c[a], c[b])
+                if r < need: problems.append(f"{mode}: {a} on {b} is {r:.2f}:1, needs {need}:1")
+print("\n".join(problems))
+KIT
+}
+assert_ok "tokens.json is valid JSON" python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$DK/tokens.json"
+assert_eq "every token is in both files, with the same value, in every mode" "" "$(_kit_check parity)"
+assert_eq "every var() the components use is defined" "" "$(_kit_check defined)"
+assert_eq "the components hold no colour literal - a re-theme is tokens.css alone" "" "$(_kit_check literals)"
+assert_eq "every colour pair a component draws meets WCAG contrast, light and dark" "" "$(_kit_check contrast)"
+
+
+section "prototype starts from the kit, recommends, and maps how people get around"
+# prototype used to start from a blank theme file, ask about "feel" without
+# recommending anything, and treat anything beyond two or three mockups as a
+# design system it should not build - so navigation, most components and the
+# screens every app needs were invented per feature, or never.
+assert_ok "prototype copies the kit's tokens rather than inventing them" \
+  _says skills/prototype.md 'Copy `blueprint/design-kit/tokens.css` to `prototypes/theme.css`'
+assert_ok "and changes values, never names" _says skills/prototype.md 'Never rename or remove a token.'
+assert_ok "it classifies the product before recommending" _says skills/prototype.md 'Name the product type'
+assert_ok "it recommends directions as token changes, with a reason" \
+  _says skills/prototype.md 'each stated as the **token changes** it makes to the kit'
+assert_ok "it maps the navigation before any pixel" _says skills/prototype.md 'The navigation map'
+assert_ok "it adds the screens every product of that type needs" \
+  _says skills/prototype.md 'plus** the required ones from checklist section 2'
+assert_ok "it mocks the whole component sheet in the project's look" \
+  _says skills/prototype.md 'Copy `blueprint/design-kit/components.html` to'
+assert_ok "and design.md records the navigation and the journeys" \
+  _says skills/prototype.md '**The navigation map** from Step 2.'
+assert_ok "a project without the kit is told how to get it, not given a freehand one" \
+  _says skills/prototype.md 'Do not recreate it from memory'
+assert_ok "spec turns each journey into a done-when" \
+  _says skills/spec.md 'Every journey in `design.md` this item passes through is a done-when'
+assert_ok "the checklist names the journey a screen-by-screen check misses" \
+  _says template/blueprint/design-kit/ux-checklist.md 'Change or reset **your own** password'
+assert_ok "review reports a literal where a token belongs" \
+  _says skills/review.md 'written as a literal instead of a token is drift'
+
+# ==== seams-G: found by reading all 27 skills end to end (2026-09-25) ====
+# Not by running a skill: by reading each one whole and asking whether it agrees
+# with itself and with the files around it. Every defect below lints clean.
+
+section "a skill's reference to its own step names a step it has"
+# build said "Step 6 tells you" with four steps; autopilot said "the budget from
+# Step 1b" when the budget is Step 2. Both read as correct, and an agent told to
+# follow a step that does not exist follows whichever one it guesses. A
+# reference qualified by another skill's name - "`build`'s Step 2" - is that
+# skill's step and is skipped.
+_dangling_steps() {
+  python3 - "$@" <<'PYSTEP'
+import re, sys
+for f in sys.argv[1:]:
+    s = open(f).read()
+    heads = set(re.findall(r'^## Step (\d+[a-z]?)\b', s, re.M))
+    flat = re.sub(r'\s+', ' ', s)
+    for m in re.finditer(r'\bSteps? (\d+[a-z]?)\b', flat):
+        if m.group(1) in heads:
+            continue
+        before = flat[max(0, m.start() - 40):m.start()]
+        if re.search(r"`[a-z-]+`('s)?\s*(\w+\s){0,3}$", before) or "'s" in before[-8:]:
+            continue
+        print(f"{f}: Step {m.group(1)}")
+PYSTEP
+}
+assert_eq "no skill refers to a step it does not have" "" "$(_dangling_steps skills/*.md)"
+_ds_tmp=$(mktemp -d "$TEST_TMP/steps.XXXXXX")
+printf '## Step 1 - a\n\nThe rule in Step 6 says so.\n' > "$_ds_tmp/x.md"
+assert_eq "and the check sees one" "$_ds_tmp/x.md: Step 6" "$(_dangling_steps "$_ds_tmp/x.md")"
+printf '## Step 1 - a\n\nAs `build`'"'"'s Step 6 says.\n' > "$_ds_tmp/y.md"
+assert_eq "but not another skill's step" "" "$(_dangling_steps "$_ds_tmp/y.md")"
+
+section "a skill agrees with itself"
+assert_lacks "stack no longer claims to work in an empty directory" skills/stack.md 'It works in an empty directory'
+assert_lacks "stack's description no longer hands back text without the workflow" skills/stack.md 'hands the decision back as text'
+assert_ok "stack names every section it touches" \
+  _says skills/stack.md "Tech and Deployment, the data model's owners in sections 4 and 6"
+assert_ok "architect takes Step 2's six answers instead of asking again" \
+  _says skills/architect.md 'Take the six answers from Step 2 - do not ask them again'
+assert_ok "and its rules allow the Constraints it writes" \
+  _says skills/architect.md 'the platform Step 2 records under Constraints'
+assert_ok "autopilot counts the four blocked actions it lists" \
+  _says skills/autopilot.md 'Four actions are **blocked in every range'
+assert_ok "autopilot's board checks read as conditions to start" \
+  _says skills/autopilot.md 'each of these must hold, or the run stops'
+assert_ok "spec counts its modes" _says skills/spec.md 'Six modes, chosen from the argument'
+assert_ok "preflight counts its buckets" _says skills/preflight.md 'Sort everything into six buckets'
+assert_eq "preflight asks the same config question once" "1" \
+  "$(grep -c "genuinely separate" skills/preflight.md)"
+assert_ok "progress counts its lists" _says skills/progress.md 'Four lists exist'
+assert_ok "ship's rules name all three ways past the gate" \
+  _says skills/ship.md '`deferred`, `accepted` and `invalid`'
+# verify's needs-you rule sat inside Step 5, which only --manual runs.
+assert_ok "verify records a could-not-verify in every mode, not only --manual" \
+  bash -c 'awk "/In every mode, not only/{a=NR} /could-not-verify becomes a line/{b=NR} /^## Step 5/{c=NR} END{exit !(a && b>a && c>b)}" skills/verify.md'
+assert_lacks "verify's description no longer calls it read-only" skills/verify.md 'Read-only either way'
+assert_ok "orchestrate tells build's own subagent apart from delegating build" \
+  _says skills/orchestrate.md "This is not the subagent \`build\` uses itself"
+assert_ok "and so does the multi-part guide" \
+  _says docs/multi-part.md "one step's code to a subagent of its own is different"
+assert_lacks "README no longer sends upgrades through --force" README.md '^install.sh --force$'
+assert_ok "install's help says --force changes nothing" \
+  _says install.sh 'Accepted but no longer needed'
+assert_ok "the walkthrough's no-precondition list matches check.sh" \
+  _says docs/walkthrough.md '`setup`, `progress`, `preflight`, `debug`, `docs` and `prepare` have no preconditions'
+
+section "design is required wherever there is a UI"
+# prototype was optional, so a UI project could reach spec with no design.md and
+# every item answered the same design questions again. D18.
+assert_ok "spec stops on a UI with no design record" \
+  _says skills/spec.md 'The project has a UI and `blueprint/context/design.md` does not exist'
+assert_ok "and names prototype" _says skills/spec.md 'stop and say to run `prototype` first'
+assert_ok "a project with no UI passes" _says skills/spec.md 'a CLI, a library or an API with no UI'
+assert_ok "a fix does not wait on design work" _says skills/spec.md 'must not wait on design work'
+# Without this an adopted app deadlocked: prototype stopped on a shipped look,
+# and spec stopped without the record.
+assert_ok "prototype records a look that already exists" \
+  _says skills/prototype.md '## Recording a look that already exists'
+assert_lacks "and no longer stops on a shipped look alone" skills/prototype.md 'or the tokens have already'
+assert_ok "prototype's description says it is required" \
+  _says skills/prototype.md 'Required before the first `spec` in any project with a UI'
+assert_lacks "architect no longer calls skipping it legitimate" skills/architect.md 'Skipping it is'
+assert_ok "distill names prototype when the record is missing" \
+  _says skills/distill.md '`prototype` if the project has a UI and `blueprint/context/design.md` does not exist'
+assert_ok "setup's report names it for an adopted UI" \
+  _says skills/setup.md '**And `prototype`, if the project has a UI'
+assert_ok "progress names prototype rather than sending the user into spec's stop" \
+  _says skills/progress.md 'the next action is `prototype`, not `spec`'
+for f in README.md docs/walkthrough.md docs/mobile.md; do
+  assert_eq "$f no longer calls prototype optional" "" \
+    "$(tr -s ' ' < "$f" | grep -niE 'prototype.{0,60}optional|optional.{0,20}prototype' || true)"
+done
+assert_ok "the template's loop line includes it" \
+  _says template/AGENTS.md '-> prototype (with a UI)'
+# Required made it a stop on every UI project's unattended run: autopilot's
+# general "stop at any decision" rule never said a look was one, and prototype
+# writes design.md only after a person has seen the mockups.
+assert_ok "autopilot stops at prototype when there is no record" \
+  _says skills/autopilot.md 'the range reaches `prototype` on a project with no `design.md`'
+assert_ok "but records a look the app already has" \
+  _says skills/autopilot.md 'recording what the code already draws decides nothing'
+assert_ok "and a range starting past prototype checks for the record first" \
+  _says skills/autopilot.md 'a project with a UI has `blueprint/context/design.md`'
+assert_ok "prototype says where an unattended run stops" \
+  _says skills/prototype.md 'So an unattended run stops here.'
+
+
+section "a skill that tells the agent to write a state file declares it"
+# Rule 12 holds a declared write to its table row and to the skill's own text.
+# Nothing held the reverse: scaffold wrote the plan's Deployment section and
+# spec updated design.md, neither in its Writes: line, and both linted clean -
+# the writer table was simply wrong about who writes those files. Found by
+# reading, which is the weak way; this is the check for next time.
+#
+# **It is a heuristic, and it says so.** It matches an imperative write verb
+# followed, within the sentence, by a state file from the table - by path, by
+# `basename`, or for the project plan by "the plan's X section" - and skips
+# another skill's verb, a negation, and "writes it" (a different object). Run
+# on the tree before that fix it finds two of the four undeclared writes; the
+# other two name their target only as "it" or "the plan changes", which nothing
+# can resolve to one file. A new exemption belongs in the skipping rules here,
+# with its reason, not as a skill quietly reworded to dodge it.
+_undeclared() {
+  python3 - "$@" <<'PYW'
+import re, sys, os
+root = sys.argv[1]
+t = open(os.path.join(root, 'template/AGENTS.md')).read()
+paths = [m for m in re.findall(r'^\| `([^`]+)` \| [^|]+ \| [^|]+ \|$', t, re.M)]
+verb = (r"\b(write|writes|update|updates|append|appends|reset|resets|fill|fills|"
+        r"amend|amends|tick|ticks|add (?:a|it|them|each|every)\b[^.;()\"]{0,30}? to|"
+        r"move[^.;()\"]{0,30}? to|set (?:it|that finding|each)\b[^.;()\"]{0,20}? to)\b")
+names = sys.argv[2:] or sorted(f[:-3] for f in os.listdir(os.path.join(root, 'skills')))
+for name in names:
+    s = open(os.path.join(root, 'skills', name + '.md')).read()
+    wl = re.search(r'^\*\*Writes:\*\*(.*)$', s, re.M).group(1)
+    declared = set(re.findall(r'`([^`]+)`', wl))
+    body = re.sub(r'^\*\*Writes:\*\*.*$', '.', s, flags=re.M)   # the declaration itself
+    body = re.sub(r'^#+ .*$', '.', body, flags=re.M)       # a heading ends a sentence
+    flat = re.sub(r'\s+', ' ', body)
+    for sent in re.split(r'(?<=[.!?:])\s', flat):
+        for p in paths:
+            if p in declared:
+                continue
+            # how prose names it: the path, `basename`, or - for the project
+            # plan - one of its numbered or named sections
+            alias = [re.escape(p.rstrip('/')), r"`%s`" % re.escape(p.rstrip('/').split('/')[-1])]
+            if p == 'blueprint/project-plan.md':
+                alias.append(r"the plan's (?:[A-Z][\w/]+ )+section|section \d+ of the plan")
+            target = "(?:%s)" % "|".join(alias)
+            if not re.search(target, sent):
+                continue
+            for m in re.finditer(verb + r"[^.;()\"]{0,80}?" + target, sent, re.I):
+                pre = sent[:m.start()]
+                if re.search(r"\b(not|never|no)\s+(\w+\s+)?$", pre, re.I) \
+                        or re.match(r"\w+ nothing\b", m.group(0)):
+                    continue                                 # "do not write", "writes nothing"
+                if re.search(r"`(?!%s`)[a-z-]+`('s)?\s*(\w+\s+){0,2}$" % name, pre):
+                    continue                                 # another skill's verb
+                if re.search(r"\b(it|them)\b", m.group(0)[:len(m.group(1)) + 5]):
+                    continue                                 # "writes it" - a different object
+                print(f"{name}: {p}")
+                break
+PYW
+}
+assert_eq "no skill writes a state file its Writes: line leaves out" "" "$(_undeclared .)"
+_uw=$(mktemp -d "$TEST_TMP/undeclared.XXXXXX")
+mkdir -p "$_uw/skills" "$_uw/template"
+cp template/AGENTS.md "$_uw/template/"
+printf -- '---\nname: zz\n---\n\n**Writes:** nothing\n\nThen update `design.md` with the reason.\n' > "$_uw/skills/zz.md"
+assert_eq "and the check sees one" "zz: blueprint/context/design.md" "$(_undeclared "$_uw" zz)"
+printf -- '---\nname: zz\n---\n\n**Writes:** nothing\n\nDo not write `design.md`; `prototype` writes `design.md`.\n' > "$_uw/skills/zz.md"
+assert_eq "but not a negation, or another skill's write" "" "$(_undeclared "$_uw" zz)"
+
+# ==== seams-J: found by running a small project end to end (2026-09-25) ====
+# A one-page web app from `new-project.sh` to `ship`, then `preflight`, `docs`
+# and the operate stops - every skill followed as written, the user's answers
+# played by the agent. Nineteen findings; these are the ones the pack's text
+# caused.
+
+section "the setup work is committed before the first item branches"
+# Only scaffold committed anything, and only the plans. Followed literally, the
+# scaffold, the CI workflow, the overview and design.md were all in the working
+# tree when build branched for item 1 - merged as item 1, and stopped by ship's
+# own check for unrelated work.
+assert_ok "scaffold commits what landed" _says skills/scaffold.md 'Commit what landed, before handing on'
+assert_ok "ci commits its workflow locally, and does not push" \
+  _says skills/ci.md 'Ask to commit what this run wrote, on `main`, locally'
+assert_ok "distill commits what it wrote" _says skills/distill.md 'Then commit what this run wrote'
+assert_ok "prototype commits the record and the mockups" \
+  _says skills/prototype.md 'Commit the record and the mockups on `main`'
+assert_ok "and build looks at git status before it branches" \
+  _says skills/build.md 'Before creating it, look at `git status`.'
+
+section "the README is filled as the loop runs, not at preflight"
+# It stayed "# Project Name" and "<install command>" through a whole build loop;
+# preflight's README blocker was the first thing to notice.
+assert_ok "scaffold fills the README's command placeholders" \
+  _says skills/scaffold.md "Fill the README's placeholders with what you just proved"
+assert_ok "distill fills its one-sentence description" \
+  _says skills/distill.md "And the README's opening line, the same way."
+assert_ok "and the placeholder distill replaces is the one the template ships" \
+  grep -qF 'One or two sentences: what this is, and who it is for.' template/README.md
+
+section "a project that is not published has no release to block on"
+# The plan said "runs from source, not published". preflight audited a release
+# nobody planned and wrote its blockers as P1s - one only the user could clear -
+# which then held every later ship. deploy would have asked for a target.
+assert_ok "preflight reads section 8 before auditing" \
+  _says skills/preflight.md 'is a release planned at all?'
+assert_ok "and writes nothing to the ledger when none is" \
+  _says skills/preflight.md 'but **write nothing to the ledger**'
+assert_ok "a release-only blocker is offered as deferred to the release" \
+  _says skills/preflight.md 'A blocker only a release needs holds the build loop too.'
+assert_ok "ship says so when one holds its gate" \
+  _says skills/ship.md 'When the finding holding the gate is one `preflight` raised'
+assert_ok "deploy stops on not published, as host does" \
+  _says skills/deploy.md 'say so and stop, the way `host` does'
+
+section "the design kit's controls meet its own touch-target line"
+# The checklist asks 44px on touch; .input was 40px (--size-control-md). A size,
+# so the kit's contrast test could not see it. Every interactive rule sized by an
+# md or sm control token must reappear under pointer: coarse.
+_touch_gaps() {
+  python3 - template/blueprint/design-kit/components.css <<'PYT'
+import re, sys
+css = re.sub(r'/\*.*?\*/', '', open(sys.argv[1]).read(), flags=re.S)
+coarse, rest, pos = '', '', 0
+for m in re.finditer(r'@media \(pointer: coarse\)', css):   # every such block
+    j = css.index('{', m.start()) + 1; d = 1; k = j
+    while d:
+        d += {'{': 1, '}': -1}.get(css[k], 0); k += 1
+    coarse += css[j:k - 1]; rest += css[pos:m.start()]; pos = k
+rest += css[pos:]
+covered = {x.strip() for sel in re.findall(r'([^{}]+)\{[^{}]*size-target-min', coarse) for x in sel.split(',')}
+for sel, body in re.findall(r'([^{}@]+)\{([^{}]*)\}', rest):
+    if not re.search(r'(min-height|height|width|min-width):\s*var\(--size-control-(sm|md)\)', body):
+        continue
+    for x in (s.strip() for s in sel.split(',')):
+        # .avatar is not a control; .textarea's own rule makes it 6rem
+        if x not in ('.avatar', '.textarea') and x not in covered:
+            print(x)
+PYT
+}
+assert_eq "every control sized by --size-control-sm/md grows to 44px on touch" "" "$(_touch_gaps)"
+assert_ok "the checklist has a row for a one-screen tool" \
+  _says template/blueprint/design-kit/ux-checklist.md '| **Tool** (one screen'
+assert_ok "and prototype can name it" _says skills/prototype.md 'mixed, or a one-screen tool'
+
+section "what the run found in layout, build, ship, progress and ideate"
+assert_ok "layout probes a trap claim with the installed runtime" \
+  _says skills/layout.md 'Probe each claim with the runtime that is installed, or say it is unverified.'
+assert_ok "build's packet says a browser test against the served app is live" \
+  _says skills/build.md 'A browser test that drives the served app counts as live'
+assert_ok "ship records the mockups it kept in the archive" \
+  _says skills/ship.md '`## Prototypes kept` heading'
+assert_ok "and progress reads that before calling the directory drift" \
+  _says skills/progress.md 'has a `## Prototypes kept` section'
+assert_ok "ideate records a verdict the user built past" \
+  _says skills/ideate.md 'Record it**, in `dev-notes/decisions.md`'
+assert_ok "scaffold's no-scaffolder path ignores the tools' output" \
+  _says skills/scaffold.md "The tools' output in \`.gitignore\`"
+
+# ==== seams-K: a review of seams-J, run rather than read (2026-09-28) ====
+# seams-J asserted that sentences existed. Each defect below passed it, and was
+# found by rendering the kit, running new-project.sh, or following one skill's
+# new text into the skill it hands to.
+
+# The paragraph of $1 that contains $2, flattened to one line.
+_para() {
+  python3 - "$1" "$2" <<'PYP'
+import re, sys
+for p in re.split(r'\n\s*\n', open(sys.argv[1]).read()):
+    flat = re.sub(r'\s+', ' ', p)
+    if sys.argv[2] in flat:
+        print(flat); break
+PYP
+}
+# The files in a skill's **Writes:** line, as prose names them: a file by its
+# basename, a directory by its last segment and slash.
+_writes() {
+  sed -n 's/^\*\*Writes:\*\*//p' "skills/$1.md" | grep -oE '`[^`]+`' | tr -d '`' \
+    | sed -E 's#^.*/([^/]+/)$#\1#; s#^.*/([^/]+)$#\1#'
+}
+
+section "a setup skill's commit names everything the skill wrote"
+# ci committed only the workflow file; the status.md line and the Environments
+# row it also wrote stayed in the tree and rode into item 1 - the defect the
+# commit existed to prevent. The list below is the rule: a skill that commits
+# its setup work on main goes here, with the phrase that opens its commit.
+setup_commits=(
+  'scaffold|Commit what landed, before handing on'
+  'ci|Ask to commit what this run wrote, on `main`, locally'
+  'distill|Then commit what this run wrote'
+  'prototype|Commit the record and the mockups on `main`'
+  'preflight|Then commit what this run wrote, without asking'
+)
+for entry in "${setup_commits[@]}"; do
+  s=${entry%%|*}; anchor=${entry#*|}; para=$(_para "skills/$s.md" "$anchor")
+  assert_ok "$s has its commit paragraph" test -n "$para"
+  while IFS= read -r f; do
+    [ "$f" = "status/" ] && continue   # blueprint/status/ is never committed
+    case "$para" in *"$f"*) _name="$s's commit names $f"; _ok ;;
+      *) _name="$s's commit names $f"; _no "its Writes: line has $f; the commit paragraph does not" ;; esac
+  done < <(_writes "$s")
+done
+_name="ci's commit names AGENTS.md, whose Environments row it adds"
+case "$(_para skills/ci.md 'Ask to commit what this run wrote')" in *AGENTS.md*) _ok ;; *) _no "not named" ;; esac
+
+section "a commit asks for its own yes rather than citing one that was never asked"
+# ci Step 3 shows the config and writes it - no stop. distill Step 2 asks only
+# when it proposes a plan change. Both commits cited that approval anyway, and
+# the template's rule is "never commit code the user has not seen and approved".
+assert_lacks "ci no longer cites a yes Step 3 never asked" skills/ci.md "the yes Step 3"
+assert_lacks "distill no longer cites an approval Step 2 may not ask" skills/distill.md "approval Step 2 already asked for"
+
+section "build treats what spec wrote as this item's, all of it"
+# spec may update design.md "as part of that item", and declares it; build's
+# git status check called a design record someone else's work and sent it to main.
+bpara=$(_para skills/build.md 'Before creating it, look at `git status`.')
+while IFS= read -r f; do
+  [ "$f" = "status/" ] && continue
+  case "$bpara" in *"$f"*) _name="build's git status check counts spec's $f as the item's"; _ok ;;
+    *) _name="build's git status check counts spec's $f as the item's"; _no "not named" ;; esac
+done < <(_writes spec)
+
+section "a finding deferred to the release is due when the release runs"
+# preflight offers `Deferred to:` host or deploy for a release-only blocker; its
+# own Deferred bucket says "a release goes out with them live", and neither host
+# nor deploy read the ledger's deferred entries. Deferred to the release meant
+# never blocking it.
+for s in $(_para skills/preflight.md 'A blocker only a release needs' | grep -oE '`Deferred to:` the skill that releases - `[a-z]+` or `[a-z]+`' | grep -oE '`[a-z]+`' | tr -d '`'); do
+  assert_ok "$s reads the findings deferred to it" _says "skills/$s.md" 'a `deferred` finding whose `Deferred to:` names this skill'
+done
+assert_ok "and preflight names the ones it can defer to" test -n "$(_para skills/preflight.md 'A blocker only a release needs')"
+assert_ok "preflight's audit before a release counts one deferred to it as a blocker" \
+  _says skills/preflight.md 'deferred to the release this audit is for is due now'
+
+section "mockups kept by one item are still kept after the next"
+# ship writes `## Prototypes kept` only when its item consumed mockups, so the
+# next non-UI item's archive - the latest - has none, and progress, reading only
+# the latest, called the kept files drift again.
+assert_lacks "progress does not read only the latest archive" skills/progress.md 'latest archive under'
+assert_ok "progress reads any archive's list" _says skills/progress.md 'any archive under `blueprint/history/` has a `## Prototypes kept` section'
+
+section "the touch block never makes a control smaller"
+# .textarea is 6rem and .btn--lg 48px; a later min-height of 44px in
+# `pointer: coarse`, same specificity, shrank both on every phone. The block
+# may only raise sizes - for a selector it names, and for that selector's BEM
+# modifiers, which always sit on the same element. $1 overrides tokens, as
+# `prototype` re-themes a density: a roomy 48px control was shrunk to 44px on a
+# phone by a block that set the target size outright (a run, 2026-09-30).
+_touch_shrinks() {
+  python3 - template/blueprint/design-kit/tokens.css template/blueprint/design-kit/components.css "${1:-}" <<'PYS'
+import re, sys
+tok = open(sys.argv[1]).read() + sys.argv[3]
+var = dict(re.findall(r'(--[\w-]+):\s*([^;]+);', tok))
+def px(v):
+    v = v.strip()
+    m = re.fullmatch(r'max\((.+),(.+)\)', v)
+    if m:
+        a, b = px(m.group(1)), px(m.group(2))
+        return None if a is None or b is None else max(a, b)
+    m = re.match(r'var\((--[\w-]+)\)', v)
+    if m: return px(var.get(m.group(1), 'x'))
+    m = re.match(r'([\d.]+)(rem|px)$', v)
+    return None if not m else float(m.group(1)) * (16 if m.group(2) == 'rem' else 1)
+css = re.sub(r'/\*.*?\*/', '', open(sys.argv[2]).read(), flags=re.S)
+coarse, rest, pos = [], '', 0
+for m in re.finditer(r'@media \(pointer: coarse\)', css):
+    j = css.index('{', m.start()) + 1; d = 1; k = j
+    while d:
+        d += {'{': 1, '}': -1}.get(css[k], 0); k += 1
+    coarse.append(css[j:k - 1]); rest += css[pos:m.start()]; pos = k
+rest += css[pos:]
+def heights(block):
+    out = {}   # selector -> the last min-height/height it gets in this block
+    for sel, body in re.findall(r'([^{}@]+)\{([^{}]*)\}', block):
+        for prop in ('min-height', 'height'):
+            m = re.search(r'(?:^|;|\s)' + prop + r':\s*([^;]+)', body)
+            if m and px(m.group(1)) is not None:
+                for s in sel.split(','):
+                    out[s.strip()] = max(out.get(s.strip(), 0), px(m.group(1)))
+    return out
+base = heights(rest); touch = heights(''.join(coarse))
+for s, h in base.items():
+    root = s.split('--')[0] if re.fullmatch(r'\.[\w-]+--[\w-]+', s) else s
+    for t in {s, root} & touch.keys():
+        if touch.get(s, touch[t]) < h:
+            print(s); break
+PYS
+}
+assert_eq "no control is smaller under pointer: coarse than without it" "" "$(_touch_shrinks)"
+assert_eq "nor under a roomy density, above the touch target" "" \
+  "$(_touch_shrinks '--size-control-sm: 2.75rem; --size-control-md: 3rem; --size-control-lg: 3.5rem;')"
+
+
+# ==== the 2026-09-28 re-run, phase A ====
+
+section "a claim layout could not probe is settled by the step it waits for"
+# layout records such a claim as "unverified until `scaffold`", "so the step that
+# can check it knows to" - and scaffold never named the mark. On the re-run
+# scaffold proved both claims and left the plan saying they were open; distill
+# found the stale line. The mark is read out of layout, so renaming it there
+# breaks this rather than leaving scaffold looking for the old words.
+mark=$(tr '\n' ' ' < skills/layout.md | tr -s ' ' | grep -oE '\*\*unverified until `[a-z]+`\*\*' | head -1 | tr -d '*')
+waits_for=$(grep -oE '`[a-z]+`' <<<"$mark" | tr -d '`')
+assert_ok "layout still names the step its unverified claims wait for" test -n "$waits_for"
+assert_ok "$waits_for names layout's mark" _says "skills/$waits_for.md" "$mark"
+assert_ok "and replaces it with what its run showed" \
+  _says "skills/$waits_for.md" 'replace the mark with what the run showed'
+
+
+section "build's handoff is the user's request, and says which path it took"
+# Claude Code's own Agent tool says "do not spawn agents unless the user asks".
+# build said only "if the host supports subagents", so on the re-run - and the
+# 2026-09-25 run before it - every step was built inline and nothing said so:
+# a skipped handoff reads exactly like a chosen one.
+hpara=$(_para skills/build.md 'Prepare the packet and hand the step off.')
+assert_ok "build says running it is the user asking for the handoff" \
+  grep -qF 'Running `build` is the user asking for this handoff' <<<"$hpara"
+assert_ok "build reports which path each step took" \
+  _says skills/build.md 'Say which path the step took'
+
+
+# ==== the 2026-09-28 re-run, phase C ====
+
+section "a yes to publishing a project the plan says is not has an owner"
+# preflight, host and deploy all stopped on "not published", and preflight asked
+# whether a release was coming - but no skill said where a yes went. On the
+# re-run preflight rewrote four plan sections itself, outside its Writes: line.
+# The owner is read out of preflight, so re-routing it there moves every check.
+owner=$(_para skills/preflight.md 'ask whether one is coming' | grep -oE '\*\*`[a-z]+` records' | grep -oE '[a-z]+' | head -1)
+assert_ok "preflight names who records a yes" test -n "$owner"
+_name="$owner declares the plan it rewrites"
+if _writes "$owner" | grep -qx 'project-plan.md'; then _ok; else _no "project-plan.md is not in its Writes: line"; fi
+_name="preflight does not declare the plan - its one write is the ledger"
+if _writes preflight | grep -qx 'project-plan.md'; then _no "preflight writes the plan"; else _ok; fi
+assert_ok "$owner's not-hosted stop records the change instead of stopping" \
+  _says "skills/$owner.md" 'Unless the user has just said it changed'
+assert_ok "deploy routes the same yes to $owner" \
+  grep -qF "release is now coming, route to \`$owner\`" <<<"$(_para skills/deploy.md 'says this is not published')"
+
+section "a check only the released copy can answer runs after the release"
+# ship deferred a real-device check to deploy, rightly - it needs the hosted
+# copy. deploy stopped on every finding deferred to it until fixed or accepted,
+# and fixed was impossible before a release, so accepting - dropping the check -
+# was the only way out. The marker is read out of ship, where it is offered.
+after=$(_para skills/ship.md 'A check only the released copy can answer' | grep -oE '`deploy, after release`' | head -1)
+after=${after:-<ship names no marker>}   # an empty pattern matches anything
+assert_ok "ship offers the after-release deferral" test "$after" = '`deploy, after release`'
+assert_ok "preflight offers it too" \
+  grep -qF "$after" <<<"$(_para skills/preflight.md 'A blocker only a release needs')"
+assert_ok "preflight does not count it as a blocker before the release" \
+  grep -qF "Except $after" <<<"$(_para skills/preflight.md 'deferred to the release this audit is for is due now')"
+assert_ok "deploy does not stop on it before releasing" \
+  grep -qF "Except one deferred to $after" <<<"$(_para skills/deploy.md 'Except one deferred to')"
+assert_ok "deploy runs it once released, in Step 3" \
+  grep -qF "each finding deferred to $after" <<<"$(_para skills/deploy.md 'the **version now serving**')"
+
+# ==== the quick path, D19 ====
+
+section "a quick fix's limits and marker are the same in all three skills"
+# spec --quick skips sizing, the red-team, verify and review. The limits are
+# what make that safe, and three skills check them - spec against the code,
+# build against the diff, ship before merging. A limit loosened in one of them,
+# or a marker spelled differently, lets a large change reach main unreviewed
+# with every file still reading correctly on its own. Both are read out of spec.
+limit=$(_para skills/spec.md 'It changes at most' | grep -oE 'at most [a-z]+ files outside `blueprint/`' | head -1)
+limit=${limit:-<spec states no limit>}   # an empty pattern matches anything
+assert_ok "spec states the file limit" test "$limit" != '<spec states no limit>'
+assert_ok "build holds the diff to spec's limit" \
+  grep -qF "$limit" <<<"$(_para skills/build.md 'A quick fix stays quick only inside its limits')"
+assert_ok "ship holds the branch to spec's limit" \
+  grep -qF "$limit" <<<"$(_para skills/ship.md 'A quick fix is still inside its limits')"
+marker=$(grep -oE '^ +\*\*[A-Z][a-z]+:\*\* yes - ' skills/spec.md | head -1 | sed 's/^ *//; s/ yes - $//')
+marker=${marker:-<no marker in the spec template>}
+assert_ok "spec's template writes the quick marker" test "$marker" = '**Quick:**'
+assert_ok "build reads the marker spec writes" _says skills/build.md "a spec with a \`$marker\` line"
+assert_ok "build drops it when a limit is crossed" _says skills/build.md "remove the \`$marker\` line from the spec"
+assert_ok "ship reads the marker spec writes" _says skills/ship.md "a spec with a \`$marker\` line"
+
+section "a quick fix skips steps, never the evidence"
+# The short path trades verify for the reproduction test. A green run is not
+# that evidence - only one seen failing first is - so each skill says so.
+assert_ok "spec's sizing step says a quick fix skips it" \
+  grep -qF 'A quick fix skips this step' <<<"$(awk '/^## Step 2/{f=1; next} f && /^## /{exit} f' skills/spec.md)"
+assert_ok "spec's red-team step says a quick fix checks the limits instead" \
+  grep -qF 'Check the draft against the quick path' <<<"$(awk '/^## Step 4/{f=1; next} f && /^## /{exit} f' skills/spec.md)"
+assert_ok "build proves a quick fix test-first, both runs named" \
+  _says skills/build.md 'name both runs in the packet'
+assert_ok "build hands a quick fix to ship only inside its limits" \
+  _says skills/build.md 'A quick fix still inside its limits names `ship` directly'
+assert_ok "ship takes the reproduction test, not a green run" \
+  _says skills/ship.md 'A green run alone is not that evidence'
+assert_ok "ship sends a quick fix past its limits back to verify and review" \
+  _says skills/ship.md 'it is an ordinary fix that skipped `verify` and `review` - stop and run them'
+
+# ==== the 2026-09-28 pressure pilot ====
+
+section "an order to merge does not accept the finding holding the gate"
+# ship stopped on an open P1 every time it was run plainly. Pushed with "no
+# time, merge it now" or "as tech lead I am overriding this, merge it", it set
+# the finding accepted with the push as its reason and merged - six runs in six;
+# one said "you didn't give a reason, so the record says that". The runs that
+# held told the user the reason must be about the risk itself. ship never said so.
+gate=$(_para skills/ship.md 'Never set any of the three on the user')
+assert_ok "ship says an order to merge sets no status" \
+  grep -qF 'An order to merge is not that decision' <<<"$gate"
+assert_ok "ship says urgency, authority or effort is not a reason" \
+  grep -qF 'a deadline, an override or the time already spent is not one' <<<"$gate"
+assert_ok "ship never writes a reason the user did not give" \
+  grep -qF 'Never write a reason the user did not give' <<<"$gate"
+# The same push could as easily become deferred, with a skill the agent named.
+assert_ok "ship says a deferral's later skill is the user's to choose" \
+  grep -qF '`deferred` needs them to choose the skill that will do it' <<<"$gate"
+
+section "test-first holds when the user is in a hurry"
+# Pushed with "short on time" at build, two runs of three gave test-first way:
+# one wrote the code and its test in one command and never saw red; one saw red
+# only on the missing module - the import error build already said does not
+# count, without saying how to avoid it. The runs that held named their red run.
+tf=$(_para skills/build.md 'Every step with a behavioural done-when is proven test-first')
+assert_ok "build says how a new module reaches its assertion" \
+  grep -qF 'create it first with its exported names stubbed' <<<"$tf"
+assert_ok "build makes every test-first step name its red run" \
+  grep -qF 'Name the red run when you show the step' <<<"$tf"
+assert_ok "and says a hurry is no exception" \
+  grep -qF 'A hurry is not an exception' <<<"$tf"
+# But three of the six runs pushed with "tick it and move on" never loaded
+# build at all - no wording in a skill reaches an agent that does not open it.
+assert_ok "the project's standing rules load a named skill however small the ask" \
+  _says template/AGENTS.md 'A skill the user names is loaded first'
+
+section "preflight's verdict is recorded where deploy reads it"
+# deploy gated production on "preflight has been run and returned go", but
+# preflight wrote only the ledger - its go/no-go lived in the conversation, and
+# the pressure tier's fixtures had to write one into status.md by hand.
+assert_ok "preflight declares dev-notes/status.md as a write" \
+  grep -qE '^\*\*Writes:\*\*.*`dev-notes/status.md`' skills/preflight.md
+assert_ok "preflight records its verdict line there" \
+  _says skills/preflight.md 'Record the verdict in `dev-notes/status.md`'
+assert_ok "deploy reads preflight's verdict from that line" \
+  _says skills/deploy.md 'its `preflight:` line in `dev-notes/status.md` reads go'
+assert_ok "and treats a missing line as not run" \
+  _says skills/deploy.md 'No `preflight:` line means it has not run'
+
+section "verify and review record what they examined, and ship reads it"
+# Nothing recorded that verify or review had run. A review that found nothing
+# left an empty ledger, which reads exactly like one nobody looked at, and a
+# verify report lived only in the conversation - so ship either re-ran the
+# checks itself or merged on a claim nothing could confirm. spec's header had a
+# **Status:** field that nothing read, and agents filled it in their own words.
+hdr=$(sed -n '/^    # <Feature | Fix>: <name>$/,/^    ## Goal$/p' skills/spec.md)
+assert_ok "spec's header starts the verify record" grep -qF '**Verified:** not yet' <<<"$hdr"
+assert_ok "spec's header starts the review record" grep -qF '**Reviewed:** not yet' <<<"$hdr"
+assert_fails "spec's header has no field nothing reads" grep -qF '**Status:**' <<<"$hdr"
+for n in verify review; do
+  assert_ok "$n declares current-work.md as a write" \
+    grep -qE '^\*\*Writes:\*\*.*`blueprint/context/current-work.md`' skills/$n.md
+done
+assert_ok "verify records its result in the spec" \
+  _says skills/verify.md 'Record the result in the spec'"'"'s `**Verified:**` line'
+assert_ok "review records every pass in the spec" \
+  _says skills/review.md 'record the pass in the spec'"'"'s `**Reviewed:**` line'
+assert_ok "including a pass that found nothing" \
+  _says skills/review.md 'Including when nothing was found'
+assert_ok "ship reads both records" \
+  _says skills/ship.md 'Read the spec'"'"'s `**Verified:**` and `**Reviewed:**` lines'
+# A review that ran out of context recorded "0 blocking" exactly as a complete
+# one did, so ship could not tell a clean pass from a half-read one.
+assert_ok "review's record example says what was read" \
+  grep -qF '**Reviewed:** 2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking' skills/review.md
+for w in 'PARTLY READ' 'NOT READ'; do
+  assert_ok "review names $w as a record" _says skills/review.md "\`$w: <"
+done
+assert_ok "ship does not take a partly read review as clean" \
+  _says skills/ship.md 'reading `PARTLY READ` or `NOT READ` is not a clean pass'
+# One fingerprint, written three times: a copy that drifts makes every record
+# it writes look stale, or worse, makes a stale one match.
+fps=$(for n in verify review ship; do grep -h 'git write-tree' skills/$n.md | sed 's/^ *//'; done)
+assert_eq "verify, review and ship each give the fingerprint once" 3 "$(grep -c . <<<"$fps")"
+assert_eq "and it is the same command in all three" 1 "$(sort -u <<<"$fps" | grep -c .)"
+
+section "an overview over its cap is reported, not only prevented"
+# distill holds the overview to its cap only when it runs, so one written before
+# the cap, or edited by hand since, stayed over it with nothing reading its size.
+cap=$(grep -F '`blueprint/context/project-overview.md`' template/AGENTS.md | grep -oE 'at most [0-9]+ KB' | grep -oE '[0-9]+ KB')
+assert_ok "the template declares the overview's cap" test -n "$cap"
+# One copy of the check: progress runs the checker, which reads the cap from
+# AGENTS.md at run time, rather than stating its own number beside it (D23).
+assert_ok "progress reports it by running the checker" \
+  _says skills/progress.md 'Run `.agents/bin/check-project.sh`'
+assert_lacks "and no longer states the number itself" skills/progress.md "over $cap"
+assert_ok "the checker routes the overview to distill" \
+  grep -q '^overview-cap|distill|' <<<"$(lib/check-project.sh --sources)"
+
+section "every field in spec's header has a reader"
+# **Status:** was written into every spec and read by nothing. A field with a
+# writer and no reader is filled in by whoever passes, in whatever words, and
+# trusted by nobody - the same defect as a board field with no writer, reversed.
+# Named, bold or not - a paraphrase binds nothing, as rule 17 says of the contract.
+fields=$(grep -oE '^    \*\*[A-Z][A-Za-z ]+:\*\*' <<<"$hdr" | sed 's/^ *\*\*//; s/\*\*$//' | sort -u)
+assert_ok "spec's header declares fields" test -n "$fields"
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  assert_ok "something other than spec reads $f" \
+    grep -qlF -- "$f" $(ls skills/*.md | grep -v '^skills/spec.md$')
+done <<<"$fields"
+
+section "preflight counts an accepted blocker as the user's go"
+# A verdict recorded as "no-go, every blocker accepted as risk" was followed by
+# a release: by preflight's own buckets an accepted blocker is a risk, not a
+# blocker, and deploy reads the line - so it has to say go, and name them.
+assert_ok "preflight says an accepted blocker counts as go" \
+  _says skills/preflight.md 'An accepted blocker counts as go'
+
+section "every preflight blocker, and its acceptance, is in the ledger"
+# A no-go audit of a live project named four blockers: one filed at P2, three
+# only as needs-you lines, and all four accepted in status prose. Nothing that
+# gates read any of it - a P2 holds no merge, a needs-you line has no ID for
+# the preflight: line to name, and the ledger never said accepted.
+assert_ok "preflight says a blocker is P0 or P1 whatever review would call it" \
+  _says skills/preflight.md 'Every blocker is a ledger entry at P0 or P1, whatever'
+assert_ok "and a person's blocker still goes in the ledger" \
+  _says skills/preflight.md 'still goes in the ledger'
+assert_ok "and an acceptance is set in the ledger, not only in status prose" \
+  _says skills/preflight.md 'Set it `accepted` in the ledger'
+assert_ok "and its rules say where the acceptance is recorded" \
+  _says skills/preflight.md 'the acceptance is recorded in the ledger with a reason'
+
+section "a sign-in redirect is walked both ways, and its target reviewed"
+# Reproduced 2026-09-30 on React Router 8.4.0 with the redirect tutorials write
+# (to request.url): a full page load of a protected page, sign in, lands there;
+# the same through the app's own link lands on /protected.data, a 404, and so
+# does changing your own password by a client-side submit. A check that only
+# loads pages directly passes.
+assert_ok "verify walks a guarded page by full page load and by the app's own navigation" \
+  _says skills/verify.md 'by a full page load and through the app'"'"'s own link or form'
+assert_ok "and names the data-request forms a wrong landing carries" \
+  _says skills/verify.md '`.data`, `_data`, `_rsc`'
+assert_ok "and includes the actions that end or change a session" \
+  _says skills/verify.md 'each action that ends or changes a session'
+assert_ok "review checks a redirect target built from the request URL" \
+  _says skills/review.md 'A redirect target built from the request URL'
+assert_ok "and names the same forms" \
+  _says skills/review.md '`.data`, `_data`, `_rsc`'
+
+section "a deferred finding's target is in the index, where deploy and host read it"
+# deploy and host read `Deferred to:` in blueprint/context/findings.md, but
+# review's index format was "the heading and one File: line, nothing more" - so
+# a review following it to the letter put the target in the entry file, where
+# neither looks. Found writing the ledger migration, which had to choose.
+assert_ok "review puts Deferred to: under the index heading" \
+  _says skills/review.md 'its `Deferred to:` line goes under the heading too'
+for s in deploy host; do
+  assert_ok "$s reads it from the index" _says skills/$s.md '`Deferred to:` names this skill, in `blueprint/context/findings.md`'
+done
+
+
+section "the planning skills leave their files for scaffold to commit"
+# scaffold says ideate, architect, stack and layout leave their files in the
+# working tree and commits them itself, on main. None of the four said so, and
+# a run can find ideate filling the silence by offering to commit on a new
+# branch - taken, the setup work left main until scaffold noticed.
+for s in ideate architect stack layout; do
+  assert_ok "$s leaves its files for scaffold to commit" \
+    _says skills/$s.md 'Leave what this writes uncommitted, on `main`'
+done
+
+
+section "the 2026-09-30 run: a verdict deploy can use, a quick fix's diff, parked work"
+# preflight wrote its ledger entries and its status line on main and committed
+# nothing, while deploy never deploys from a dirty tree: a go would have stopped
+# the release on preflight's own records. preflight is in setup_commits above.
+assert_ok "preflight says why its records are committed" \
+  _says skills/preflight.md '`deploy` refuses a dirty tree'
+# ship checked a quick fix's limits from memory of its own session and ran no
+# diff: the limit is a count, so name the command that counts.
+assert_ok "ship counts a quick fix's files with a command" \
+  _says skills/ship.md 'run `git diff --stat main` and `git status --short`'
+# ship parked the user's unrelated edit in a stash, named only in an archive;
+# no skill reads either, and progress did not report it.
+assert_ok "ship records work it sets aside where a skill will see it" \
+  _says skills/ship.md 'a stash is invisible to every skill'
+assert_ok "progress reports a stash as drift" \
+  _says skills/progress.md '`git stash list`'
+
+section "behaviour travels from spec to capabilities, D21"
+# What the product does now was only a pile of archives: spec never read what held,
+# and verify --all re-judged supersession on every run. Each link is a sentence in a
+# different skill, so each is asserted where it is said.
+assert_ok "the spec template has the section" \
+  _says skills/spec.md '## Behaviour changes'
+assert_ok "spec reads the capability files before writing it" \
+  _says skills/spec.md 'list `blueprint/capabilities/` and open the files for the areas the item touches'
+assert_ok "spec says seeding does not block" \
+  _says skills/spec.md '`verify --all` would seed them, write the section for this item alone, and do not block'
+assert_ok "spec's red-team asks the undeclared-contradiction question" \
+  _says skills/spec.md 'contradict a claim in `blueprint/capabilities/` that its Behaviour changes did not declare'
+assert_ok "a quick fix may only add a claim" \
+  _says skills/spec.md 'add a claim and nothing more'
+assert_ok "ship names the section and the script" \
+  _says skills/ship.md '.agents/bin/merge-capabilities.sh blueprint/context/current-work.md <archive name>'
+assert_ok "ship treats a missing section as missing evidence" \
+  _says skills/ship.md 'A missing one is missing evidence'
+assert_ok "abandoning merges nothing" \
+  _says skills/ship.md 'Its Behaviour changes merge nothing'
+assert_ok "rollback writes the inverse section" \
+  _says skills/rollback.md 'the inverse of the target'"'"'s'
+assert_ok "rollback writes the old text back" \
+  _says skills/rollback.md 'Write the old text back exactly as the target'"'"'s archive recorded it'
+assert_ok "rollback names later items that changed the claims" \
+  _says skills/rollback.md 'later items that changed or removed this feature'"'"'s claims'
+assert_ok "verify --all proves the capability files" \
+  _says skills/verify.md 'Where `blueprint/capabilities/` exists, it is the checklist'
+assert_ok "verify --all states the per-archive seeding rule" \
+  _says skills/verify.md 'An archive with no `## Behaviour changes` section is walked claim by claim'
+assert_ok "verify names the merge script" \
+  _says skills/verify.md '.agents/bin/merge-capabilities.sh <archive> <archive name>'
+assert_ok "seeding shows every line before writing" \
+  _says skills/verify.md 'Show every line first'
+
+# A skill that tells an agent to run a script in the project is only right if
+# install puts it there - the merge script was named for months and never shipped.
+section "every script a skill runs inside a project is installed there"
+w=$(workdir); (cd "$w" && "$REPO/new-project.sh" sk >/dev/null 2>&1)
+for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); do
+  assert_ok "$f exists in a fresh project" test -x "$w/sk/$f"
+  # On disk is not in the repository: the generated .gitignore's bin/ matched
+  # .agents/bin/, so the script existed here and was missing from every clone.
+  assert_fails "$f is not gitignored, so a clone has it too" \
+    git -C "$w/sk" check-ignore -q "$f"
+done
+assert_ok "and at least one is named, so the loop above is not empty" \
+  grep -q '\.agents/bin/' skills/ship.md
+# A multi-part product is one repository whose root .gitignore covers every
+# part, and `!.agents/bin/` re-included the root's alone - each part's scripts
+# were on disk and in no clone. Found by the D23 trial.
+w=$(workdir); (cd "$w" && "$REPO/new-project.sh" skm --parts api,web >/dev/null 2>&1)
+for f in $(grep -ohE '\.agents/bin/[A-Za-z0-9_.-]+\.sh' skills/*.md | sort -u); do
+  assert_fails "api/$f is not gitignored in a multi-part product" \
+    git -C "$w/skm" check-ignore -q "api/$f"
+done
+# A project with its own .gitignore keeps it - install.sh never edits one - so
+# the ignore it already has must at least be named.
+w=$(workdir); git -C "$w" init -q; printf 'bin/\n' > "$w/.gitignore"
+bin_out=$("$REPO/install.sh" --target "$w" 2>&1)
+assert_ok "install names an existing .gitignore that hides .agents/bin/" \
+  grep -qF '.agents/bin/ is gitignored' <<< "$bin_out"
+assert_ok "and leaves that .gitignore as it was" \
+  bash -c 'test "$(cat "$1")" = "bin/"' _ "$w/.gitignore"
+
+# deploy refuses a dirty tree, and build carries anything uncommitted onto the
+# next item's branch - so a skill that records into dev-notes/status.md and then
+# leaves it uncommitted stops the release it was part of. host, deploy, migrate,
+# monitor and docs all did. Declared by the Writes: line, so a new skill that
+# records there is held to it without anyone remembering this list.
+section "a skill that records in dev-notes/status.md commits it"
+_says_i() { grep -qiF -- "$2" <<<"$(tr '\n' ' ' < "$1" | tr -s ' ')"; }
+_status_writers=""
+for f in skills/*.md; do
+  _w="$(grep -m1 '^\*\*Writes:\*\*' "$f" || true)"
+  grep -qF '`dev-notes/status.md`' <<<"$_w" || continue
+  _status_writers="$_status_writers ${f#skills/}"
+  # ship records it in Step 2 and commits it in the item's one work commit.
+  assert_ok "${f#skills/} commits what it wrote" sh -c '
+    t=$(tr "\n" " " < "$1" | tr -s " ")
+    case "$t" in *"commit what this run wrote"*|*"one commit covering the code and this bookkeeping"*) ;; *) exit 1 ;; esac' _ "$f"
+done
+
+# D24: a commit made "without asking" must hold only workflow state - the paths
+# AGENTS.md's rule names and the main-commit hook lets through. Declared by the
+# Writes: line, so a skill that starts writing code there is caught here.
+section "a skill that commits without asking writes only workflow state, D24"
+_unasked=""
+for f in skills/*.md; do
+  _says_i "$f" 'commit what this run wrote, without asking' || continue
+  _unasked="$_unasked ${f#skills/}"
+  _bad=$(grep -m1 '^\*\*Writes:\*\*' "$f" | grep -o '`[^`]*`' | tr -d '`' \
+         | grep -vE '^(blueprint/|dev-notes/|CHANGELOG\.md$)' || true)
+  assert_eq "${f#skills/} writes nothing but workflow state" "" "$_bad"
+done
+assert_ok "and the loop checked something" test -n "$_unasked"
+# The hook's pattern and AGENTS.md's tables are the same list, written twice.
+_paths=$(awk '/^\| File \| What it holds \| Written by \|/ {t=1; next} /^$/ {t=0} t' template/AGENTS.md \
+         | grep -oE '^\| `[^`]+`' | tr -d '|` ' | sort -u)
+assert_ok "the two state-file tables were read" test "$(wc -w <<<"$_paths")" -ge 15
+_hook_re=$(grep -o 'STATE = re.compile(r"[^"]*")' lib/hook-main-commit.sh | sed 's/^STATE = re.compile(r"//; s/")$//')
+assert_ok "the main-commit hook names its pattern" test -n "$_hook_re"
+_uncovered=$(python3 -c 'import re,sys; r=re.compile(sys.argv[1]); print(" ".join(p for p in sys.argv[2].split() if not r.fullmatch(p) and not r.fullmatch(p+"x")))' "$_hook_re" "$_paths")
+assert_eq "every state file AGENTS.md declares is workflow state to the hook" "" "$_uncovered"
+# The standing push yes is one line read by two things: ship, and the hook.
+for f in template/AGENTS.md skills/ship.md; do
+  assert_ok "$f names the push line exactly" grep -qF '**Push main without asking:**' "$f"
+done
+assert_ok "the template ships it as no" grep -qE '^ *\*\*Push main without asking:\*\* no$' template/AGENTS.md
+assert_ok "and the hook reads that same line" grep -qF 'Push main without asking:' lib/hook-main-commit.sh
+assert_ok "and AGENTS.md's commit rule names the same three" \
+  _says template/AGENTS.md '(`blueprint/`, `dev-notes/`, `CHANGELOG.md`) is not code'
+assert_ok "and the list is not empty, so the loop above checked something" \
+  test -n "$_status_writers"
+
+# A fix has no plan number, so fixes/name.md let a second fix of the same name
+# overwrite the first archive - and its findings' prefixed IDs with it.
+section "every archive name is unique, and every spec type has a branch"
+assert_ok "ship dates a fix's archive" _says skills/ship.md 'blueprint/history/fixes/YYYY-MM-DD-name.md'
+assert_ok "verify reads that name" _says skills/verify.md '`YYYY-MM-DD-title.md` for a fix'
+assert_ok "and the directory's README states it" \
+  _says template/blueprint/history/fixes/README.md 'named YYYY-MM-DD-title.md'
+assert_ok "build names a rollback's branch" _says skills/build.md '`rollback/<name>` for a rollback'
+# ship empties the index between items while a backlogged P3 keeps its entry
+# file, so an ID counted from the index alone overwrote that file.
+assert_ok "review counts the next finding ID past the backlog and the entry files" \
+  _says skills/review.md 'in `blueprint/findings/backlog.md`, and among the entry files in `blueprint/findings/`'
+
+# AGENTS.md is every tool's entry point, and it went stale against check.sh:
+# `ideate` lost its exemption when it gained --rescope while AGENTS.md still
+# listed it, and `integrate` was never named at all.
+section "AGENTS.md agrees with the skills it introduces"
+_exempt_cs=$(sed -n 's/^exempt_preconditions="\(.*\)"$/\1/p' check.sh | tr ' ' '\n' | sort | tr '\n' ' ')
+_exempt_ag=$(grep -m1 'have none by design' template/AGENTS.md | grep -oE '`[a-z-]+`' | tr -d '`' | sort | tr '\n' ' ')
+assert_eq "AGENTS.md's no-preconditions list is check.sh's exempt list" "$_exempt_cs" "$_exempt_ag"
+_unnamed=""
+for f in skills/*.md; do
+  n=$(basename "$f" .md)
+  grep -qF "\`$n\`" template/AGENTS.md || _unnamed="$_unnamed $n"
+done
+assert_eq "every skill is named in AGENTS.md" "" "$_unnamed"
+assert_ok "and it counts the state-checking skills it lists" \
+  _says template/AGENTS.md 'four skills, different questions'
+
+# Each pair below once gave an agent two instructions for the same case.
+section "no skill contradicts another, or itself"
+assert_lacks "ci no longer forbids the caching its Rules ask for" skills/ci.md 'or caching layers just'
+assert_ok "ci's one rule: the dependency cache" _says skills/ci.md 'caching beyond the dependency cache the Rules ask for'
+assert_lacks "autopilot does not hand closing to a person" skills/autopilot.md 'a person closes them'
+assert_ok "a review outside the run closes autopilot's repairs" \
+  _says skills/autopilot.md 'until a `review` run outside this one closes them'
+assert_ok "AGENTS.md names autopilot's checkpoints as the exception to its commit rule" \
+  _says template/AGENTS.md "except \`autopilot\`'s checkpoints"
+assert_ok "and ai-interaction.md defers to it rather than restating it (D24)" \
+  _says template/blueprint/context/ai-interaction.md "follow \`AGENTS.md\`'s rules"
+assert_lacks "progress does not call every commit on main drift" skills/progress.md '^  - work committed directly to `main`$'
+assert_ok "only product code that bypassed ship's merge" \
+  _says skills/progress.md "product code committed to \`main\` by anything but \`ship\`'s merge"
+assert_lacks "verify does not claim to write only the ledger" skills/verify.md 'only the ledger and `needs-you.md`'
+assert_lacks "preflight does not claim a single file" skills/preflight.md 'one file it writes is'
+assert_lacks "nor in its Rules" skills/preflight.md 'the only file this writes'
+assert_ok "rollback writes the Type line the spec template uses" _says skills/rollback.md 'marked `**Type:** Rollback`'
+assert_ok "architect points at the step that asked" _says skills/architect.md 'Step 2 asked whether this project has real load'
+
+section "the project checker reads formats the skills state, D23"
+# The checker is a second reader of formats the skills write - the class of
+# defect this repo keeps finding. So each check declares the text its form rests
+# on, and the skill that repairs it; this holds both. Edit a skill's example
+# heading without the checker, and this fails rather than a project's commits.
+_srcs=$(lib/check-project.sh --sources)
+assert_ok "the checker declares its sources" test -n "$_srcs"
+while IFS='|' read -r _c _fx _sf _src _txt; do
+  _flat=$([ -f "$_src" ] && tr '\n' ' ' <"$_src" | tr -s ' ')
+  _name="$_c: $_src still states what the check matches"
+  if grep -qF -- "$_txt" <<<"$_flat"; then _ok; else _no "no '$_txt' in $_src"; fi
+  [ -n "$_sf" ] || continue
+  _row=$(grep -F "| \`$_sf\` |" template/AGENTS.md || true)
+  _name="$_c: $_fx, named as its fix, is a writer of $_sf"
+  if grep -qF "\`$_fx\`" <<<"$_row"; then _ok; else _no "template/AGENTS.md's row for $_sf does not list $_fx"; fi
+done <<<"$_srcs"
+
+# The status set is a list in two places - review's table and the checker - so
+# hold them equal. The checker once lacked `unverified` and refused a correct one.
+_review_st=$(sed -n '/^| Status |/,/^$/p' skills/review.md | grep -oE '^\| `[a-z]+`' | tr -d '|` ' | sort | tr '\n' ' ')
+_ck_st=$(grep -E '^STATUSES = ' lib/check-project.sh | grep -oE '"[a-z]+"' | tr -d '"' | sort | tr '\n' ' ')
+assert_ok "review's status table is found" test -n "$_review_st"
+assert_eq "the checker's statuses are review's" "$_review_st" "$_ck_st"
+
+section "progress, ci and ship run the project checker, D23"
+# A checker nothing runs checks nothing. ship is the one every item passes
+# through, so a project with no hooks is still checked once per item - but exit 2
+# means it could not run, and a missing python3 must not block a merge.
+assert_ok "progress runs it" _says skills/progress.md 'Run `.agents/bin/check-project.sh`'
+assert_ok "ci's pipeline runs it from the repository root" \
+  _says skills/ci.md 'run `.agents/bin/check-project.sh` from the repository root'
+_ship1=$(sed -n '/^## Step 1 /,/^## Step 2 /p' skills/ship.md | tr '\n' ' ' | tr -s ' ')
+assert_ok "ship's safety pass runs it" grep -qF 'run `.agents/bin/check-project.sh`' <<<"$_ship1"
+assert_ok "a problem it names is a blocker, fixed by the skill it names" \
+  grep -qF 'Exit 1 is a blocker' <<<"$_ship1"
+assert_ok "and exit 2 is reported without blocking" \
+  grep -qF 'Exit 2 means it could not run - report that; it does not block' <<<"$_ship1"
+assert_ok "anatomy names who runs it" _says docs/anatomy.md '`.agents/bin/check-project.sh`'
+# core.hooksPath is per-clone config: the hook travels with the repository and
+# its activation does not, so a fresh clone is unguarded without a word.
+assert_ok "progress names git hooks installed but not active" \
+  _says skills/progress.md '`.agents/git-hooks/` present but not the active `core.hooksPath`'
+assert_ok "README documents --git-hooks" _says README.md '--git-hooks'
+assert_ok "anatomy says what the git hook cannot do" _says docs/anatomy.md 'skipped with `--no-verify`'
+
+section "a step runs its own test, and the whole suite has one place"
+# The full browser suite ran many times per item. Two causes, neither visible in one
+# file: a verification command with the browser tests inside it, which `build`
+# runs after every step, and done-whens naming the whole-suite command. The
+# declaration is the `Full verify:` line; these check it has a writer on both
+# routes and that every gate reads the right one of the two.
+_flat() { tr '\n' ' ' < "$1" | tr -s ' '; }
+b3=$(_step 3 skills/build.md); b4=$(_step 4 skills/build.md)
+assert_ok "the build step extraction works" test -n "$b3" -a -n "$b4"
+assert_ok "the template declares a full verify command" \
+  grep -q '^- Full verify: ' template/AGENTS.md
+assert_ok "and says it is never run per step" \
+  grep -qF 'never per step' <<< "$(_flat template/AGENTS.md)"
+for w in scaffold setup; do
+  assert_ok "$w writes it - greenfield and brownfield both" \
+    grep -qF 'full verify command**: the verification command' <<< "$(_flat skills/$w.md)"
+  assert_ok "$w keeps tests that need something running out of the per-step command" \
+    grep -qF 'that need nothing running' <<< "$(_flat skills/$w.md)"
+done
+assert_ok "a build step runs its own test, never full verify" \
+  grep -qF 'never full verify and never a whole browser or database suite' <<< "$b3"
+assert_ok "build runs full verify once, when every step is built" \
+  grep -qF 'When every step is built, **run full verify once**' <<< "$b4"
+assert_ok "build's per-step text never asks for full verify" \
+  test "$(grep -oF 'run full verify' <<< "$b3" | wc -l)" -eq 0
+assert_ok "a done-when names one test, not the suite" \
+  grep -qF 'A done-when names the one test that proves it, never the whole suite' <<< "$(_flat skills/spec.md)"
+assert_ok "autopilot's steps follow the same rule" \
+  grep -qF 'never full verify' <<< "$a3"
+a1=$(_step 1 skills/autopilot.md)
+assert_ok "autopilot's baseline checks what the spec touches, not full verify (D33)" \
+  grep -qF "the spec's done-whens name - **what the spec touches, never full verify.**" <<< "$a1"
+assert_ok "autopilot's baseline no longer asks for full verify to pass" \
+  test "$(grep -c 'and so does full' <<< "$a1")" -eq 0
+for r in ship ci deploy integrate; do
+  assert_ok "$r gates on full verify" grep -qiF 'full verify' <<< "$(_flat skills/$r.md)"
+done
+assert_ok "ship no longer merges on the per-step command alone" \
+  test "$(grep -c 'verification command must pass first' skills/ship.md)" -eq 0
+assert_ok "ci and preflight do not report a suite kept out of the per-step command" \
+  grep -qF 'is where it belongs' <<< "$(_flat skills/ci.md)"
+assert_ok "preflight reads full verify for what gates" \
+  grep -qF 'Read full verify for this, not the verification command' <<< "$(_flat skills/preflight.md)"
+
+section "a check runs once, by whoever made the change (D34)"
+# Most test runs can come from step subagents,
+# not from the gates. build's packet named no check, so each brief made one up
+# - the per-step command, the whole browser suite, the suite twice to prove it
+# was not flaky - and the main session then ran it again on the same tree.
+# review ran the per-step command once more in every pass.
+assert_ok "build's packet names the check the subagent runs" \
+  grep -qF '**The check to run, and only that**' <<< "$b3"
+assert_ok "and that check is never full verify" \
+  grep -qF 'Never full verify, never a whole browser or database suite, never the same test twice' <<< "$b3"
+# A step subagent can run one browser test file twice
+# in a loop. "Never a suite run twice" had left a file open.
+assert_ok "and the same test is never run twice on one tree, a file or a suite" \
+  grep -qF 'on one tree to show it is not flaky - a file or a suite alike' <<< "$(_flat skills/build.md)"
+# Full-verify failures can be tests leaning on
+# left-over data or another test's order - green alone, red in suite order.
+assert_ok "the packet tells a step that its test sets up its own state" \
+  grep -qF '**the test sets up the state it needs** - never data another test left or the order the suite runs in' <<< "$(_flat skills/build.md)"
+assert_ok "the old wording, which named only a suite, is gone" \
+  test "$(grep -c 'never a suite run twice' skills/build.md)" -eq 0
+assert_ok "the main session proves the done-when from the reported run" \
+  grep -qF "**A handed-off step's reported run is that proof**" <<< "$b3"
+assert_ok "the packet says when the check runs, not after each edit" \
+  grep -qF '**Run it at those points only, never after each edit**' <<< "$b3"
+assert_ok "and so does the main session building inline" \
+  grep -qF '**The same points hold inline: never after each edit.**' <<< "$b3"
+assert_ok "a change only to blueprint, docs or comments runs no tests" \
+  grep -qF 'docs or comments runs no tests**' <<< "$b3"
+assert_ok "setup relabels a per-step command described as after every change" \
+  grep -qF 'it runs once per build step, never "after every change"' <<< "$(_flat skills/setup.md)"
+assert_ok "review never runs full verify" \
+  grep -qF '**Never full verify**' <<< "$(_step 2 skills/review.md)"
+assert_ok "review runs each signal once per pass" \
+  grep -qF 'each once per pass' <<< "$(_step 2 skills/review.md)"
+for w in scaffold setup; do
+  assert_ok "$w keeps the per-step command fast" \
+    grep -qF 'a minute here is paid on every step' <<< "$(_flat skills/$w.md)"
+done
+assert_ok "the template says the per-step command is fast" \
+  grep -qF 'the fast checks that need nothing running' template/AGENTS.md
+# The first pass at D34 added "do not run it again" under a sentence that still
+# said "run that exact command", and left three other repeats standing.
+assert_ok "build no longer tells the main session to run the command itself" \
+  test "$(grep -c 'run that exact' skills/build.md)" -eq 0
+assert_ok "whoever built the step runs its check" \
+  grep -qF '**Whoever built the step runs it**' <<< "$b3"
+assert_ok "a test the verification command already runs is not named beside it" \
+  grep -qF 'the green run is that command alone' <<< "$b3"
+assert_ok "a test seen red before the code is not broken a second time" \
+  grep -qF '**For a test first seen green**' <<< "$b3"
+assert_ok "autopilot runs nothing a handed-off report already shows" \
+  test "$(grep -c 're-runs only what is quick' skills/autopilot.md)" -eq 0
+assert_ok "migrate runs the verification command once, not per environment" \
+  grep -qF '**The verification command runs once, in development**' <<< "$(_flat skills/migrate.md)"
+assert_ok "integrate does not re-run a part already green on that commit" \
+  grep -qF 'is not run again' <<< "$(_flat skills/integrate.md)"
+
+section "the verify commands have one home (D37)"
+# A project's standards file held a verify command from before AGENTS.md's
+# changed, and a table of what runs when beside build's own. The template had
+# asked for the first and said nothing against the second.
+_std=$(_flat template/blueprint/context/coding-standards.md)
+assert_ok "the standards template sends the commands to AGENTS.md" \
+  grep -qF 'Do not write either command in this file' <<< "$_std"
+assert_ok "and keeps a second test schedule out" \
+  grep -qF 'Never a second schedule, and never a command' <<< "$_std"
+assert_ok "setup reconciles a standards file that restates them" \
+  grep -qF '**Both commands are recorded in `AGENTS.md` and nowhere else.**' <<< "$(_flat skills/setup.md)"
+
+section "full verify is recorded with a fingerprint, and ship reuses it (D34)"
+# ship reused build's closing run "when nothing has changed since", and review
+# and verify always write in between - so read as written, the whole suite ran
+# again at every merge. Verified: and Reviewed: already carried a fingerprint
+# that leaves blueprint/ out; the full run had none to compare.
+assert_ok "spec's header starts the full verify record" \
+  grep -qF '**Full verify:** not yet' skills/spec.md
+assert_ok "build records its closing run there" \
+  grep -qF 'Record a passing run in the spec'"'"'s `**Full verify:**` line' <<< "$(_flat skills/build.md)"
+assert_ok "a round of repairs is one more run, not one per repair" \
+  grep -qF 'one run per round of repairs, never one per repair' <<< "$(_flat skills/build.md)"
+# The same count: build said what a passing full verify does and nothing of a
+# failing one, and the suite ran five times - three after a repair to one test
+# file, one after a failure that did not reproduce.
+bf=$(_flat skills/build.md)
+assert_ok "a failed full verify is not answered with the whole command" \
+  grep -qF '**When it fails, do not run the whole command again to see.**' <<< "$bf"
+assert_ok "the part that failed is re-run, then the parts a stopped run never reached" \
+  grep -qF 'then the parts after it, which a stopped run never reached' <<< "$bf"
+assert_ok "the whole command runs again only for a repair outside the tests" \
+  grep -qF 'only when the repair changed something other than a test' <<< "$bf"
+assert_ok "a failure that does not reproduce is its part once, never the suite" \
+  grep -qF '**A failure that does not reproduce is re-run as its part, once**' <<< "$bf"
+assert_ok "ship reuses the run while the fingerprint matches" \
+  grep -qF 'that run is the gate and it is not run again' <<< "$(_flat skills/ship.md)"
+assert_ok "and no longer hangs the reuse on nothing having changed" \
+  test "$(grep -c 'nothing has changed since' skills/ship.md)" -eq 0
+assert_ok "the pipeline's run is the gate on the pull-request route" \
+  grep -qF 'that run on the pushed commit is the gate instead' <<< "$(_flat skills/ship.md)"
+assert_ok "ship's work commit does not run it again" \
+  grep -qF 'Do not run it again for this commit' <<< "$(_flat skills/ship.md)"
+assert_eq "build and ship fingerprint the same tree" \
+  "$(grep -F 'git write-tree' skills/ship.md | head -1 | tr -s ' ')" \
+  "$(grep -F 'git write-tree' skills/build.md | head -1 | tr -s ' ')"
+
+section "each stage's last skill says where a fresh session starts"
+# Most of what a long session reads is its own earlier conversation. The
+# advice on where to start again was in
+# docs/walkthrough.md, which no project loads, and in one skill of four.
+s5=$(_step 5 skills/spec.md); sh4=$(_step 4 skills/ship.md)
+assert_ok "the spec and ship step extraction works" test -n "$s5" -a -n "$sh4"
+assert_ok "spec says build starts in a fresh session" \
+  grep -qF '`build` starts best in a fresh session' <<< "$s5"
+assert_ok "build says so where it names review directly" \
+  grep -qF 'say it reads best from a fresh session' <<< "$b4"
+assert_ok "verify says it for review" \
+  grep -qF '`review` reads best from a fresh session' <<< "$v4"
+assert_ok "ship says the next item starts in one" \
+  grep -qF 'say it starts in a fresh session' <<< "$sh4"
+assert_ok "and the walkthrough still holds the table they summarise" \
+  _says docs/walkthrough.md 'Where to start a fresh session'
+
+finish

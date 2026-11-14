@@ -1,0 +1,12 @@
+# Nothing is built or installed here - the pack has no dependencies.
+# These are only guards against local noise.
+.DS_Store
+*.log
+build-output/
+
+# The pack is public; its maintainer notes are not. `dev-notes/` at the root -
+# status, decisions, coverage, the diary - holds the history of running the pack
+# on real projects, so it stays local. Nothing the suite or the entry points need
+# lives there: tests that read it run only where it exists, and say they skipped.
+# `template/dev-notes/` is the project template and is tracked.
+/dev-notes/

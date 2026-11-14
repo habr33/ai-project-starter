@@ -1,0 +1,411 @@
+---
+name: review
+description: "Read-only code audit that records what it finds in the ledger at blueprint/context/findings.md. Reviews the current work (`current`), the changed files (`changed`), a named path, or the whole project (`full`), through every lens or one focused lens: quality, security, performance, or tests. Findings get durable IDs, a severity from P0 to P3, and a status; an open or fixed P0 or P1 blocks the merge at `ship`. Writes nothing but the ledger and the spec's review line - never edits source, installs, or commits. Use when the user runs `review`, asks for a code review, security review, performance check, or test-quality pass, or before closing out an item."
+---
+
+# review - audit the code, and record what you find
+
+**Writes:** `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/current-work.md`
+
+Where this sits:
+
+    `build` -> review -> repairs -> review again -> `ship`
+
+> **Multi-part project:** `blueprint/project-plan.md`,
+> `blueprint/context/quality-bar.md` (the bar the whole product is held to -
+> `architect` writes it at the root, not per part), and
+> `blueprint/context/principles.md` (the product's own, from `ideate`) live at
+> the **product root**, not this part. Resolve it from `AGENTS.md`'s
+> `Product root:` field. Everything else here is this part's own.
+
+`verify` proves the *behavior* matches the spec. This checks the *code*:
+whether it is safe, consistent, and worth building on.
+
+It changes nothing except blueprint/context/findings.md and the entries in
+`blueprint/findings/`. It never edits source, installs a
+dependency, commits, merges, or starts product work.
+
+## What this is not
+
+**`progress`** answers *where am I and what is next* from plan and git state, in
+seconds, without reading the code. **`preflight`** asks whether the whole project
+is fit to be live - backups, configuration, operations, documentation - and
+returns a go or no-go.
+
+This skill asks one thing: **is the code sound.** `review full` audits every
+source file and is still not a launch check, because a project can have
+faultless code and no backups.
+
+## Before you start
+
+**The standards are two files** - `blueprint/context/fundamentals.md` (the
+pack's) and `blueprint/context/coding-standards.md` (this project's). Audit
+against both, and **where they disagree the project's own file wins**: it
+describes a real project and the other describes every project.
+
+**Follow the standards file out to what it points at.** Where it names a tool as
+the authority for a rule, the tool's config is the standard - check against that,
+not against a prose paraphrase, and do not report a rule as unrecorded because it
+is recorded somewhere the file deliberately did not copy. Same for a
+`CONTRIBUTING.md` or style guide it references.
+
+**If `coding-standards.md` is still unfilled prompts, say so before reporting.**
+The fundamentals are always checkable, but the quality lens also checks drift
+from *this project's* recorded conventions, and there is nothing to drift from -
+so a clean result there means "not checked", not "consistent".
+
+**Check "Standards this project follows" specifically.** It is what Step 3 audits
+security and accessibility against, and an empty one means those lenses can report
+generic smells and nothing checkable. Say that rather than letting a short finding
+list read as a clean bill.
+
+Same for the accessibility lens against a missing `blueprint/context/design.md`,
+and the performance and security lenses against a missing
+`blueprint/context/quality-bar.md`, which `architect` writes.
+
+Report that as an unverified area in the summary rather than letting silence read
+as a pass.
+
+**A third file to check against, when it exists: `blueprint/context/principles.md`**
+- the project's own non-negotiable commitments, written by `ideate`. Different
+from the two standards above: those are code-level conventions, this is a
+project-level commitment the code as a whole either honors or breaks - an
+analytics call added to a project whose principles say "nothing leaves this
+machine" is a finding here regardless of how clean the code around it is. A
+missing file is not itself a gap the way a missing `coding-standards.md` is:
+"none recorded" is written explicitly when there is nothing to hold, so an
+absent file most often means `ideate` never ran, which is worth naming but is
+not a code finding.
+
+## Input
+
+Scope and lens are separate controls, and either can be omitted.
+
+**Scope** - what to look at:
+
+| Argument | Reviews |
+|---|---|
+| *(none)* | the current work if there is any, else local changes, else everything |
+| `current` | the active spec, the branch's commits from its merge base, and uncommitted work |
+| `changed` | staged, unstaged, and untracked source files, plus nearby code |
+| `full` | all project-owned source, tests, and config |
+| a path | that area, plus the tests and callers needed to understand it |
+
+**Lens** - what to look for: `quality`, `security`, `performance`, `tests`,
+`accessibility`, `dependencies`, or all of them when unspecified. Multiple lenses review their union and report each
+separately.
+
+`full` is a scope, never a lens. If the scope is ambiguous, take the smallest
+useful one and say which you took.
+
+## Step 1 - gather context
+
+Read the project's state before acting:
+
+- `blueprint/context/project-overview.md` - the source of truth for what this project is
+- `blueprint/context/coding-standards.md` - the conventions this project's code follows
+- `blueprint/context/fundamentals.md` - the pack's conventions; not loaded by default, so read it here
+- `blueprint/context/principles.md` - the project's non-negotiable commitments, if `ideate` recorded any
+- `blueprint/context/current-work.md` - the one item in flight, if any
+- `blueprint/context/findings.md` - open review findings against the current work
+
+Also read `blueprint/build-plan.md` when ordering matters, the branch and working-tree
+state, and the source files in scope.
+
+For `current`, resolve the comparison base **without network access**: a base
+branch named by the spec, else the recorded remote default, else a local `main`
+or `master`. Find the merge base, inspect the committed delta through `HEAD`,
+then add staged, unstaged, and untracked work. Never fetch or pull to find a
+base. If no reliable base exists, say so and review the spec plus local changes -
+and never claim the committed work was fully covered.
+
+For `full`, state the excluded paths before starting, so generated code,
+dependencies, and build output do not consume the review.
+
+**A changed file git calls binary is a file nobody else can see.** `git diff`
+prints "Binary files a/x and b/x differ" for any file holding a NUL byte, and a
+text source file gets one when a raw control character is written into it
+instead of an escape - inside a regex is the usual way. Check the changed set
+for it explicitly: `git diff --numstat` prints `-` for both counts on such a
+file. **Read that file whole** rather than letting an empty diff read as no
+change, and **record it as a finding** - the diff is the only thing a
+pull-request reviewer sees, so the item's main change would otherwise ship
+reviewed by nothing but this skill. That file can be the item's core
+new file, and neither `review` nor `ship` would notice.
+
+## Step 2 - run the signals that already exist
+
+Use the project's existing commands. **Do not install tools.** Run only what the
+chosen lens needs, each once per pass: lint and typecheck where relevant, the
+tests the tests lens is judging - by file, not a whole browser or database
+suite - and the build when the lens needs compiled evidence. **Never full
+verify**: `build` ran it on this work and `ship` gates on it, so a review pass
+that runs it again repeats a gate without adding a reader.
+
+A useful check the project does not have is a **gap to report**, not a reason to
+add one.
+
+## Step 3 - review the code
+
+Ground every finding in reachable code and in this project's own expectations,
+not in generic advice. Apply only the selected lenses.
+
+**Audit against the standards this project actually recorded**, listed under
+"Standards this project follows" in `blueprint/context/coding-standards.md` -
+typically OWASP Top 10:2025 for web security, OWASP MASVS for mobile, WCAG 2.2 AA for
+accessibility. **Name the edition, not just the standard** - OWASP renumbered in
+2025 and added two categories (A03 Software Supply Chain Failures, A10
+Mishandling of Exceptional Conditions), so a finding cited from a remembered 2021
+list is checking the wrong bar and misses both. **Name the source on every
+finding it applies to**: "OWASP Top 10:2025 A01,
+broken access control" is checkable and arguable; "this seems insecure" is
+neither.
+
+Two limits on that. **An unrecorded standard is not a finding** - a personal tool
+and a payment system need different bars, and imposing the stricter one produces
+noise that trains people to ignore findings. And **never claim compliance**: this
+checks against a standard, it certifies nothing. "Nothing found against the
+recorded bar" is the strongest true statement available.
+
+The lenses:
+
+- **Quality** - duplicated logic, dead code, unreachable paths, oversized
+  modules, abstractions that do not pay for themselves, a missing abstraction
+  that is causing real repetition, drift from blueprint/context/coding-standards.md,
+  and anything that breaks a commitment in `blueprint/context/principles.md`.
+- **Security** - judged against the posture in `blueprint/context/quality-bar.md`
+  where it exists: what this handles, and what that obliges. Missing
+  authentication or authorization, ownership taken from
+  client-supplied input, injection, unsafe parsing, exposed sensitive data,
+  secret handling, insecure defaults, trust-boundary mistakes.
+  **A redirect target built from the request URL** - to send someone back
+  after signing in - must drop the framework's data-request forms (`.data`,
+  `_data`, `_rsc`, `index`): on a client-side navigation the request URL is
+  one, and the user signs in to a 404 or raw data. A target taken from input
+  must be a local path, or it is an open redirect.
+- **Performance** - repeated queries in a loop, redundant network work,
+  unnecessary re-rendering, blocking work on a hot path, unbounded collections,
+  missing pagination, oversized payloads. Mark anything without runtime evidence
+  as a hypothesis, not a confirmed finding.
+  **Check against `blueprint/context/quality-bar.md` where it exists.** A pattern
+  that misses the project's recorded number is a finding with a severity; the same
+  pattern in a project whose bar says "one user, a few hundred rows" is usually
+  not a finding at all. Without that file this lens can only report generic
+  smells, never a breach of what the project promised - say so rather than
+  implying the bar was met.
+- **Tests** - important logic with no coverage while a runner exists, assertions
+  that cannot fail, tests that only restate the implementation, excessive
+  mocking, shared state, order dependence, skipped or focused tests, swallowed
+  failures. Never invent a coverage percentage.
+
+- **Accessibility** - for anything with a UI, against WCAG 2.2 level AA.
+  **Every check below is about a rendered page, not a parsed one.** Contrast
+  between two tokens is arithmetic and can be computed from the stylesheet; focus
+  visibility, keyboard reach and "is this actually on screen" cannot. An element
+  can satisfy every attribute this lens looks for and be invisible - correct
+  `aria-label`, correct role, correct contrast, zero pixels tall. **If the page
+  has not been rendered, say the lens is unverified rather than reporting it
+  clean.** Checks:
+  everything reachable and operable by keyboard, focus visible and never trapped,
+  contrast sufficient, every control labelled, images given text alternatives,
+  motion respecting a reduced-motion preference, and errors identified in text
+  rather than by colour alone. Applies to web, PWA, and mobile. Skip it honestly
+  when the project has no UI.
+
+  **If this item revised `design.md`, check the revision too** - that the record
+  now matches what was built, and that the reason is written down rather than the
+  value simply being different. A record edited to match the code without saying
+  why is how a bar quietly lowers itself.
+
+  **Check against `blueprint/context/design.md` where it exists**, not only the
+  generic standard: it records the contrast values this project actually measured
+  and the states it settled. A feature that invents a fourth kind of error
+  message is drift worth reporting even when each version is individually fine.
+  **A colour, size or shadow written as a literal instead of a token is drift
+  too** - it survives the next re-theme unchanged. And check the screens
+  `design.md` marks as applying still exist: a not-found page, an empty state,
+  the whole account family.
+- **Dependencies** - versions far enough behind that it matters, packages with
+  known advisories, a lockfile that disagrees with the manifest, licences
+  incompatible with how the project is distributed, and anything unused still
+  being installed. **Report; never upgrade.** A major bump is feature-sized work
+  that goes through `spec` and `build` like any other change - not a chore
+  slipped into an unrelated diff.
+
+Do not nitpick harmless style differences unless they signal real drift. **A
+short list of real findings beats a long list of guesses.**
+
+Do not broaden a focused pass because another lens looks interesting, and do not
+imply the omitted lenses passed. If an obvious P0 turns up outside the selected
+lens, record it as an out-of-lens critical risk - then stop searching that lens.
+
+**Never quote a secret.** If one is found, report the category, file, line, risk,
+and remediation, with the value redacted. Redact command output too.
+
+## Step 4 - update the ledger
+
+`blueprint/context/findings.md` is the durable record. A chat report does not survive a context
+clear; the ledger does. The ledger - that index and the entries under
+`blueprint/findings/` - and the spec's `**Reviewed:**` line are all this skill
+writes. Create the index with a
+`# Findings` heading if it is missing.
+
+**The ledger never scopes the review.** Review the code fresh in Step 3, then
+record what you found. Working from the open findings as a checklist and
+verifying only those is the exact failure this file exists to prevent - a repair
+can introduce a defect no existing entry points at.
+
+Each finding is two pieces. **The index heading** goes in
+`blueprint/context/findings.md`, which every session loads - so it is the
+heading and one `File:` line, nothing more - except that on a `deferred`
+finding its `Deferred to:` line goes under the heading too, since `deploy` and
+`host` read it there. The heading is a machine-readable
+contract and keeps this exact shape, and **status lives only here**:
+
+    ### F-03 [P0] open - Session cookie is readable from JavaScript
+    File: src/auth/session.ts:41
+
+**The entry** goes in `blueprint/findings/F-03.md`, read by whoever acts on it:
+
+    # F-03 - Session cookie is readable from JavaScript
+
+    **Found:** 2026-08-31 by review (scope: current; lens: security)
+    **Why it matters:** ...
+    **Suggested fix:** ...
+    **Resolution:**
+
+**"Why it matters" is at most three lines.** It is read by the skill that
+repairs the finding, not by every session, but a house style of paragraphs
+makes every entry cost more than it tells.
+
+IDs are sequential within the ledger, never reused and never renumbered while
+their entries live there - not even after one closes. A bare ID is scoped to the
+live ledger; `ship` archives resolved entries under the work item's
+prefix, and that prefixed form is the permanent reference.
+
+**Severity:**
+
+- `P0` - data loss, a security break, or code that cannot ship
+- `P1` - a likely bug, a broken contract, a missing guard
+- `P2` - a maintainability problem worth fixing before the item closes
+- `P3` - a small cleanup or a follow-up candidate
+
+Use P0 or P1 only when a concrete code path, a violated boundary, or a failing
+command confirms it. Incomplete evidence goes under **Unverified risks**, not
+into a confirmed high severity.
+
+**Status:**
+
+| Status | Meaning | Blocks the merge (P0/P1) |
+|---|---|---|
+| `unverified` | Suspected, no confirming evidence yet | No |
+| `open` | Confirmed, not repaired | **Yes** |
+| `fixed` | Repaired, not yet re-reviewed | **Yes** |
+| `closed` | Repaired, and re-checked by something other than what repaired it - or, at P2 or P3, repaired with a test seen failing first | No |
+| `deferred` | Not now, by the user's explicit decision, **naming the skill or milestone that will do it** | No |
+| `accepted` | Not fixing, by the user's explicit decision, reason recorded | No |
+| `invalid` | Re-examination proved it wrong, evidence recorded | No |
+
+`fixed` blocking is deliberate. A repair is not done when the change lands; it is
+done when something other than what made it has looked at the result.
+
+- **A code finding:** `build` marks the repair `fixed`; only a pass of this skill
+  moves it to `closed`. **The exception is P2 and P3:** `build` closes those
+  itself when the repair's test was seen failing with the repair reverted, and
+  says so in **Resolution**. Re-examine one of those if its file is in scope -
+  a close is not immune to review - but it no longer waits for you.
+- **A finding no code fixes** - no backups, a leaked secret, a missing README,
+  raised by `preflight` or `host`: the skill that does the repair (`host`,
+  `deploy`, `docs`, `ci`, ...) marks it `fixed` with its evidence in
+  **Resolution**, and **the auditor closes it** - `preflight`, on a re-run that
+  re-checks the evidence. This skill does not close those; there is no code for it
+  to re-examine.
+
+Then:
+
+- Append each new confirmed finding as `open`, with the next sequential ID:
+  **one past the highest `F-` number in the index, in
+  `blueprint/findings/backlog.md`, and among the entry files in
+  `blueprint/findings/`.** The index alone is not enough - `ship` empties it
+  between items while a backlogged P3 keeps its entry file, and an ID counted
+  from the index alone overwrites that file.
+- Record a risk worth tracking but unproven as `unverified`. It is a lead, and
+  never gates a merge.
+- Update entries this pass re-examined, noting the evidence in **Resolution**.
+- **Findings in `blueprint/findings/backlog.md` are still live.** A P3 `ship`
+  moved there keeps its ID and status; close one the same way when this pass's
+  reviewed set covers its file, updating its heading in the backlog.
+- Move `fixed` to `closed` only when all three hold: this pass's reviewed set
+  included the file, re-examining the repaired code confirmed the defect is gone
+  *and* introduced nothing new, and the report names it as closed. An unrelated
+  new problem in the same file gets its own entry. **Never close implicitly.**
+- Set `accepted` only on the user's explicit decision in this conversation, with
+  their reason. Never accept one on their behalf.
+- Set `deferred` the same way, and **only with a target**: a `Deferred to:`
+  line naming the skill or milestone that will do the work. It is not
+  `accepted` - the difference is whether the work is going to happen - and
+  `accepted` was doing both jobs, which reads downstream as abandoned. A
+  `deferred` finding stays in the ledger through `ship`, because the skill
+  named in it has not run yet.
+- Set `invalid` only when re-examination shows the finding was wrong, with the
+  evidence recorded. It is a review verdict, never a shortcut past a blocked
+  merge.
+
+## Step 5 - report
+
+Lead with the findings, most severe first, using the IDs the ledger assigned.
+Then state:
+
+- ledger changes this pass, by ID: added, updated, closed
+- commands run, and what they said
+- the scope and lens used
+- for `current`: the base branch and commit range
+- what was reviewed, and what was excluded
+- checks that were unavailable
+- a suggested repair order
+
+If there are no findings, say so plainly for the selected lens, and name any
+remaining risk or missing signal - "no test command declared", "the browser flow
+was not exercised".
+
+**When an item is in flight, record the pass in the spec's `**Reviewed:**` line**,
+replacing what is there: the date, the work fingerprint, the scope and lens,
+what was read, and how many P0 or P1 findings are left `open` or `fixed` -
+`**Reviewed:** 2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking`.
+**What was read is `read whole`, `PARTLY READ: <what was not>`, or `NOT READ: <why>`**:
+a file skipped for size or context, a base that could not be resolved, a Step 1
+input that was missing. Say `read whole` only when every
+file in scope was opened; a pass that stopped early otherwise records "0
+blocking" exactly as a complete one does.
+**Including when nothing was found**: an empty ledger because nothing looked
+reads exactly like one because nothing was wrong, and this line is the only
+difference `ship` can see. The fingerprint is the tree of every file outside
+`blueprint/` and `dev-notes/`, committed or not:
+
+    i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
+
+For `full`, say whether coverage was complete or partial. **Never call a partial
+review a full-project audit.**
+
+**Then say what comes next**, and it depends on what was found: **open P0 or
+P1** goes back to `build` for repair, and `ship` will refuse the merge until it
+is resolved. **Nothing blocking** means the item is ready for `ship`. Say which
+of the two it is rather than leaving the report to be interpreted - a findings
+list with no verdict reads as approval.
+
+## Rules
+
+- **The ledger - the index and its entry files - and the spec's `**Reviewed:**` line are all this skill writes.** Never edit, format, install,
+  commit, or delete anything else.
+- **A focused lens is not a broad audit.** State what was not reviewed.
+- **The ledger reports status; it never defines what to look at.**
+- **Never reproduce a secret** in a finding or in pasted output.
+- **Ground every finding in a path and line** where possible.
+- **Recommend the smallest fix that removes the risk.** Avoid speculative
+  rewrites, and respect existing patterns over generic advice.
+- **The goal is not perfection.** It is code that is understandable, consistent,
+  tested where it matters, and safe to keep building on.
+
+## Formatting
+
+Match `blueprint/context/ai-interaction.md` when it exists; otherwise keep output short, scannable, and direct.

@@ -1,0 +1,1926 @@
+#!/usr/bin/env bash
+# What the scripts actually do when run, rather than what they read like.
+#
+# Every defect these cover was found by running a command and comparing the
+# result against what was claimed - never by reading.
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+# Derived, never hardcoded. The invariant is "every source skill gets installed",
+# not "there are 25 of them" - a literal here breaks on every skill added and
+# teaches whoever adds one to bump the number rather than read the failure.
+NSKILLS=$(ls "$REPO"/skills/*.md | wc -l | tr -d ' ')
+
+NP="$REPO/new-project.sh"
+IN="$REPO/install.sh"
+CP="$REPO/convert-to-parts.sh"
+SP="$REPO/lib/seed-part.sh"
+
+section "new-project.sh - the shape it creates"
+w=$(workdir); (cd "$w" && "$NP" demo >/dev/null 2>&1)
+p="$w/demo"
+assert_exists   "creates the project"               "$p"
+assert_absent   "creates no source directory"       "$p/src"
+assert_exists   "writes blueprint/"                 "$p/blueprint"
+assert_exists   "writes dev-notes/"                 "$p/dev-notes"
+assert_exists   "writes AGENTS.md"                  "$p/AGENTS.md"
+assert_eq       "installs every source skill"      "$NSKILLS" "$(ls "$p/.claude/skills" 2>/dev/null | wc -l | tr -d ' ')"
+assert_eq       "an opencode command per skill"    "$NSKILLS" "$(ls "$p/.opencode/command" 2>/dev/null | wc -l | tr -d ' ')"
+# With .claude/skills a link, comparing the two trees compares one with itself -
+# so check what the link must do: resolve to the one copy, which is current.
+assert_eq       "Claude Code's skills resolve to the one copy" \
+  "$(cd "$p/.agents/skills" && pwd -P)" "$(cd "$p/.claude/skills" && pwd -P)"
+assert_ok       "and that copy is the pack's current skill"  cmp -s "$REPO/skills/spec.md" "$p/.agents/skills/spec/SKILL.md"
+
+section "a part may be nested, and Product root points at the real root"
+# Found by trying to adopt an existing repository that was already an npm workspace.
+# `apps/web-app` was refused outright - "may not contain a slash" -
+# so the most common JavaScript monorepo shape could not be represented at all.
+# And `Product root:` was hardcoded to `..`, which is correct only one level
+# down: a nested part resolved the board to `apps/` and found nothing, silently.
+w=$(workdir); root="$w/prod"; mkdir -p "$root/apps/web-app"
+"$REPO/lib/seed-product-root.sh" "$root" apps/web-app backend >/dev/null 2>&1
+"$REPO/lib/seed-part.sh" "$root" apps/web-app --quiet
+"$REPO/lib/seed-part.sh" "$root" backend --quiet
+assert_exists "a nested part is created"            "$root/apps/web-app/AGENTS.md"
+assert_eq "its Product root climbs two levels" "- Product root: ../.." \
+  "$(grep -m1 '^- Product root:' "$root/apps/web-app/AGENTS.md")"
+assert_eq "a top-level part still climbs one" "- Product root: .." \
+  "$(grep -m1 '^- Product root:' "$root/backend/AGENTS.md")"
+# The field is only useful if it resolves to the actual root.
+assert_eq "and it resolves to the product root" "$(cd "$root" && pwd -P)" \
+  "$(cd "$root/apps/web-app" && cd "$(grep -m1 '^- Product root:' AGENTS.md | sed 's/^- Product root: //')" && pwd -P)"
+assert_eq "the status file uses the last segment, not the path" "web-app" \
+  "$(ls "$root/blueprint/status" | grep -o 'web-app' | head -1)"
+
+section "the root and the parts agree on how a part is named"
+# They did not: seed-product-root.sh listed bare names while seed-part.sh listed
+# paths, so adopting a five-part product produced a root describing eight - three
+# of them directories that did not exist. Every file was individually valid and
+# every linter rule passed.
+listed=$(sed -n '/^## The parts/,/^## /p' "$root/AGENTS.md" | grep -cE '^- `[^`]+/`')
+assert_eq "each part is listed exactly once" "2" "$listed"
+assert_ok "and the nested one is listed by its path, so it can be found" \
+  grep -q '^- `apps/web-app/`' "$root/AGENTS.md"
+
+section "seed-part refuses a path that escapes the product root"
+# `--parts '../x,api'` once created a sibling of the project and reported
+# success. Allowing nesting must not reopen that: every SEGMENT is checked, so
+# `apps/../../x` cannot pass a test that only looks for a leading '..'.
+w2=$(workdir); root2="$w2/p2"; mkdir -p "$root2"
+for bad in "../escape" "apps/../../escape" "/abs/path" "apps/-dash" "apps//empty"; do
+  assert_fails "refuses '$bad'" "$REPO/lib/seed-part.sh" "$root2" "$bad"
+done
+assert_absent "and nothing was created outside the root" "$w2/escape"
+
+section "a seeded part can move to the path layout chose"
+# new-project.sh --parts and convert-to-parts.sh create top-level parts before
+# `layout` runs, and `layout` had no answer for a framework wanting them nested
+# (`apps/api`). A part is not a directory rename: Product root, the root's listing
+# and the board all name it, and architect has already written its build plan.
+# This runs the procedure layout states: carry the part's own files, drop its
+# listing and directory, seed the new path, put the files back.
+w=$(workdir); (cd "$w" && "$NP" mv --parts api,web >/dev/null 2>&1); m="$w/mv"
+printf '\n- [ ] 1. **Pages** - store a page\n' >> "$m/api/blueprint/build-plan.md"
+assert_refuses "seeding the new path while the old part is listed is refused" \
+  "a different part is already called 'api'" "$SP" "$m" apps/api --quiet
+carry="$w/carry"; mkdir -p "$carry" && cp -R "$m/api/blueprint" "$m/api/dev-notes" "$carry/"
+sed -i '/^- `api\/`/d' "$m/AGENTS.md" && rm -rf "$m/api"
+assert_ok "then the new path seeds" "$SP" "$m" apps/api --quiet
+cp -R "$carry/blueprint" "$carry/dev-notes" "$m/apps/api/"
+assert_eq "the moved part climbs two levels to the root" "- Product root: ../.." "$(grep -m1 '^- Product root:' "$m/apps/api/AGENTS.md")"
+assert_ok "the root lists it at its new path" grep -q '^- `apps/api/`' "$m/AGENTS.md"
+assert_lacks "and no longer at the old one" "$m/AGENTS.md" '^- `api/`'
+assert_ok "the board still names its status file" grep -q '^    blueprint/status/api\.md$' "$m/blueprint/orchestration.md"
+assert_ok "and the build plan architect wrote came with it" grep -q 'Pages.*store a page' "$m/apps/api/blueprint/build-plan.md"
+_layout=$(tr '\n' ' ' < "$REPO/skills/layout.md" | tr -s ' ')
+assert_ok "layout says what to do when the parts already exist" grep -qi 'if the parts already exist' <<< "$_layout"
+assert_ok "and moves one with lib/seed-part.sh, carrying its files" grep -qF 'lib/seed-part.sh' <<< "$_layout"
+
+section "two parts may not share a status file"
+# `apps/web` and `services/web` are different parts whose last segment is the
+# same, and the status file and board entry are both keyed on that segment - so
+# the second silently adopts the first's live state. That is the one collision
+# the board exists to prevent.
+#
+# The guard for it shipped unable to fire. The product root's AGENTS.md is
+# written ~70 lines before the check, and the check required the entry it had
+# just written to be ABSENT, so the condition was never true. Every file-level
+# rule passed; the suite never executed the guard at all. Found by instrumenting
+# all 30 guard exits in the pack and running the suite once to see which were
+# reached - this was the only unreached one that did not work.
+#
+# It refuses before creating anything, so a refusal leaves no half-made part.
+w4=$(workdir); root4="$w4/shop"; mkdir -p "$root4"
+"$REPO/lib/seed-product-root.sh" "$root4" apps/web backend >/dev/null 2>&1
+"$REPO/lib/seed-part.sh" "$root4" apps/web --quiet
+assert_refuses "refuses a second part with the same last segment" \
+  "a different part is already called" \
+  "$REPO/lib/seed-part.sh" "$root4" services/web
+assert_absent "and creates no directory for it"  "$root4/services/web"
+assert_eq "the one part keeps its own status file" "1" \
+  "$(ls "$root4/blueprint/status" | grep -c '^web\.md$')"
+assert_fails "and the board never lists the refused part" \
+  grep -q '^- `services/web/`' "$root4/AGENTS.md"
+# A differently-named nested part is still fine - the guard keys on the segment,
+# not on nesting, and refusing all nesting is the bug it was written after.
+assert_ok "a nested part with its own name is still accepted" \
+  "$REPO/lib/seed-part.sh" "$root4" services/api --quiet
+
+section "seed-part reports what it actually did, not what the happy path does"
+# It printed "Listed in the product root's AGENTS.md and on the board"
+# unconditionally, while both writes are guarded by the file existing - so
+# seeding into an unseeded root claimed a mechanism that was not there.
+w3=$(workdir); root3="$w3/bare"; mkdir -p "$root3"
+out3="$w3/out.txt"
+"$REPO/lib/seed-part.sh" "$root3" api >"$out3" 2>&1
+assert_eq "it does not claim the board listed it" "0" \
+  "$(grep -c 'Listed on the board' "$out3" || true)"
+assert_ok "it says the root is not seeded" grep -q 'product root is not seeded yet' "$out3"
+assert_ok "and names the command that fixes it" grep -q 'seed-product-root.sh' "$out3"
+
+section "the next-steps message names the loop that actually exists"
+# Found by running the loop end to end: the closing message
+# still said the source directory appears "once 'stack' has decided what this
+# project is". `architect` runs before `stack` now, and `layout` is what decides
+# the source directory.
+#
+# This is the very first thing a new user reads, before they have run anything,
+# so a stale line here teaches the wrong loop and nothing later contradicts it.
+# The linter cannot see it: script output is not a skill file.
+# The message goes to a file rather than through a variable: it contains single
+# quotes around every skill name, and nesting those through `bash -c` turned the
+# quoted name into a filename argument - the grep looked for a file called
+# "stack". Same class as the herestring bug in test-seams.sh: correct logic,
+# broken by its own shell mechanics.
+w=$(workdir); msg="$w/next-steps.txt"
+(cd "$w" && "$NP" msgdemo >"$msg" 2>&1)
+assert_ok "the message names architect"  grep -q "'architect'" "$msg"
+assert_ok "and layout"                   grep -q "'layout'"    "$msg"
+assert_ok "and still points at ideate"   grep -q "'ideate'"    "$msg"
+assert_eq "and never says stack decides what scaffold creates" "0" \
+  "$(grep -c "once 'stack' has decided" "$msg" || true)"
+
+section "a created project has no placeholder work queued"
+# The template shipped two live checkboxes - "First item", "Second item" - at
+# column 0. Every skill reading build-plan.md treats an unchecked box as real
+# work: `spec` with no argument specs the first, `progress` counts it as
+# remaining, `prepare` files a requirement for whatever service it names. A
+# project can run for months with items describing a different product
+# entirely, and `progress` would say "next up: Skill submission".
+#
+# An empty section stops the loop with "nothing is queued", which is obvious.
+# Two fake items send it confidently in the wrong direction.
+assert_eq "no live checkbox items in a fresh build plan" "0" \
+  "$(grep -c '^- \[ \]' "$p/blueprint/build-plan.md" || true)"
+assert_ok "the Format examples are still there, indented and inert" \
+  bash -c "grep -q '^    - \[ \]' '$p/blueprint/build-plan.md'"
+assert_ok "and it says what to run to get real ones" \
+  grep -q 'ideate' "$p/blueprint/build-plan.md"
+
+section "new-project.sh - git state"
+# The branch was unborn until the script made a commit itself: branching before
+# committing left nothing for ship's squash-merge to land on, and which happened
+# depended only on the order the user worked in.
+assert_eq "initial branch is main"      "main" "$(git -C "$p" branch --show-current)"
+assert_eq "makes exactly one commit"    "1"    "$(git -C "$p" log --oneline 2>/dev/null | wc -l | tr -d ' ')"
+assert_eq "the first commit is clean"   "0"    "$(git -C "$p" ls-files | grep -cE '(^|/)\.env$|node_modules/')"
+
+# `.gitignore` had `build/`, which matches at any depth - so every project this
+# pack created committed 24 skills and the missing one was `build`. Invisible to
+# every check here, because they all looked at the filesystem and never at git.
+assert_eq "every skill is tracked by git" "$NSKILLS" \
+  "$(git -C "$p" ls-files | grep -c '\.agents/skills/[^/]*/SKILL\.md$')"
+assert_eq "the build skill specifically is tracked" "1" \
+  "$(git -C "$p" ls-files | grep -c '\.agents/skills/build/SKILL\.md$')"
+
+section "one copy of the skills, and Claude Code reaches it through a link"
+# With two copies, every repo-wide search hits each passage twice, and a hand
+# edit to one makes the tools disagree.
+# Claude Code 2.1.280 reads only .claude/skills, and follows a directory symlink.
+assert_ok "the skills directory Claude Code reads is a symlink" test -L "$p/.claude/skills"
+assert_eq "pointing at the one copy" "../.agents/skills" "$(readlink "$p/.claude/skills")"
+assert_eq "git tracks it as a link, not 27 files" "120000" \
+  "$(git -C "$p" ls-files -s .claude/skills | awk '{print $1}')"
+assert_eq "and commits no second copy" "0" \
+  "$(git -C "$p" ls-files | grep -c '^\.claude/skills/.*SKILL\.md$')"
+
+section "new-project.sh - path forms"
+w=$(workdir)
+assert_ok      "a bare name works"            env -C "$w" "$NP" bare
+mkdir -p "$w/sub"
+assert_ok      "a relative path works"        env -C "$w" "$NP" sub/nested
+assert_ok      "an absolute path works"       env -C "$w" "$NP" "$w/abs"
+assert_ok      "--in DIR works"               "$NP" inned --in "$w"
+assert_exists  "--in landed in DIR"           "$w/inned"
+assert_exists  "the absolute path landed where it names" "$w/abs/AGENTS.md"
+# Run from inside \$w, so a name joined onto \$PWD would land at \$w/\$w/abs.
+# Named exactly, not found by a glob: '*home*' matched every file whenever the
+# temp directory itself sat under a home directory.
+assert_absent  "an absolute name does not nest under \$PWD" "$w/${w#/}"
+
+section "new-project.sh - refusals"
+assert_fails   "refuses an existing directory"       env -C "$w" "$NP" bare
+assert_refuses "refuses a missing parent" "" "$NP" "$w/no/such/parent/x"
+assert_fails   "refuses an absolute path with --in"  "$NP" "$w/x" --in "$w"
+
+section "part names - the guard that new-project.sh was missing"
+# `--parts '../escaped,api'` created a sibling of the project and exited 0.
+# convert-to-parts.sh had the guard; new-project.sh did not; both call
+# lib/seed-part.sh, which is where the guard now lives.
+w=$(workdir)
+# Each names the part it refused, so a refusal for some other reason - a typo in
+# the command, a missing directory - cannot pass as the guard firing.
+assert_refuses "refuses a traversing part name" "part name here: '../escaped'" \
+  env -C "$w" "$NP" t --parts '../escaped,api'
+assert_absent  "and writes nothing outside the root" "$w/escaped"
+assert_refuses "refuses '..' as a part"         "part name: '..'" \
+  env -C "$w" "$NP" t2 --parts '..,api'
+assert_refuses "refuses a leading dash"         "may not start with '-'" \
+  env -C "$w" "$NP" t3 --parts '-rf,api'
+assert_refuses "refuses an absolute part path"  "part name: '/tmp/pwned'" \
+  env -C "$w" "$NP" t4 --parts '/tmp/pwned,api'
+assert_absent "and creates no absolute path"    "/tmp/pwned"
+# The guard has to hold at the chokepoint too, or the callers are the only check
+# and the rule drifts again the next time something calls seed-part.sh.
+assert_refuses "seed-part.sh refuses it directly too" "not a usable part" \
+  "$REPO/lib/seed-part.sh" "$w" '../sneaky'
+
+# A refusal must leave nothing half-made, and every assertion above passed while
+# it did: the target directory and its .gitignore were written seventy lines
+# before --parts was ever looked at, so a refused run left `t/` on disk. The
+# cost is not the stray directory. It is that the retry with the name corrected
+# hits "Already exists: ... use install.sh instead", which sends the user to the
+# wrong tool for what is a typo - and the guard's own comment claimed "nothing
+# is created before a bad name is reported" the whole time.
+assert_absent "a refused --parts leaves no half-made project" "$w/t"
+assert_ok     "so the corrected retry is not blocked by it" \
+  env -C "$w" "$NP" t --parts web,api
+assert_exists "and the retry really built the product" "$w/t/blueprint/orchestration.md"
+
+# A refusal that names no route is how a supported shape becomes unreachable.
+# lib/seed-part.sh takes `apps/web` and docs/multi-part.md calls a nested part
+# supported; both bulk callers refused it with "A part is a single directory
+# name, not a path" and named nothing that does take one. The limit is real -
+# each creates every part in one pass, and convert-to-parts.sh keys what it
+# moves on a top-level name - so what has to hold is that the refusal says
+# where to go, not that it disappears.
+assert_refuses "new-project.sh sends a nested part to the route that takes one" \
+  "lib/seed-part.sh" env -C "$w" "$NP" t5 --parts 'apps/web,api'
+assert_absent  "and still creates nothing"  "$w/t5"
+w2=$(workdir); (cd "$w2" && "$NP" conv >/dev/null 2>&1)
+assert_refuses "convert-to-parts.sh does the same" \
+  "lib/seed-part.sh" env -C "$w2/conv" "$CP" --parts 'apps/web,api' --existing 'apps/web'
+
+section "part-name validation shared by new-project.sh and convert-to-parts.sh"
+# convert-to-parts.sh's own part-list loop checked only '*/*', '.' and '..' -
+# missing the leading '-', backslash, space and empty checks lib/seed-part.sh
+# applies. So `convert-to-parts.sh --parts 'web,-api' --existing web
+# --allow-dirty` moved every file in the project into web/ and only THEN failed
+# inside lib/seed-part.sh on '-api' - after the destructive step had already
+# run. Re-running reported "already a multi-part project", because the move
+# itself had already happened. Both bulk scripts now share one check
+# (lib/part-name.sh) so the two cannot drift apart again.
+
+# (a) a leading dash, checked before convert-to-parts.sh moves anything.
+w=$(workdir); (cd "$w" && "$NP" conv --no-git >/dev/null 2>&1)
+before=$(find "$w/conv" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh refuses a leading dash" "may not start with '-'" \
+  env -C "$w/conv" "$CP" --parts 'web,-api' --existing web --allow-dirty
+after=$(find "$w/conv" -not -path '*/.git/*' | sort)
+assert_eq    "and moves nothing before refusing it"        "$before" "$after"
+assert_absent "and never creates the part directory"        "$w/conv/web"
+
+# (b) a duplicate part name. `new-project.sh dup --no-git --parts web,web`
+# used to exit 0 with web/ listed twice in AGENTS.md; the same duplicate also
+# defeated convert-to-parts.sh's "at least two parts" guard, since two entries
+# in the list is not two real parts.
+w2=$(workdir)
+assert_refuses "new-project.sh refuses a duplicate part name" "listed more than once" \
+  env -C "$w2" "$NP" dup --parts web,web
+assert_absent "and creates nothing at all"                  "$w2/dup"
+
+w3=$(workdir); (cd "$w3" && "$NP" conv2 --no-git >/dev/null 2>&1)
+before3=$(find "$w3/conv2" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh refuses a duplicate part name too" \
+  "listed more than once" \
+  env -C "$w3/conv2" "$CP" --parts 'web,web' --existing web --allow-dirty
+after3=$(find "$w3/conv2" -not -path '*/.git/*' | sort)
+assert_eq "and moves nothing before refusing it, defeating its own guard" \
+  "$before3" "$after3"
+
+# (c) `tr -d '[:space:]'` stripped every space, not just leading and trailing,
+# so `new-project.sh x --parts "we b,api"` silently created web/ instead of
+# refusing 'we b' - trimming only the ends is what lets the existing space
+# check actually see it.
+w4=$(workdir)
+assert_refuses "new-project.sh rejects an internal space instead of trimming it away" \
+  "may not contain a space" env -C "$w4" "$NP" x --parts "we b,api"
+assert_absent "and does not silently create 'web'"          "$w4/x/web"
+assert_absent "and creates nothing at all"                  "$w4/x"
+
+w5=$(workdir); (cd "$w5" && "$NP" conv3 --no-git >/dev/null 2>&1)
+before5=$(find "$w5/conv3" -not -path '*/.git/*' | sort)
+assert_refuses "convert-to-parts.sh rejects an internal space the same way" \
+  "may not contain a space" \
+  env -C "$w5/conv3" "$CP" --parts "we b,api" --existing "we b" --allow-dirty
+after5=$(find "$w5/conv3" -not -path '*/.git/*' | sort)
+assert_eq "and moves nothing before refusing it" "$before5" "$after5"
+
+# A plain "did the command fail" assertion cannot tell a guard that runs before
+# anything is created apart from one that only exists downstream: lib/seed-part.sh
+# has its own copy of these checks, so if new-project.sh's own upfront guard
+# (~line 120, now the check_part_name call above the mkdir) were deleted, a bad
+# name after a good one would still fail the overall command - just after the
+# target directory and every earlier part were already fully seeded, the exact
+# half-made state this guard exists to prevent.
+w6=$(workdir)
+assert_fails "refuses a leading dash even when it is not the first part" \
+  env -C "$w6" "$NP" t6 --parts 'good,-rf'
+assert_absent "and leaves no half-made project - not even the target directory" \
+  "$w6/t6"
+
+section "new-project.sh --parts"
+w=$(workdir); (cd "$w" && "$NP" prod --parts web,api >/dev/null 2>&1)
+p="$w/prod"
+assert_exists "creates the product root"        "$p/AGENTS.md"
+assert_exists "creates each part"               "$p/web/AGENTS.md"
+assert_exists "creates the second part"         "$p/api/AGENTS.md"
+assert_exists "creates the board"               "$p/blueprint/orchestration.md"
+assert_exists "creates a status file per part"  "$p/blueprint/status/web.md"
+assert_exists "and for the other part"          "$p/blueprint/status/api.md"
+assert_exists "creates contracts/"              "$p/contracts"
+assert_eq     "the root has skills to run orchestrate from" "$NSKILLS" \
+  "$(ls "$p/.claude/skills" 2>/dev/null | wc -l | tr -d ' ')"
+assert_eq     "each part has the full set"      "$NSKILLS" \
+  "$(ls "$p/web/.claude/skills" 2>/dev/null | wc -l | tr -d ' ')"
+assert_ok     "a part declares Part:"           grep -q '^- Part: web' "$p/web/AGENTS.md"
+assert_ok     "a part declares Product root:"   grep -q '^- Product root:' "$p/web/AGENTS.md"
+assert_absent "the product plan is not copied into a part" "$p/web/blueprint/project-plan.md"
+
+section "the board names this product's real parts, not the template's examples"
+# The board answers one question - where each part's state lives - and it shipped
+# copied verbatim from the template, naming `web.md` and `api.md` whatever the
+# parts were actually called. Every file was individually valid, so all 13 rules
+# passed over a coordination file that was wrong about the thing it exists to
+# record. Root AGENTS.md had a writer for its part list; the board did not.
+#
+# These names are deliberately NOT web/api. With those the bug is invisible,
+# which is exactly how it survived - a test using them would have passed against
+# the broken script.
+w=$(workdir); (cd "$w" && "$NP" shop --parts frontend,backend >/dev/null 2>&1)
+b="$w/shop/blueprint/orchestration.md"
+assert_ok     "the board lists the first real part"   grep -q '^    blueprint/status/frontend\.md$' "$b"
+assert_ok     "and the second"                        grep -q '^    blueprint/status/backend\.md$' "$b"
+assert_lacks  "and names no part that does not exist" "$b" '^    blueprint/status/web\.md$'
+assert_lacks  "the seeding placeholder is consumed"   "$b" '^    \(none yet'
+
+# Adding a part later has to reach the board too - that is the half that drifted.
+"$SP" "$w/shop" worker >/dev/null 2>&1
+assert_ok  "a part added later is listed too" grep -q '^    blueprint/status/worker\.md$' "$b"
+assert_eq  "and listed exactly once" "1" \
+  "$(grep -c '^    blueprint/status/worker\.md$' "$b")"
+
+# The invariant the three above are instances of: the board and the directory
+# agree in both directions.
+unlisted=""
+for f in "$w/shop"/blueprint/status/*.md; do
+  n=$(basename "$f")
+  grep -q "^    blueprint/status/$n\$" "$b" || unlisted="$unlisted $n"
+done
+assert_eq "every status file the product has is named on the board" "" "$unlisted"
+
+phantom=""
+while read -r n; do
+  [ -e "$w/shop/blueprint/status/$n" ] || phantom="$phantom $n"
+done < <(sed -n 's|^    blueprint/status/\(.*\.md\)$|\1|p' "$b")
+assert_eq "and the board names no status file that is missing" "" "$phantom"
+
+# The converter builds a product too, and shares lib/ so it cannot drift - but
+# that is the claim, and this is the check.
+w2=$(workdir); (cd "$w2" && "$NP" conv2 >/dev/null 2>&1)
+(cd "$w2/conv2" && "$CP" --parts ui,svc --existing ui >/dev/null 2>&1)
+b2="$w2/conv2/blueprint/orchestration.md"
+assert_ok    "the converted product's board names its parts" grep -q '^    blueprint/status/ui\.md$' "$b2"
+assert_lacks "and not the template's"                        "$b2" '^    blueprint/status/web\.md$'
+
+section "concurrent sessions cannot corrupt each other's status files"
+# The multi-part design rests on one claim: separate files remove the write race
+# by construction. That was reasoning, not a measurement, until this ran. Three
+# writers, 300 rewrites each, genuinely concurrent.
+w=$(workdir); (cd "$w" && "$NP" race --parts web,api >/dev/null 2>&1)
+"$SP" "$w/race" worker >/dev/null 2>&1
+st="$w/race/blueprint/status"
+_writer() {
+  for i in $(seq 1 200); do
+    printf '# %s\n\n**State:** building\n**Item:** %s\n**Blocked on:** -\n**Review packet:** -\n**Updated:** 2026-09-07\n' "$1" "$i" > "$st/$1.md"
+  done
+}
+_writer web & _writer api & _writer worker & wait
+
+intact=0
+for n in web api worker; do
+  [ "$(head -1 "$st/$n.md")" = "# $n" ] \
+    && grep -q '^\*\*Item:\*\* 200$' "$st/$n.md" \
+    && [ "$(wc -l < "$st/$n.md")" -eq 7 ] && intact=$((intact + 1))
+done
+assert_eq "all three survive 600 concurrent writes intact" "3" "$intact"
+
+# The control: the design the board explicitly rejected, under the same load.
+# Without this the claim above is only that the chosen design works, not that
+# the rejected one fails - and that is the half that justifies the choice.
+sh_file="$w/race/shared-table.md"
+printf '| part | item |\n|---|---|\n| web | 0 |\n| api | 0 |\n| worker | 0 |\n' > "$sh_file"
+_shared() {
+  for i in $(seq 1 200); do
+    python3 -c "
+import sys,pathlib,re
+p=pathlib.Path(sys.argv[1]); s=p.read_text()
+p.write_text(re.sub(rf'^\| {sys.argv[2]} \| \d+ \|$', f'| {sys.argv[2]} | {sys.argv[3]} |', s, flags=re.M))
+" "$sh_file" "$1" "$i"
+  done
+}
+# Losing a row is a race, so a single round is near-certain but not certain, and
+# a control that fails spuriously is worse than no control. Three rounds; the
+# claim is that the shared design loses rows, not that it loses them every time.
+lost=no
+for _round in 1 2 3; do
+  printf '| part | item |\n|---|---|\n| web | 0 |\n| api | 0 |\n| worker | 0 |\n' > "$sh_file"
+  _shared web & _shared api & _shared worker & wait
+  [ "$(grep -c '^| \(web\|api\|worker\) |' "$sh_file")" -eq 3 ] || { lost=yes; break; }
+done
+assert_eq "a shared table under the same load loses rows" "yes" "$lost"
+
+section "adding a part reports it, without making the bulk callers repeat it"
+# README documents lib/seed-part.sh as the way to add a part to an existing
+# product. It created a directory, a full skill set, a status file and two list
+# entries, and printed nothing at all - exit 0, no output, go and look. The two
+# internal callers print their own summary, so they pass --quiet; without that
+# split, fixing the silence would have made `new-project.sh --parts` repeat
+# itself once per part.
+w=$(workdir); (cd "$w" && "$NP" prod --parts web,api >/dev/null 2>&1)
+out=$("$SP" "$w/prod" mobile 2>&1)
+assert_ok "the standalone command says what it made" \
+  grep -q "Added part 'mobile'" <<< "$out"
+assert_ok "and names where the part's live state actually lives" \
+  grep -q 'blueprint/status/mobile.md' <<< "$out"
+assert_ok "and points at the product root, not the part" \
+  grep -q 'never inside the part' <<< "$out"
+
+w2=$(workdir)
+np_out=$(cd "$w2" && "$NP" prod2 --parts web,api 2>&1)
+assert_eq "new-project.sh does not repeat it per part" "0" \
+  "$(grep -c 'Added part' <<< "$np_out" | tr -d ' ')"
+
+w3=$(workdir); (cd "$w3" && "$NP" conv3 >/dev/null 2>&1)
+cv_out=$(cd "$w3/conv3" && "$CP" --parts ui,svc --existing ui 2>&1)
+assert_eq "and neither does the converter" "0" \
+  "$(grep -c 'Added part' <<< "$cv_out" | tr -d ' ')"
+
+section "install.sh knows a product root from a part"
+# A product root takes the skills and nothing else. README documented
+# --skills-only for it, but a flag you must remember is not a guard: run without
+# it and the root gained a fundamentals.md it has no use for, and six AGENTS.md
+# sections were reported as legacy drift - because a product root's AGENTS.md
+# comes from template/product/AGENTS.md and was being compared against the part
+# template. It told the user to run `setup` over a file that was already right.
+w=$(workdir); (cd "$w" && "$NP" prod --parts web,api >/dev/null 2>&1)
+before=$(find "$w/prod" -not -path '*/.git/*' -not -path '*/skills/*' -not -path '*/.opencode/*' -type f | sort)
+root_out=$("$IN" --target "$w/prod" 2>&1)
+after=$(find "$w/prod" -not -path '*/.git/*' -not -path '*/skills/*' -not -path '*/.opencode/*' -type f | sort)
+
+assert_eq "installing over a product root adds no build-loop files" "$before" "$after"
+assert_ok "and says it detected one, rather than changing mode silently" \
+  grep -q 'product root detected' <<< "$root_out"
+assert_fails "and reports no AGENTS.md section as missing" \
+  grep -q 'AGENTS.md has no:' <<< "$root_out"
+assert_absent "no fundamentals.md at a root that builds no code" \
+  "$w/prod/blueprint/context/fundamentals.md"
+
+# The detection must not catch a part, which declares Part: and needs the loop.
+part_out=$("$IN" --target "$w/prod/web" 2>&1)
+assert_fails "a part is not mistaken for a root" \
+  grep -q 'product root detected' <<< "$part_out"
+assert_exists "and keeps its build-loop files" "$w/prod/web/blueprint/build-plan.md"
+
+section "a board naming parts that do not exist is reported, never rewritten"
+# Products seeded before the board's part list had a writer name web.md and
+# api.md whatever their parts are called. The board holds the frozen contract
+# line, so it is the user's file - this reports and leaves it alone.
+w2=$(workdir); (cd "$w2" && "$NP" old --parts frontend,backend >/dev/null 2>&1)
+b="$w2/old/blueprint/orchestration.md"
+python3 - "$b" <<'PYEOF'
+import sys, pathlib, re
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+s = re.sub(r"^    blueprint/status/\w+\.md$", "", s, flags=re.M)
+s = s.replace("**One file per part**, under `blueprint/status/`:",
+              "**One file per part**, under `blueprint/status/`:\n\n    blueprint/status/web.md\n    blueprint/status/api.md")
+p.write_text(s)
+PYEOF
+stale=$("$IN" --target "$w2/old" 2>&1)
+assert_ok "it names the file that does not exist" grep -q 'web.md' <<< "$stale"
+assert_ok "and the real part the board omits"    grep -q 'frontend.md' <<< "$stale"
+assert_ok "and says the board is the user's to fix" \
+  grep -q 'nothing here rewrites it' <<< "$stale"
+assert_ok "the board itself is untouched" grep -q 'blueprint/status/web.md' "$b"
+
+# Status files are not committed, so a fresh clone has only the ones this machine
+# has written. A listed part with no file yet is normal, not a wrong board.
+w4=$(workdir); (cd "$w4" && "$NP" fresh --parts frontend,backend >/dev/null 2>&1)
+rm "$w4/fresh/blueprint/status/backend.md"
+clone_out=$("$IN" --target "$w4/fresh" --skills-only 2>&1)
+assert_ok "a part with no status file yet is not reported as a wrong board" \
+  bash -c '! grep -q "lists the wrong parts" <<< "$1"' _ "$clone_out"
+
+# A product seeded before status/ was ignored still tracks it. Untracking is the
+# user's index, so install.sh prints the commands and changes nothing.
+w5=$(workdir); (cd "$w5" && "$NP" legacy --parts web,api >/dev/null 2>&1)
+sed -i '/^\/blueprint\/status\/\*\.md$/d' "$w5/legacy/.gitignore"
+git -C "$w5/legacy" add -A >/dev/null && git -C "$w5/legacy" -c user.name=t -c user.email=t@t commit -qm track
+assert_ok "the fixture really tracks its status files" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- "blueprint/status/*.md")"' _ "$w5/legacy"
+tracked_out=$("$IN" --target "$w5/legacy" --skills-only 2>&1)
+assert_ok "install.sh says the status files are committed" \
+  grep -q 'blueprint/status/ is committed' <<< "$tracked_out"
+assert_ok "and gives the command that untracks them" \
+  grep -qF 'git rm --cached blueprint/status/*.md' <<< "$tracked_out"
+assert_ok "and runs neither" \
+  bash -c 'test -n "$(git -C "$1" ls-files -- "blueprint/status/*.md")"' _ "$w5/legacy"
+
+# The report lived inside the non-skills-only branch, so --skills-only silently
+# suppressed every legacy finding - and --skills-only is the documented mode for
+# a product root, the only place this particular finding can occur. The report
+# existed and could never reach its own case. Explicit flag, not just detection.
+explicit=$("$IN" --target "$w2/old" --skills-only 2>&1)
+assert_ok "legacy findings survive an explicit --skills-only" \
+  grep -q 'lists the wrong parts' <<< "$explicit"
+
+section "a context file that lands on upgrade does not land unloaded"
+# CLAUDE.md is the user's and is never rewritten, so a project created before a
+# context file existed keeps an import list that predates it: install writes the
+# file into blueprint/context/ and no session ever loads it. Found on a real
+# project - one took fundamentals.md and needs-you.md this way.
+w=$(workdir); (cd "$w" && "$NP" old >/dev/null 2>&1)
+# age the project: drop the two newest imports, as an older CLAUDE.md would have
+python3 - "$w/old/CLAUDE.md" <<'PYEOF'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1])
+p.write_text("".join(l for l in p.read_text().splitlines(keepends=True)
+                     if "fundamentals.md" not in l and "needs-you.md" not in l))
+PYEOF
+aged=$("$IN" --target "$w/old" 2>&1)
+assert_ok "install names the context files nothing loads" \
+  grep -q 'CLAUDE.md does not load' <<< "$aged"
+assert_ok "and names them individually" grep -q 'needs-you.md' <<< "$aged"
+assert_ok "and gives the exact import line to add" \
+  grep -q '@blueprint/context/needs-you.md' <<< "$aged"
+assert_ok "while leaving CLAUDE.md alone - it is the user's file" \
+  test "$(grep -c 'needs-you' "$w/old/CLAUDE.md")" -eq 0
+
+# A current project must not trip it, or the report is noise nobody reads.
+w2=$(workdir); (cd "$w2" && "$NP" fresh >/dev/null 2>&1)
+fresh_out=$("$IN" --target "$w2/fresh" 2>&1)
+assert_fails "a project created by this pack reports nothing" \
+  grep -q 'does not load' <<< "$fresh_out"
+
+# The reverse: fundamentals.md left the loaded set, and a CLAUDE.md written
+# before that keeps importing 11 KB no session needs.
+echo "@blueprint/context/fundamentals.md" >> "$w2/fresh/CLAUDE.md"
+over_out=$("$IN" --target "$w2/fresh" 2>&1)
+assert_ok "install names a file CLAUDE.md loads that is now read on demand" \
+  grep -q 'read on demand: fundamentals.md' <<< "$over_out"
+assert_fails "and a fresh project does not trip it" \
+  grep -q 'read on demand' <<< "$fresh_out"
+
+# D28: current-work.md left the loaded set too - a spec in flight was the
+# largest file in every session and every subagent. Every project installed before
+# that still imports it, so this is the route by which they find out.
+w3=$(workdir); (cd "$w3" && "$NP" older >/dev/null 2>&1)
+assert_eq "a new project's CLAUDE.md does not import the spec file" 0 \
+  "$(grep -c 'current-work.md' "$w3/older/CLAUDE.md")"
+echo "@blueprint/context/current-work.md" >> "$w3/older/CLAUDE.md"
+cw_out=$("$IN" --target "$w3/older" 2>&1)
+assert_ok "install names an older CLAUDE.md that still loads the spec file" \
+  grep -q 'read on demand: current-work.md' <<< "$cw_out"
+assert_ok "with the exact line to remove" \
+  grep -q '^        @blueprint/context/current-work.md$' <<< "$cw_out"
+assert_ok "and says the row in AGENTS.md has to move too" \
+  grep -q "move each one's row to its read-on-demand table" <<< "$cw_out"
+assert_eq "while leaving that CLAUDE.md alone" 1 "$(grep -c 'current-work.md' "$w3/older/CLAUDE.md")"
+# The list of read-on-demand files is the table's first column, nothing else. A
+# break of this test once changed nothing: the row was deleted and install still
+# named the file, having found it in a sentence further down AGENTS.md. So a
+# loaded file mentioned in prose there would have been reported for removal.
+pk=$(workdir); cp -r "$REPO/." "$pk/pack"; rm -rf "$pk/pack/.git"
+printf '\nSee `blueprint/context/findings.md` for what is open.\n' >> "$pk/pack/template/AGENTS.md"
+(cd "$pk" && "$pk/pack/new-project.sh" prose >/dev/null 2>&1)
+prose_out=$("$pk/pack/install.sh" --target "$pk/prose" 2>&1)
+assert_ok "the copied pack installs" grep -q 'Installed into' <<< "$prose_out"
+assert_fails "a loaded file named in prose below the table is not reported" \
+  grep -q 'read on demand' <<< "$prose_out"
+
+# A hand-written CLAUDE.md that never imports AGENTS.md: Claude Code loads its
+# own architecture text and none of the pack's, and the two drift apart.
+sed -i '/^@AGENTS.md$/d' "$w2/fresh/CLAUDE.md"
+noimp_out=$("$IN" --target "$w2/fresh" 2>&1)
+assert_ok "install names a CLAUDE.md that does not import AGENTS.md" \
+  grep -q 'CLAUDE.md does not import AGENTS.md' <<< "$noimp_out"
+assert_eq "and leaves that CLAUDE.md alone" 0 "$(grep -c '^@AGENTS.md$' "$w2/fresh/CLAUDE.md")"
+assert_eq "and a fresh project does not trip it" "" \
+  "$(grep 'does not import AGENTS.md' <<< "$fresh_out")"
+
+section "opencode wrappers carry the modes the skill declares"
+# Rule 15 makes sure a mode is named in the skill's own description, which is
+# what Claude Code matches on. The opencode wrapper keeps only the FIRST
+# SENTENCE of that description, so no mode ever survived into it - and in
+# opencode the wrapper is what the command menu shows and what the model matches
+# a request against. `/ideate --rescope` worked, because $ARGUMENTS reaches the
+# skill body; nobody could discover it existed. Rule 15 held in one tool of two.
+w=$(workdir); (cd "$w" && "$NP" wr >/dev/null 2>&1)
+c="$w/wr/.opencode/command"
+assert_ok "a declared mode reaches the wrapper" \
+  grep -q 'Modes this skill declares: --rescope' "$c/ideate.md"
+assert_ok "and so do multi-argument scopes" \
+  grep -q 'Modes this skill declares: current changed full' "$c/review.md"
+assert_fails "a skill with no declared modes gets no modes line" \
+  grep -q 'Modes this skill' "$c/build.md"
+assert_ok "the wrapper still passes arguments through to the skill" \
+  grep -q '\$ARGUMENTS' "$c/ideate.md"
+
+# Every mode rule 15 enforces in the description must reach the wrapper too, or
+# the guarantee is only true in Claude Code.
+missing=""
+for f in "$REPO"/skills/*.md; do
+  n=$(basename "$f" .md)
+  args=$(sed -n '/^## Input/,/^## [^I]/p' "$f" | grep -oE '^\| `[^`]+`' | sed 's/^| //; s/`//g' | sort -u || true)
+  for a in $args; do
+    grep -qF -- "$a" "$c/$n.md" || missing="$missing $n:$a"
+  done
+done
+assert_eq "no declared mode is missing from its wrapper" "" "$missing"
+
+section "a single-part project is unaffected by the multi-part machinery"
+w=$(workdir); (cd "$w" && "$NP" solo >/dev/null 2>&1)
+assert_absent "no board"                "$w/solo/blueprint/orchestration.md"
+assert_absent "no status directory"     "$w/solo/blueprint/status"
+assert_lacks  "no Part: field"          "$w/solo/AGENTS.md" '^- Part: '
+
+section "install.sh - into a project that already exists"
+w=$(workdir); mkdir -p "$w/existing/src"
+printf '{"name":"mine"}\n' > "$w/existing/package.json"
+printf 'console.log(1)\n'  > "$w/existing/src/index.js"
+assert_ok  "installs into an existing tree"  "$IN" --target "$w/existing"
+assert_eq  "leaves the project's files alone" '{"name":"mine"}' "$(cat "$w/existing/package.json")"
+assert_exists "installs the skills"          "$w/existing/.claude/skills/build/SKILL.md"
+
+# A plain re-install upgrades skills. It used to keep any that differed, on the
+# assumption that a difference meant a local edit - it usually means the pack
+# moved on, so re-installing upgraded nothing and you had to know to pass
+# --force. A stale skill is invisible and behaves like a current one.
+printf 'stale-from-an-old-version\n' > "$w/existing/.claude/skills/spec/SKILL.md"
+assert_ok "a plain re-install runs" "$IN" --target "$w/existing"
+assert_fails "and upgrades a stale skill without --force" \
+  grep -qx stale-from-an-old-version "$w/existing/.claude/skills/spec/SKILL.md"
+assert_ok "the upgraded skill matches the source" \
+  cmp -s "$REPO/skills/spec.md" "$w/existing/.claude/skills/spec/SKILL.md"
+
+printf 'edited\n' >> "$w/existing/.claude/skills/build/SKILL.md"
+printf 'my plan\n' > "$w/existing/blueprint/project-plan.md"
+assert_ok    "--force re-installs"                "$IN" --target "$w/existing" --force
+assert_lacks "--force replaced the edited skill"  "$w/existing/.claude/skills/build/SKILL.md" '^edited$'
+assert_eq    "--force left the plan alone" "my plan" "$(cat "$w/existing/blueprint/project-plan.md")"
+
+section "pack-owned files refresh on install; project-owned never do"
+# A template file used to freeze at install time forever. A project set up
+# months earlier still had a findings.md naming skills that no longer exist and
+# a CLAUDE.md importing a file nothing writes - and `setup` was correcting all
+# of it by hand, 1741 deleted lines the installer should have done.
+#
+# The boundary is ownership, not staleness: a file the project never edits is
+# refreshed, a file holding project content is never touched even when the
+# template moves on.
+w=$(workdir); (cd "$w" && "$NP" own >/dev/null 2>&1)
+p="$w/own"
+printf 'STALE\n' > "$p/blueprint/context/fundamentals.md"
+printf 'STALE\n' > "$p/blueprint/history/features/README.md"
+printf 'MINE\n'  > "$p/blueprint/context/coding-standards.md"
+printf 'MY PLAN\n' > "$p/blueprint/project-plan.md"
+printf 'MY ITEMS\n' > "$p/blueprint/build-plan.md"
+assert_ok "re-install runs" "$IN" --target "$p"
+
+assert_lacks "the pack's fundamentals are refreshed" "$p/blueprint/context/fundamentals.md" '^STALE$'
+assert_lacks "so are the history READMEs"            "$p/blueprint/history/features/README.md" '^STALE$'
+assert_eq "this project's standards are NOT touched" "MINE"     "$(cat "$p/blueprint/context/coding-standards.md")"
+assert_eq "nor is the plan"                          "MY PLAN"  "$(cat "$p/blueprint/project-plan.md")"
+assert_eq "nor the build plan"                       "MY ITEMS" "$(cat "$p/blueprint/build-plan.md")"
+
+# The split exists so the fundamentals can be refreshed at all. One file with a
+# pack-owned half and a project-owned half is a file with two writers, which is
+# what left every existing project without the curated list.
+assert_ok "fundamentals ships separately" test -f "$REPO/template/blueprint/context/fundamentals.md"
+assert_fails "and is not still inside coding-standards" \
+  grep -q '^# Part 1' "$REPO/template/blueprint/context/coding-standards.md"
+
+section "opencode wrappers are generated, so they refresh like skills do"
+# The wrapper is generated from the skill's frontmatter, which makes it a
+# pack-owned artifact with one source - the same category as the skill itself.
+# It used to be written only when absent, so a description could change, the
+# installed skill would take the new text, and the wrapper would keep the old.
+# In opencode the wrapper's description is what the command menu shows and what
+# the model matches a request against, so the stale copy is the visible one.
+w=$(workdir); (cd "$w" && "$NP" wrap >/dev/null 2>&1)
+p="$w/wrap"
+printf 'STALE WRAPPER\n' > "$p/.opencode/command/verify.md"
+rm -f "$p/.opencode/command/spec.md"
+out=$("$IN" --target "$p" 2>&1)
+
+assert_fails "a stale wrapper is rewritten without --force" \
+  grep -qx 'STALE WRAPPER' "$p/.opencode/command/verify.md"
+assert_exists "a deleted wrapper comes back" "$p/.opencode/command/spec.md"
+assert_ok "the rewrite is reported, not silent" \
+  grep -q 'rewritten from a different version:.*verify' <<< "$out"
+# The description is the half that matters: it is what opencode matches on.
+assert_ok "the wrapper carries the skill's current description" \
+  grep -q "$(sed -n 's/^description:[[:space:]]*"\{0,1\}//p' "$REPO/skills/verify.md" \
+            | head -1 | sed 's/\. .*//' | cut -c1-40)" "$p/.opencode/command/verify.md"
+# An unchanged wrapper must not be reported as rewritten, or the line becomes
+# noise on every install and stops being read.
+out=$("$IN" --target "$p" 2>&1)
+assert_fails "an unchanged wrapper is not reported" \
+  grep -q 'rewritten from a different version' <<< "$out"
+
+section "legacy shapes are reported, never rewritten"
+# A project from before a structural change carries the old shape. The installer
+# must not fix it: these are project-owned files, and a merge needs judgement a
+# script has not got - the first real `setup` run corrected four wrong rules
+# while restructuring, and stripping "the duplicated part" would have deleted
+# those corrections too. So it names the problem and touches nothing.
+w=$(workdir); (cd "$w" && "$NP" legacy >/dev/null 2>&1)
+p="$w/legacy"
+printf '# Coding Standards\n\n## Part 1 - Fundamentals\n\nMY OLD RULES\n' \
+  > "$p/blueprint/context/coding-standards.md"
+mkdir -p "$p/blueprint/.state"; printf '{}\n' > "$p/blueprint/.state/manifest.json"
+out=$("$IN" --target "$p" 2>&1)
+
+assert_eq "the stale Part 1 is left exactly as it was" \
+  "$(printf '# Coding Standards\n\n## Part 1 - Fundamentals\n\nMY OLD RULES')" \
+  "$(cat "$p/blueprint/context/coding-standards.md")"
+assert_exists "the old state directory is not deleted either" "$p/blueprint/.state/manifest.json"
+assert_ok "it reports the stale Part 1"    bash -c 'printf "%s" "$1" | grep -q "still has its own"' _ "$out"
+assert_ok "it names setup as the fixer"    bash -c 'printf "%s" "$1" | grep -q "Run .setup. to reconcile"' _ "$out"
+assert_ok "it reports the old state dir"   bash -c 'printf "%s" "$1" | grep -q "blueprint/.state/ is from an older pack"' _ "$out"
+assert_ok "setup knows how to merge it"    grep -q 'has its own "Part 1"' "$REPO/skills/setup.md"
+
+# A project with neither must not be told it has them.
+w2=$(workdir); (cd "$w2" && "$NP" clean >/dev/null 2>&1)
+out2=$("$IN" --target "$w2/clean" 2>&1)
+assert_fails "a clean project gets no legacy report" \
+  bash -c 'printf "%s" "$1" | grep -q "From an older version"' _ "$out2"
+
+section "the closing advice tells a first install from an upgrade"
+# "Run setup" is right for a first install and wrong for an upgrade: a project
+# part-way through the loop has already been tuned. The first attempt inferred
+# it from what had been written and got it exactly backwards - on a first
+# install every pack-owned file is new, which looks identical to nothing needing
+# an update. Decided before anything is written instead.
+w=$(workdir); mkdir -p "$w/fresh"
+first=$("$IN" --target "$w/fresh" 2>&1)
+again=$("$IN" --target "$w/fresh" 2>&1)
+assert_ok "a first install points at setup" \
+  bash -c 'printf "%s" "$1" | grep -q "run .setup. so the workflow"' _ "$first"
+assert_fails "and does not claim the workflow was already there" \
+  bash -c 'printf "%s" "$1" | grep -q "already had the workflow"' _ "$first"
+assert_ok "a re-install points at progress instead" \
+  bash -c 'printf "%s" "$1" | grep -q "run .progress. to see where it stands"' _ "$again"
+assert_fails "and does not tell you to re-run setup" \
+  bash -c 'printf "%s" "$1" | grep -q "run .setup. so the workflow"' _ "$again"
+
+section "AGENTS.md sections added after a project was set up are reported"
+# AGENTS.md is project-owned, so it is never overwritten - which means a section
+# added to the template later never reaches an existing project. One had no
+# Environments table while nine skills read it, including `migrate`, whose rule
+# is that an environment *not* in the table holds real data. Reported, never
+# inserted: the file is the user's and a section may have been deleted on purpose.
+w=$(workdir); (cd "$w" && "$NP" drift >/dev/null 2>&1)
+p="$w/drift"
+# Just the heading - that is what the comparison looks at, and it avoids
+# assuming Environments has another section after it (it does not).
+sed -i '/^## Environments$/d' "$p/AGENTS.md"
+out=$("$IN" --target "$p" 2>&1)
+assert_ok "a missing section is named"   bash -c 'printf "%s" "$1" | grep -q "AGENTS.md has no: Environments"' _ "$out"
+assert_ok "and setup is named as the fixer" bash -c 'printf "%s" "$1" | grep -q "setup. fills them in"' _ "$out"
+assert_lacks "the file itself is not edited" "$p/AGENTS.md" '^## Environments'
+
+w2=$(workdir); (cd "$w2" && "$NP" clean2 >/dev/null 2>&1)
+out2=$("$IN" --target "$w2/clean2" 2>&1)
+assert_fails "a current project is not nagged" \
+  bash -c 'printf "%s" "$1" | grep -q "AGENTS.md has no"' _ "$out2"
+
+section "upgrading prunes this pack's retired skills, and only those"
+# Installing never removed anything, so a project set up long ago kept every
+# skill it was ever given. A real one had 42 installed, 16 from a predecessor
+# pack - all loaded by the agent, all contradicting the current workflow.
+# check.sh rule 5 catches a stale reference inside this repo; nothing caught
+# stale files inside a project, which is the copy anyone runs against.
+w=$(workdir); (cd "$w" && "$NP" old >/dev/null 2>&1)
+p="$w/old"
+retired_name=$(grep -v '^#' "$REPO/lib/retired-names" | grep -v '^[[:space:]]*$' | head -1)
+for a in .claude/skills .agents/skills; do
+  mkdir -p "$p/$a/$retired_name" "$p/$a/my-own-thing"
+  printf 'stale\n' > "$p/$a/$retired_name/SKILL.md"
+  printf 'mine\n'  > "$p/$a/my-own-thing/SKILL.md"
+done
+assert_ok "re-install runs"  "$IN" --target "$p" --force
+assert_absent "a retired skill is removed"        "$p/.claude/skills/$retired_name"
+assert_absent "removed from the other adapter too" "$p/.agents/skills/$retired_name"
+assert_exists "an unrecognised skill is KEPT"      "$p/.claude/skills/my-own-thing"
+assert_eq "and its content is untouched" "mine" "$(cat "$p/.claude/skills/my-own-thing/SKILL.md")"
+assert_eq "every current skill is still installed" "$NSKILLS" \
+  "$(for d in "$p"/.claude/skills/*/; do n=$(basename "$d"); [ -f "$REPO/skills/$n.md" ] && echo x; done | wc -l | tr -d ' ')"
+assert_refuses "the report names what it kept" "not from this pack" \
+  bash -c '"$0" --target "$1" --force | grep "not from this pack" && exit 1' "$IN" "$p"
+
+section "a skill a framework's generator installed survives a re-install whole"
+# create-react-router writes its own react-router skill, with a references/
+# directory, into .claude/skills and .agents/skills. Only the top-level SKILL.md
+# of an unrecognised skill was ever tested, and the report called anything
+# unrecognised "your own, or from an unknown version" - neither describes it.
+w=$(workdir); (cd "$w" && "$NP" gen >/dev/null 2>&1)
+p="$w/gen"
+# The generator writes into .claude/skills, which in a current project is the
+# link - so the one copy is what must keep it. Counting through both paths would
+# find the same file twice and prove nothing.
+mkdir -p "$p/.claude/skills/react-router/references"
+printf -- '---\nname: react-router\n---\n' > "$p/.claude/skills/react-router/SKILL.md"
+printf 'framework docs\n' > "$p/.claude/skills/react-router/references/routing.md"
+out=$("$IN" --target "$p" --force 2>&1)
+assert_eq "its nested reference files are kept in the one copy" "framework docs" \
+  "$(cat "$p/.agents/skills/react-router/references/routing.md" 2>/dev/null)"
+assert_ok "and Claude Code still reaches them through the link" \
+  test -f "$p/.claude/skills/react-router/references/routing.md"
+assert_ok "and the report says a generator can be where it came from" \
+  grep -q "framework's generator installed" <<< "$out"
+
+section "check.sh and install.sh read the same retired list"
+# Two copies of that list is how the two stop agreeing - the same reason the
+# seed scripts are shared between new-project.sh and convert-to-parts.sh.
+assert_ok "check.sh reads lib/retired-names"   grep -q 'lib/retired-names' "$REPO/check.sh"
+assert_ok "install.sh reads lib/retired-names" grep -q 'lib/retired-names' "$REPO/install.sh"
+assert_fails "neither hardcodes the old inline list" \
+  grep -q 'retired="release feature' "$REPO/check.sh"
+
+section "re-installing over a multi-part product - the upgrade path"
+# Picking up new skills means re-running install.sh over an existing product.
+# It used to write files that are silently wrong rather than harmless: a stub
+# project-plan.md inside a part is what an unqualified `blueprint/` resolves to,
+# so a part would read an empty plan instead of the real one a level up -
+# undoing the deletion lib/seed-part.sh performs for exactly that reason.
+w=$(workdir); (cd "$w" && "$NP" prod --parts web,api >/dev/null 2>&1)
+p="$w/prod"
+printf 'REAL PRODUCT PLAN\n' > "$p/blueprint/project-plan.md"
+printf 'REAL WEB ITEMS\n'    > "$p/web/blueprint/build-plan.md"
+for d in "$p" "$p/web" "$p/api"; do "$IN" --target "$d" --force >/dev/null 2>&1; done
+
+assert_absent "no stub plan appears inside a part"        "$p/web/blueprint/project-plan.md"
+assert_absent "nor inside the other part"                 "$p/api/blueprint/project-plan.md"
+assert_absent "no build plan appears at the product root" "$p/blueprint/build-plan.md"
+assert_absent "no current-work at the product root"       "$p/blueprint/context/current-work.md"
+assert_eq "the real product plan survives" "REAL PRODUCT PLAN" "$(cat "$p/blueprint/project-plan.md")"
+assert_eq "a part's real build plan survives" "REAL WEB ITEMS" "$(cat "$p/web/blueprint/build-plan.md")"
+assert_eq "every part still has the full skill set" "$NSKILLS" \
+  "$(ls "$p/web/.claude/skills" | wc -l | tr -d ' ')"
+assert_exists "the board is untouched" "$p/blueprint/orchestration.md"
+
+section "convert-to-parts.sh"
+w=$(workdir); (cd "$w" && "$NP" conv >/dev/null 2>&1)
+assert_ok     "converts a single-part project" env -C "$w/conv" "$CP" --parts web,api --existing web
+assert_exists "the board appears"              "$w/conv/blueprint/orchestration.md"
+assert_exists "both parts appear"              "$w/conv/api/AGENTS.md"
+assert_exists "the status files appear"        "$w/conv/blueprint/status/web.md"
+assert_exists "the product plan stays at the root" "$w/conv/blueprint/project-plan.md"
+assert_refuses "refuses a part name with a slash" "Not a usable part name" \
+  env -C "$w/conv" "$CP" --parts 'a/b,api' --existing api
+
+section "convert-to-parts.sh will not move a project it cannot undo"
+# This moves every file in the project. Without git there is no way back; with a
+# dirty tree the move is tangled up with work in progress instead of being one
+# reviewable diff. The guard was written with those messages and then never
+# tested - the most destructive path in the pack, held by nothing. Running it by
+# hand is what found the count bug the stderr assertion below now covers.
+w=$(workdir); (cd "$w" && "$NP" nogit --no-git >/dev/null 2>&1)
+assert_refuses "refuses a project with no git" "is not a git repository" \
+  env -C "$w/nogit" "$CP" --parts a,b --existing a
+assert_exists "and nothing was moved"      "$w/nogit/blueprint/build-plan.md"
+assert_absent "no part directory appeared" "$w/nogit/a"
+
+w=$(workdir); (cd "$w" && "$NP" dirty >/dev/null 2>&1)
+printf 'work in progress\n' > "$w/dirty/wip.txt"
+assert_refuses "refuses an uncommitted tree" "has uncommitted changes" \
+  env -C "$w/dirty" "$CP" --parts a,b --existing a
+assert_exists "the uncommitted file is untouched" "$w/dirty/wip.txt"
+assert_absent "and no part directory appeared"    "$w/dirty/a"
+
+# The refusal has to be overridable, or a project without git can never convert.
+assert_ok     "--allow-dirty accepts it deliberately" \
+  env -C "$w/dirty" "$CP" --parts a,b --existing a --allow-dirty
+assert_exists "and the uncommitted file moves with the project" "$w/dirty/a/wip.txt"
+
+section "convert-to-parts.sh refuses what it must not convert"
+# Four guards, none of them ever executed by a test until now - the same probe
+# that found the seed-part one. These all work; nothing held them in place.
+w=$(workdir); (cd "$w" && "$NP" cv1 >/dev/null 2>&1)
+assert_refuses "refuses --existing that is not one of --parts" \
+  "is not in --parts" \
+  env -C "$w/cv1" "$CP" --parts a,b --existing zzz
+assert_absent  "and moves nothing" "$w/cv1/a"
+
+mkdir -p "$w/cv1/a"
+assert_refuses "refuses a part directory that already exists" \
+  "already exists - pick part names" \
+  env -C "$w/cv1" "$CP" --parts a,b --existing a
+rmdir "$w/cv1/a"
+
+mkdir -p "$w/plain" && (cd "$w/plain" && git init -q .)
+assert_refuses "refuses a project without the workflow" \
+  "does not look like a project built with this workflow" \
+  env -C "$w/plain" "$CP" --parts a,b --existing a
+assert_absent  "and seeds no board into it" "$w/plain/blueprint"
+
+(cd "$w" && "$NP" cv2 --parts x,y >/dev/null 2>&1)
+assert_refuses "refuses a product that is already multi-part" \
+  "already a multi-part project" \
+  env -C "$w/cv2" "$CP" --parts a,b --existing a
+assert_exists  "and leaves its existing parts alone" "$w/cv2/x/AGENTS.md"
+
+section "created and converted products are the same shape"
+# The two routes share lib/ precisely so they cannot drift. This is the check
+# that says so - and note it compares *file trees*, which is why it could never
+# have caught the part-name guard being on only one of the two routes.
+w=$(workdir)
+(cd "$w" && "$NP" made --parts web,api >/dev/null 2>&1)
+(cd "$w" && "$NP" turned >/dev/null 2>&1 && cd turned && "$CP" --parts web,api --existing web >/dev/null 2>&1)
+( cd "$w/made"   && find . -path ./.git -prune -o -type f -print | sort > "$TEST_TMP/made.txt" )
+( cd "$w/turned" && find . -path ./.git -prune -o -type f -print | sort > "$TEST_TMP/turned.txt" )
+assert_ok "identical file trees" diff -q "$TEST_TMP/made.txt" "$TEST_TMP/turned.txt"
+
+
+section "the created project reports git honestly"
+# It printed two contradictory lines at once - "with that first commit already
+# made" and "initialised, nothing committed yet". The second was a leftover from
+# before the script started committing. Not cosmetic: "nothing committed yet"
+# tells the user to branch before committing, and an unborn base branch is
+# exactly what breaks a first `ship`.
+w=$(workdir); out=$(cd "$w" && "$NP" gitrep 2>&1)
+assert_ok    "says the first commit was made" grep -q "first commit already made" <<< "$out"
+assert_fails "and does not also say nothing was committed" \
+  grep -q "nothing committed yet" <<< "$out"
+assert_eq    "which is true: one commit exists" "1" \
+  "$(git -C "$w/gitrep" rev-list --count HEAD)"
+assert_eq    "on main" "main" "$(git -C "$w/gitrep" rev-parse --abbrev-ref HEAD)"
+
+# --no-git must not claim a repository or a commit that does not exist.
+w2=$(workdir); out2=$(cd "$w2" && "$NP" nogit --no-git 2>&1)
+assert_fails "--no-git claims no commit"      grep -q "first commit already made" <<< "$out2"
+assert_fails "--no-git claims no git init"    grep -q "before git init" <<< "$out2"
+assert_absent "--no-git creates no repository" "$w2/nogit/.git"
+
+section ".gitignore covers the ecosystems stack can choose"
+# It listed node_modules, .venv, __pycache__, vendor, dist - JS, Python, Ruby.
+# Nothing for .NET, Rust or the JVM. After one `dotnet build`,
+# `git add -A` can stage hundreds of files from bin/ and obj/. `obj/` is .NET's restore
+# output, so it is a dependency directory as much as a build one, and the claim
+# "the first commit is clean, no dependency directory staged" was true only for
+# the ecosystems someone had happened to use.
+w=$(workdir); (cd "$w" && "$NP" ig >/dev/null 2>&1)
+p="$w/ig"
+mkdir -p "$p/api/bin" "$p/api/obj" "$p/target" "$p/src/bin"
+: > "$p/api/bin/App.dll"; : > "$p/api/obj/project.assets.json"
+: > "$p/target/debug.bin"; : > "$p/src/bin/tool"
+(cd "$p" && git add -A >/dev/null 2>&1)
+assert_eq "no .NET/Rust build output is staged" "0" \
+  "$(cd "$p" && git diff --cached --name-only | grep -cE '(^|/)(bin|obj|target)/')"
+# ...and the patterns must not eat the workflow, the way `build/` once ate the
+# `build` skill. That bug shipped in every project for weeks.
+assert_eq "every skill is still tracked" "$NSKILLS" \
+  "$(cd "$p" && git ls-files | grep -c 'agents/skills/.*\.md')"
+
+section "converting reports what it moved into one part"
+# Everything part-local moves into --existing and the other parts are seeded
+# empty. For a build plan that is wrong: `ideate` writes product features, it
+# runs once at the product root, and after the split nothing writes an initial
+# item set again - so the other part's plan stays empty and `spec` run there
+# reports "nothing is queued" while its whole surface is unbuilt.
+#
+# Reported, never split: telling a product feature from a front-end-only one is
+# judgement. Same rule as install.sh - name it, and name who fixes it.
+w=$(workdir); (cd "$w" && "$NP" cvr >/dev/null 2>&1)
+p="$w/cvr"
+python3 - "$p" <<'PY'
+import sys
+b=f"{sys.argv[1]}/blueprint/build-plan.md"; s=open(b).read()
+open(b,"w").write(s.replace('_No items yet. Run `ideate` to write them from the plan._',
+  "- [ ] 1. **A thing** - do it\n- [ ] 2. **Another** - do that"))
+open(f"{sys.argv[1]}/blueprint/context/needs-you.md","a").write("\n### An account\n\n- **Status** - open\n")
+open(f"{sys.argv[1]}/dev-notes/decisions.md","a").write("\n## D1 - A choice (2026-01-01)\n\nChosen: x.\n")
+PY
+(cd "$p" && git add -A >/dev/null 2>&1 && git commit -q -m plans)
+out=$(cd "$p" && "$CP" --parts web,api --existing web 2>&1)
+assert_ok "names the unsplit build plan"  grep -q "build-plan.md has 2 unchecked item" <<< "$out"
+assert_ok "names the open needs-you line" grep -q "needs-you.md has 1 open line"       <<< "$out"
+assert_ok "names the pre-split decision"  grep -q "decisions.md has 1 entry"           <<< "$out"
+assert_ok "and says nothing here splits them" grep -q "Nothing here splits these"      <<< "$out"
+assert_lacks "the other part's plan really is empty" \
+  "$p/api/blueprint/build-plan.md" '^- \[ \]'
+
+# A project with nothing to split must stay quiet, or the line is noise on every
+# conversion and stops being read.
+w2=$(workdir); (cd "$w2" && "$NP" cvq >/dev/null 2>&1)
+(cd "$w2/cvq" && git add -A >/dev/null 2>&1; git commit -q -m x 2>/dev/null)
+out2=$(cd "$w2/cvq" && "$CP" --parts web,api --existing web 2>&1)
+assert_ok    "an empty project still converts" grep -q "Converted" <<< "$out2"
+assert_fails "and gets no split report"        grep -q "written before there were parts" <<< "$out2"
+
+# stderr on its own. A script that has just moved every file in the project must
+# say nothing there on its happy path, and `2>&1` above cannot see the
+# difference - it hid this for as long as the bug lived: `grep -c` exits 1 when
+# it matches nothing, so `|| echo 0` made the count "0\n0" and each `[ -gt ]`
+# printed "integer expected". Three of them, on exactly this quiet path, where
+# every count is zero.
+w3=$(workdir); (cd "$w3" && "$NP" cvs >/dev/null 2>&1)
+err=$(cd "$w3/cvs" && "$CP" --parts web,api --existing web 2>&1 >/dev/null)
+assert_eq "a clean conversion prints nothing to stderr" "" "$err"
+
+
+section "a local database is never committed"
+# A built project can end up having
+# committed its dev SQLite file, and `git show HEAD:...db | strings` read the
+# rows straight back. A dev database fills with real rows while you
+# test, and .gitignore covered .env for exactly this reason while leaving the
+# file that holds the actual data.
+w=$(workdir); (cd "$w" && "$NP" db >/dev/null 2>&1)
+p="$w/db"
+mkdir -p "$p/api"
+: > "$p/api/app.db"; : > "$p/api/app.db-wal"; : > "$p/api/app.db-shm"
+: > "$p/data.sqlite"; : > "$p/data.sqlite3"
+(cd "$p" && git add -A >/dev/null 2>&1)
+assert_eq "no database file is staged" "0" \
+  "$(cd "$p" && git diff --cached --name-only | grep -cE '\.(db|db-wal|db-shm|sqlite|sqlite3)$')"
+assert_eq "and the skills are still all tracked" "$NSKILLS" \
+  "$(cd "$p" && git ls-files | grep -c 'agents/skills/.*\.md')"
+
+section "an install with two copies converts to one, and loses nothing"
+# The old shape: .claude/skills and .agents/skills as two real directories.
+_old_shape() {
+  local d; d=$(workdir); (cd "$d" && "$NP" o >/dev/null 2>&1)
+  rm "$d/o/.claude/skills"; cp -r "$d/o/.agents/skills" "$d/o/.claude/skills"
+  echo "$d/o"
+}
+o=$(_old_shape)
+assert_ok "the fixture really is two real directories" \
+  bash -c "[ -d '$o/.claude/skills' ] && [ ! -L '$o/.claude/skills' ]"
+mkdir -p "$o/.claude/skills/my-claude-only"; echo mine > "$o/.claude/skills/my-claude-only/SKILL.md"
+out=$("$IN" --target "$o" 2>&1)
+assert_ok "it becomes the link" test -L "$o/.claude/skills"
+assert_ok "and says so" grep -q 'converted from two copies to one' <<< "$out"
+assert_eq "a skill only Claude Code had is moved into the one copy, intact" "mine" \
+  "$(cat "$o/.agents/skills/my-claude-only/SKILL.md")"
+assert_eq "and is still where Claude Code looks" "mine" \
+  "$(cat "$o/.claude/skills/my-claude-only/SKILL.md")"
+
+# A user skill that differs between the two cannot be merged by a script, so
+# the directory is left a directory - converting would drop one version.
+o=$(_old_shape)
+mkdir -p "$o/.claude/skills/theirs" "$o/.agents/skills/theirs"
+echo one > "$o/.claude/skills/theirs/SKILL.md"; echo two > "$o/.agents/skills/theirs/SKILL.md"
+out=$("$IN" --target "$o" 2>&1)
+assert_ok "a skill that differs keeps the two-copy shape" \
+  bash -c "[ -d '$o/.claude/skills' ] && [ ! -L '$o/.claude/skills' ]"
+assert_eq "with both versions untouched" "one two" \
+  "$(cat "$o/.claude/skills/theirs/SKILL.md") $(cat "$o/.agents/skills/theirs/SKILL.md")"
+assert_ok "and names why" grep -q 'theirs differs between .claude/skills and .agents/skills' <<< "$out"
+assert_ok "while the pack's own skills are still current in both" \
+  cmp -s "$REPO/skills/spec.md" "$o/.claude/skills/spec/SKILL.md"
+
+# A hand edit to a pack skill in .claude/skills alone - the copy Claude Code
+# reads - was removed by the conversion, or overwritten in the copy shape, with
+# no word: the report compared .agents/skills only, which held the pack's
+# unchanged text. Git has it; the report is what says to look.
+for shape in converts keeps; do
+  o=$(_old_shape)
+  if [ "$shape" = keeps ]; then
+    mkdir -p "$o/.claude/skills/theirs" "$o/.agents/skills/theirs"
+    echo one > "$o/.claude/skills/theirs/SKILL.md"; echo two > "$o/.agents/skills/theirs/SKILL.md"
+  fi
+  printf 'my local note\n' >> "$o/.claude/skills/debug/SKILL.md"
+  out=$("$IN" --target "$o" 2>&1)
+  assert_ok "an edit only .claude/skills had is named when the install $shape the shape" \
+    grep -qE 'updated from a different version:.* debug( |$)' <<< "$out"
+done
+o=$(_old_shape)
+out=$("$IN" --target "$o" 2>&1)
+assert_fails "and an unedited two-copy install names nothing" \
+  grep -q 'updated from a different version' <<< "$out"
+
+section "where a symlink does not work, the skills are copied and the report says so"
+# git on Windows without symlink support checks a link out as a plain file
+# holding its target - Claude Code then finds no skills and says nothing.
+w=$(workdir); (cd "$w" && "$NP" win >/dev/null 2>&1)
+rm "$w/win/.claude/skills"; printf '../.agents/skills' > "$w/win/.claude/skills"
+"$IN" --target "$w/win" >/dev/null 2>&1
+assert_exists "a link checked out as a plain file is repaired" "$w/win/.claude/skills/spec/SKILL.md"
+
+# And a filesystem where `ln -s` fails outright.
+w=$(workdir); (cd "$w" && "$NP" nolink >/dev/null 2>&1)
+rm "$w/nolink/.claude/skills"
+mkdir -p "$w/bin"; printf '#!/bin/sh\nexit 1\n' > "$w/bin/ln"; chmod +x "$w/bin/ln"
+out=$(PATH="$w/bin:$PATH" "$IN" --target "$w/nolink" 2>&1)
+assert_ok "with no working symlink it copies" \
+  bash -c "[ -d '$w/nolink/.claude/skills' ] && [ ! -L '$w/nolink/.claude/skills' ]"
+assert_exists "every skill, not a partial tree" "$w/nolink/.claude/skills/build/SKILL.md"
+assert_ok "and the report says it copied, and why" \
+  grep -q 'copied (this filesystem did not make a working symlink)' <<< "$out"
+
+section "the design kit reaches a project, and stays the pack's"
+# prototype starts from blueprint/design-kit/. A project without it would send
+# prototype back to inventing tokens from nothing - the thing the kit replaces.
+w=$(workdir); (cd "$w" && "$NP" dk >/dev/null 2>&1)
+for f in tokens.json tokens.css components.css components.html ux-checklist.md README.md; do
+  assert_exists "a new project gets design-kit/$f" "$w/dk/blueprint/design-kit/$f"
+done
+echo "local edit" >> "$w/dk/blueprint/design-kit/tokens.css"
+out=$("$IN" --target "$w/dk" 2>&1)
+assert_ok "an edited kit file is restored on install - it is pack-owned" \
+  cmp -s "$REPO/template/blueprint/design-kit/tokens.css" "$w/dk/blueprint/design-kit/tokens.css"
+assert_ok "and the install says it refreshed something" grep -q 'pack-owned file(s) refreshed' <<< "$out"
+
+section "new-project.sh names the README and ignores test output"
+# Both surfaced on an end-to-end run: "# Project Name" survived to preflight,
+# and Playwright's test-results/ was committed with the scaffold.
+w=$(workdir); (cd "$w" && "$NP" named-app >/dev/null 2>&1)
+assert_eq "the README's title is the project's name" "# named-app" "$(head -1 "$w/named-app/README.md")"
+assert_ok "test-results/ is ignored" grep -qx 'test-results/' "$w/named-app/.gitignore"
+assert_ok "playwright-report/ is ignored" grep -qx 'playwright-report/' "$w/named-app/.gitignore"
+(cd "$w" && "$NP" shop --parts web,api >/dev/null 2>&1)
+assert_eq "a product root is named too" "# shop" "$(head -1 "$w/shop/README.md")"
+assert_eq "and each part, under the product" "# shop - web" "$(head -1 "$w/shop/web/README.md")"
+assert_eq "and the first commit is still clean" "" "$(git -C "$w/shop" status --short)"
+
+section "new-project.sh names the README whatever characters the name holds"
+# The title went through a sed replacement: '&' pasted the matched placeholder
+# back in, and '|' ended the expression - the script then failed after writing
+# the whole tree, before git init, and a re-run was refused as "Already exists".
+for n in 'r&d' 'x|y' 'back\slash'; do
+  w=$(workdir)
+  assert_ok "new-project.sh accepts '$n'" bash -c 'cd "$1" && "$2" "$3" >/dev/null' _ "$w" "$NP" "$n"
+  assert_eq "and titles the README '# $n'" "# $n" "$(head -1 "$w/$n/README.md" 2>/dev/null)"
+  assert_exists "and still makes its first commit" "$w/$n/.git"
+done
+
+section "the work fingerprint verify, review and ship record"
+# Run as ship gives it. A commit is the wrong key: checkpoints are optional, so
+# a review of uncommitted work already differs from its HEAD, and git diff never
+# sees a new file nobody has added.
+fpcmd=$(grep -h 'git write-tree' "$REPO/skills/ship.md" | sed 's/^ *//')
+assert_ok "ship gives the fingerprint command" test -n "$fpcmd"
+w=$(workdir); (cd "$w" && git init -q -b main && git config user.email t@t && git config user.name t \
+  && echo a >app.js && git add app.js && git commit -qm base && git checkout -qb item \
+  && echo b >>app.js && echo new >new.js) >/dev/null 2>&1
+fp() { (cd "$w" && eval "$fpcmd"); }
+f0=$(fp)
+assert_ok "prints a tree id" grep -qE '^[0-9a-f]{12}$' <<<"$f0"
+mkdir -p "$w/blueprint/context" "$w/dev-notes"
+echo "**Reviewed:** x" >"$w/blueprint/context/current-work.md"; echo s >"$w/dev-notes/status.md"
+assert_eq "ignores blueprint/ and dev-notes/" "$f0" "$(fp)"
+(cd "$w" && git add -A && git commit -qm checkpoint)
+assert_eq "ignores whether the work is committed" "$f0" "$(fp)"
+(cd "$w" && git reset -q --soft HEAD~1 && git reset -q)
+echo more >>"$w/new.js"
+f1=$(fp)
+assert_ok "sees a change to a file git does not track yet" test "$f0" != "$f1"
+assert_eq "leaves the real index alone" "" "$(cd "$w" && git diff --cached --name-only)"
+assert_eq "and git can say what changed between two" "new.js" \
+  "$(cd "$w" && git diff --name-only "$f0" "$f1")"
+
+section "the optional hooks, D20 - what each prints, and what --hooks installs"
+# Run as Claude Code runs them: the tool call's JSON on stdin, the project
+# directory in CLAUDE_PROJECT_DIR. What Claude Code then does with the output is
+# not provable here - D20 records the one headless run that showed it.
+MC="$REPO/lib/hook-main-commit.sh"; CB="$REPO/lib/hook-context-budget.sh"
+w=$(workdir); (cd "$w" && git init -q -b main && git config user.email t@t && git config user.name t \
+  && echo a >a && git add a && git commit -qm base) >/dev/null 2>&1
+call() { printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"%s"}}' "$w" "$1"; }
+mc() { call "$1" | CLAUDE_PROJECT_DIR="$w" "$MC"; }
+assert_ok "a commit on main asks the person" grep -q '"permissionDecision": *"ask"' <<<"$(mc 'git commit -m x')"
+assert_ok "and names the rule it holds" grep -q 'Never build on' <<<"$(mc 'git add -A && git commit -qm x')"
+# Headless, ask is a denial, and the trial's agents then moved scaffold's and
+# distill's setup commits onto a feature branch - "belongs on a branch" read as
+# the way out. A declined setup commit waits for the person instead.
+assert_ok "and says a declined setup commit is left, not moved to a branch" \
+  grep -q 'never move it to a branch' <<<"$(mc 'git commit -m x')"
+assert_ok "git's own options before commit still count" grep -q '"ask"' <<<"$(mc 'git -c core.editor=true commit')"
+assert_eq "a command that only mentions commit says nothing" "" "$(mc 'git log --grep commit')"
+assert_eq "nor does a merge that is not a commit" "" "$(mc 'git merge --squash item')"
+# A branch made earlier in the same command is where the commit lands, though
+# the hook runs while HEAD is still main - the trial's agent was denied that way.
+assert_eq "a commit after creating a branch in the same command says nothing" "" \
+  "$(mc 'git switch -q -c chore/x && git add -A && git commit -m x')"
+assert_eq "nor after checkout -b" "" "$(mc 'git checkout -b fix/y && git commit -m x')"
+assert_ok "switching to main first still asks" grep -q '"ask"' <<<"$(mc 'git switch main && git commit -m x')"
+assert_ok "even after a branch was made earlier in the line" \
+  grep -q '"ask"' <<<"$(mc 'git switch -c x && git switch main && git commit -m x')"
+assert_ok "and a checkout of files is not a branch" \
+  grep -q '"ask"' <<<"$(mc 'git checkout -- . && git commit -m x')"
+assert_ok "and a branch made after the commit does not count" \
+  grep -q '"ask"' <<<"$(mc 'git commit -m x && git switch -c later')"
+
+# D24: a commit on main holding only workflow state is the skill's record of
+# its own run - asked once in text and again by this hook, the
+# second ask is the one people stop reading. Anything else still asks.
+mkdir -p "$w/blueprint/context" "$w/dev-notes" "$w/web/blueprint/context" "$w/src"
+echo s >"$w/dev-notes/status.md"; echo p >"$w/blueprint/build-plan.md"; echo c >"$w/web/blueprint/context/c.md"
+quiet() { assert_eq "workflow state alone on main says nothing: $1" "" "$(mc "$1")"; }
+asks() { assert_ok "and this still asks: $1" grep -q '"ask"' <<<"$(mc "$1")"; }
+quiet 'git add -A && git commit -m x'
+quiet 'git add dev-notes blueprint && git commit -m x'
+quiet 'git add web/blueprint/context/c.md && git commit -m x'
+echo code >"$w/src/a"
+asks 'git add -A && git commit -m x'
+asks 'git add dev-notes && git commit -m x src/a'
+assert_ok "naming what is not workflow state" grep -q 'workflow state: src/a' <<<"$(mc 'git add -A && git commit -m x')"
+quiet 'git add dev-notes && git commit -m x'
+(cd "$w" && git add src/a)
+asks 'git add dev-notes && git commit -m x'
+(cd "$w" && git reset -q && echo a >a && git add a && git commit -qam t)
+asks 'git commit -am x'
+for c in 'git commit -m x' 'git add dev-notes && rm -rf src && git commit -m x' \
+         'cd . && git add dev-notes && git commit -m x' 'git add dev-notes && git commit --amend -m x'; do
+  asks "$c"
+done
+# A blueprint/ inside code is not a part's: a part has blueprint/context/.
+mkdir -p "$w/lib/blueprint" && echo x >"$w/lib/blueprint/y"
+asks 'git add lib && git commit -m x'
+rm -rf "$w/lib" "$w/src"
+
+# ...and a plain push of main is allowed where the committed AGENTS.md says so.
+git init -q --bare "$w.remote" && git -C "$w" remote add origin "$w.remote"
+allows() { grep -q '"permissionDecision": *"allow"' <<<"$(mc "$1")"; }
+assert_fails "no policy, a push is left to Claude Code" allows 'git push origin main'
+printf '**Push main without asking:** yes\n' >"$w/AGENTS.md"
+assert_fails "a policy only in the working tree grants nothing" allows 'git push origin main'
+(cd "$w" && git add AGENTS.md dev-notes blueprint web && git commit -qm policy)
+for c in 'git push origin main' 'git push' 'git push -q origin HEAD'; do
+  assert_ok "committed, a plain push of main is allowed: $c" allows "$c"
+done
+for c in 'git push --force' 'git push -f' 'git push --force origin main' 'git push origin +main' 'git push origin main:prod' 'git push origin --tags' \
+         'git push nowhere main' 'git push origin main && rm -rf x' 'git commit -m x && git push origin main'; do
+  assert_fails "and this is not: $c" allows "$c"
+done
+(cd "$w" && git checkout -qb other)
+assert_fails "nor a push from another branch" allows 'git push origin main'
+(cd "$w" && git checkout -q main)
+(cd "$w" && git checkout -qb item)
+assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
+# ...unless the command switches to main first - ship's squash, run from the
+# branch in one line, went through unasked in the D23 trial.
+assert_ok "a switch to main earlier in the command still asks" \
+  grep -q '"ask"' <<<"$(mc 'git switch -q main && git merge --squash -q item && git commit -q -m x')"
+assert_ok "and so does checkout master" grep -q '"ask"' <<<"$(mc 'git checkout master && git commit -m x')"
+assert_eq "nor does anything outside a repository" "" \
+  "$(printf '{"tool_input":{"command":"git commit"},"cwd":"/"}' | "$MC")"
+assert_eq "unreadable input fails open, silently" "" "$(printf 'not json' | "$MC")"
+
+# Where the git hook is active (D23), this one holds it in place: the two ways
+# an agent walks past it are a skipped hook and a moved hooksPath. Deny, not ask
+# - no skill needs either. Still on the branch `item` here.
+deny() { grep -q '"permissionDecision": *"deny"' <<<"$(mc "$1")"; }
+assert_fails "without git hooks installed, --no-verify says nothing" deny 'git commit --no-verify -m x'
+assert_fails "nor does a change to core.hooksPath" deny 'git config core.hooksPath x'
+git -C "$w" config core.hooksPath .agents/git-hooks
+for c in 'git commit --no-verify -m x' 'git commit -n -m x' 'git commit -anm x' 'git commit --no-veri -m x' \
+         'git add -A && git commit -qn' 'git config core.hooksPath .githooks' 'git config --unset core.hooksPath' \
+         'git config core.hookspath /dev/null' 'git -c core.hooksPath=/dev/null commit -m x'; do
+  assert_ok "with them installed, denied: $c" deny "$c"
+done
+assert_ok "naming the hook it would skip" grep -q 'pre-commit' <<<"$(mc 'git commit -n -m x')"
+assert_fails "and no pack decision number, which a project does not have" \
+  grep -qE '\bD[0-9]+\b' <<<"$(mc 'git commit -n -m x')"
+for c in 'git log -n 3' 'git commit -m x' 'git commit -m -n' "git commit -m 'drop -n handling'" \
+         'git commit -mn' 'git config core.hooksPath' 'git config --get core.hooksPath' 'git config user.name t'; do
+  assert_fails "not denied: $c" deny "$c"
+done
+git -C "$w" config --unset core.hooksPath
+
+p="$w/budget"; mkdir -p "$p/blueprint"
+printf '**Context budget: 1 KB.**\n' >"$p/AGENTS.md"
+printf '@AGENTS.md\n@blueprint/big.md\n@blueprint/gone.md\n' >"$p/CLAUDE.md"
+head -c 300 /dev/zero | tr '\0' x >"$p/blueprint/big.md"
+cb() { printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR="$p" "$CB"; }
+assert_eq "under the budget, the session start says nothing" "" "$(cb)"
+head -c 900 /dev/zero | tr '\0' x >>"$p/blueprint/big.md"
+out=$(cb)
+assert_ok "over it, it says so" grep -q 'over the 1 KB budget' <<<"$out"
+assert_ok "and names the largest loaded file first" grep -q 'largest: blueprint/big.md' <<<"$out"
+assert_ok "counting CLAUDE.md itself, as rule 18 does" \
+  grep -q "$(( $(wc -c <"$p/CLAUDE.md") + $(wc -c <"$p/AGENTS.md") + 1200 )) bytes" <<<"$out"
+rm "$p/AGENTS.md"; printf '@blueprint/big.md\n' >"$p/CLAUDE.md"
+assert_eq "no stated budget, nothing to hold it to" "" "$(cb)"
+
+# The hook only runs where --hooks put it. An upgrade is the other moment a
+# project's loaded size is worth reporting, so install runs the same count.
+t=$(workdir)
+out=$("$IN" --target "$t" 2>&1)
+assert_eq "a fresh install says nothing about the budget" "" "$(grep 'KB budget' <<<"$out")"
+head -c 80000 /dev/zero | tr '\0' x >"$t/blueprint/big.md"
+printf '@blueprint/big.md\n' >>"$t/CLAUDE.md"
+out=$("$IN" --target "$t" 2>&1)
+assert_ok "an upgrade over the budget says so, without --hooks" grep -q 'over the [0-9]* KB budget' <<<"$out"
+assert_ok "naming the file that put it over" grep -q 'largest: blueprint/big.md' <<<"$out"
+
+t=$(workdir)
+"$IN" --target "$t" >/dev/null 2>&1
+assert_absent "a plain install writes no settings.json" "$t/.claude/settings.json"
+assert_absent "and no hooks" "$t/.claude/hooks"
+printf '{"model": "opus", "hooks": {"PreToolUse": [{"matcher": "Edit", "hooks": [{"type": "command", "command": "mine.sh"}]}]}}\n' \
+  >"$t/.claude/settings.json"
+"$IN" --target "$t" --hooks >/dev/null 2>&1
+s="$t/.claude/settings.json"
+hk() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(eval(sys.argv[2]))' "$s" "$1"; }
+assert_eq "--hooks keeps the settings already there" "opus" "$(hk 'd["model"]')"
+assert_eq "and the hooks already there" "mine.sh" "$(hk 'd["hooks"]["PreToolUse"][0]["hooks"][0]["command"]')"
+assert_ok "adds the main-commit hook on Bash" grep -q 'main-commit.sh' <<<"$(hk '[e for e in d["hooks"]["PreToolUse"] if e.get("matcher")=="Bash"]')"
+assert_ok "adds the budget hook at session start" grep -q 'context-budget.sh' <<<"$(hk 'd["hooks"]["SessionStart"]')"
+# D24: what the loop runs constantly stops prompting. git commit is among them
+# only because the main-commit hook still asks about code on main.
+for r in 'Bash(.agents/bin/check-project.sh:*)' 'Bash(git status:*)' 'Bash(git commit:*)'; do
+  assert_ok "allows $r" grep -qF "'$r'" <<<"$(hk 'd["permissions"]["allow"]')"
+done
+assert_fails "and never a push" grep -q 'push' <<<"$(hk 'd["permissions"]["allow"]')"
+assert_ok "copies the hook scripts, runnable" test -x "$t/.claude/hooks/hook-main-commit.sh" -a -x "$t/.claude/hooks/hook-context-budget.sh"
+assert_ok "and they are the pack's current ones" cmp -s "$MC" "$t/.claude/hooks/hook-main-commit.sh"
+before=$(cat "$s"); "$IN" --target "$t" --hooks >/dev/null 2>&1
+assert_eq "a second --hooks changes nothing" "$before" "$(cat "$s")"
+t=$(workdir); mkdir -p "$t/.claude"; printf '{"model": ' >"$t/.claude/settings.json"
+assert_refuses "an unreadable settings.json is refused" "settings.json" "$IN" --target "$t" --hooks
+assert_absent "before anything is written" "$t/.agents"
+w=$(workdir); (cd "$w" && "$NP" one --hooks && "$NP" two --parts web,api --hooks) >/dev/null 2>&1
+assert_exists "new-project.sh --hooks installs them" "$w/one/.claude/hooks/hook-main-commit.sh"
+for d in two two/web two/api; do
+  assert_ok "and in a multi-part product, in $d" grep -q 'context-budget.sh' "$w/$d/.claude/settings.json"
+done
+
+section "a findings ledger from before D15 is split, and nothing is lost"
+# Before D15 every finding's whole entry sat in the loaded file. The split was
+# done by hand once; this runs the script instead and checks what the hand
+# check did: every entry intact, every ID exactly once, no status changed.
+MF="$REPO/lib/migrate-findings.sh"
+old_ledger() {
+  mkdir -p "$1/blueprint/context"
+  cat >"$1/blueprint/context/findings.md" <<'OLD'
+# Findings
+
+> **Generated file.** The findings ledger: review findings raised by the `review`
+> skill against the work in progress.
+
+### F-01 [P1] fixed - Session cookie is readable from JavaScript
+
+**File:** src/auth/session.ts:41
+**Found:** 2026-08-31 by review (scope: current; lens: security)
+**Why it matters:** any script on the page can read it.
+**Suggested fix:**
+
+```ts
+### F-09 [P2] open - quoted inside a fence, not a finding
+cookie.httpOnly = true;
+```
+
+**Resolution:** set httpOnly; test seen failing first.
+
+### F-02 [P3] open - Duplicated date formatting
+
+**File:** src/lib/date.ts:3
+**Found:** 2026-09-01 by review (scope: current; lens: quality)
+**Why it matters:** two formats drift.
+**Suggested fix:** one helper.
+**Resolution:**
+
+### F-04 [P0] deferred - No backups of the database
+
+**File:** (none - the server)
+**Found:** 2026-09-02 by preflight
+**Deferred to:** host
+**Why it matters:** one disk failure loses everything.
+**Suggested fix:** nightly dump, restored once.
+**Resolution:**
+OLD
+}
+w=$(workdir); old_ledger "$w"; cp "$w/blueprint/context/findings.md" "$w/before.md"
+assert_ok "migrates an old ledger" "$MF" --target "$w"
+idx="$w/blueprint/context/findings.md"
+assert_eq "the index keeps every heading, statuses unchanged" \
+  "$(grep '^### F-' "$w/before.md" | grep -v "quoted inside a fence")" "$(grep '^### F-' "$idx")"
+assert_eq "with its File: line under each" "3" "$(grep -c '^File: ' "$idx")"
+assert_ok "a deferred finding's target stays in the index, where deploy and host read it" \
+  grep -qx 'Deferred to: host' "$idx"
+assert_lacks "and nothing else of an entry stays loaded" "$idx" 'Why it matters|Suggested fix|Found:'
+assert_ok "the header is the current template's" \
+  grep -q 'moves unresolved P3s to' "$idx"
+for id in F-01 F-02 F-04; do assert_exists "writes the entry $id" "$w/blueprint/findings/$id.md"; done
+assert_ok "an entry is headed by its ID and title" \
+  grep -qx '# F-01 - Session cookie is readable from JavaScript' "$w/blueprint/findings/F-01.md"
+assert_ok "and keeps its body intact, fence and all" \
+  grep -qxF "### F-09 [P2] open - quoted inside a fence, not a finding" "$w/blueprint/findings/F-01.md"
+assert_eq "every line of the old ledger is somewhere after" "" \
+  "$(cd "$w" && grep -v '^### F-\|^# Findings\|^>\|^$' before.md | sed 's/^\*\*\(File\|Deferred to\):\*\* /\1: /' \
+     | while IFS= read -r l; do grep -qxF -- "$l" blueprint/context/findings.md blueprint/findings/*.md || echo "lost: $l"; done)"
+assert_refuses "a second run refuses - already split" "already" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; mkdir -p "$w/blueprint/findings"; echo keep >"$w/blueprint/findings/F-02.md"
+assert_refuses "an entry file already there is refused" "F-02" "$MF" --target "$w"
+assert_eq "before anything is written" "keep" "$(cat "$w/blueprint/findings/F-02.md")"
+assert_absent "not even another entry" "$w/blueprint/findings/F-01.md"
+w=$(workdir); old_ledger "$w"; printf '### F-02 [P2] open - Again\n\n**File:** x\n' >>"$w/blueprint/context/findings.md"
+assert_refuses "an ID used twice is refused" "F-02" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; mkdir -p "$w/blueprint/findings"
+printf '# Findings backlog\n\n### F-04 [P3] open - Old\nFile: y\n' >"$w/blueprint/findings/backlog.md"
+assert_refuses "an ID the backlog already holds is refused" "F-04" "$MF" --target "$w"
+w=$(workdir); old_ledger "$w"; printf '### F-05 [P2] open\n\n**File:** x\n' >>"$w/blueprint/context/findings.md"
+assert_refuses "a heading it cannot read is refused, not guessed at" "F-05" "$MF" --target "$w"
+assert_absent "and nothing is written" "$w/blueprint/findings"
+t=$(workdir); "$IN" --target "$t" >/dev/null 2>&1; old_ledger "$t"
+assert_ok "install.sh names the script when it finds an old ledger" \
+  grep -q 'migrate-findings.sh' <<<"$("$IN" --target "$t" 2>&1)"
+"$MF" --target "$t" >/dev/null 2>&1
+assert_lacks_out() { _name="$1"; if grep -q "$2" <<<"$3"; then _no "'$2' in output"; else _ok; fi; }
+assert_lacks_out "and stops once it is split" 'migrate-findings.sh' "$("$IN" --target "$t" 2>&1)"
+
+section "the capability merge, D21 - a spec's behaviour changes land in capability files"
+# ship carries a spec's ## Behaviour changes into blueprint/capabilities/, one
+# file per capability. The script keeps the arithmetic (next ID past a
+# tombstone, old text matching) that two agents by hand would get wrong.
+MC="$REPO/lib/merge-capabilities.sh"
+cap_spec() {  # cap_spec FILE <behaviour-change lines...>; steps 1-2 ticked, 3 not
+  local f="$1"; shift
+  { printf '# Feature: x\n\n## Build steps\n- [x] **Step 1 - a** - a. *Done when:* a.\n- [x] **Step 2 - b** - b. *Done when:* b.\n- [ ] **Step 3 - c** - c. *Done when:* c.\n\n## Behaviour changes\n'
+    printf '%s\n' "$@"; printf '\n## Notes\nnone\n'; } >"$f"
+}
+cap_tree() { (cd "$1" && find blueprint/capabilities -type f 2>/dev/null | sort | xargs -r cksum); }
+w=$(workdir)
+cap_spec "$w/s1.md" '- New capability `accounts`: A signed-out visit to /settings lands on /login - Step 1' \
+  '- Adds to `accounts`: Changing the password signs out other devices - Step 2'
+out="$("$MC" "$w/s1.md" features/03-auth --target "$w" 2>&1)"
+assert_eq "a new capability is created and its claims numbered" \
+  "- **accounts.1** - A signed-out visit to /settings lands on /login *Since:* features/03-auth" \
+  "$(sed -n '3p' "$w/blueprint/capabilities/accounts.md")"
+assert_eq "a second claim takes the next ID" "accounts.2" \
+  "$(sed -n '4p' "$w/blueprint/capabilities/accounts.md" | sed 's/^- \*\*\([^*]*\)\*\*.*/\1/')"
+assert_eq "the file opens with its capability name" "# Capability: accounts" "$(head -1 "$w/blueprint/capabilities/accounts.md")"
+assert_eq "it prints the IDs it assigned" "accounts.1
+accounts.2" "$out"
+cap_spec "$w/s2.md" '- Changes `accounts.2` from "Changing the password signs out other devices" to "Changing the password signs out every device" - Step 1' \
+  '- Removes `accounts.1`: superseded by SSO'
+"$MC" "$w/s2.md" features/07-roles --target "$w" >/dev/null 2>&1
+assert_ok "a change replaces the text and records where" grep -qxF -- '- **accounts.2** - Changing the password signs out every device *Since:* features/03-auth · *Changed:* features/07-roles' "$w/blueprint/capabilities/accounts.md"
+assert_ok "a removal leaves a tombstone" grep -qxF -- '- accounts.1 - removed by features/07-roles' "$w/blueprint/capabilities/accounts.md"
+assert_lacks "and the claim is gone from the list" "$w/blueprint/capabilities/accounts.md" 'accounts\.1\*\*'
+cap_spec "$w/s3.md" '- Adds to `accounts`: Sessions expire after 30 days - Step 2'
+"$MC" "$w/s3.md" fixes/expiry --target "$w" >/dev/null 2>&1
+assert_ok "an ID is never reused - the next is past the tombstone" grep -qF -- '**accounts.3** - Sessions expire' "$w/blueprint/capabilities/accounts.md"
+cap_spec "$w/s4.md" '- Removes `accounts.3`: dropped'
+"$MC" "$w/s4.md" fixes/drop --target "$w" >/dev/null 2>&1
+cap_spec "$w/s5.md" '- Adds to `accounts`: Sessions expire after 14 days - Step 2'
+assert_eq "a removed highest ID is not handed out again" "accounts.4" "$("$MC" "$w/s5.md" fixes/expiry-2 --target "$w" 2>&1)"
+cap_spec "$w/none.md" 'None'
+before="$(cap_tree "$w")"
+assert_ok "'None' is an answer and merges nothing" "$MC" "$w/none.md" fixes/none --target "$w"
+assert_eq "and changes nothing" "$before" "$(cap_tree "$w")"
+# A refusal leaves every file as it was.
+for c in \
+  'unknown ID|accounts.9|- Changes `accounts.9` from "x" to "y" - Step 1' \
+  'a tombstone ID|accounts.1|- Removes `accounts.1`: again' \
+  'stale old text|accounts.2|- Changes `accounts.2` from "an older wording" to "y" - Step 1' \
+  'a step not ticked|Step 3|- Adds to `accounts`: A new claim - Step 3' \
+  'an unknown capability|nosuch|- Adds to `nosuch`: A claim - Step 1' \
+  'a new capability that exists|accounts|- New capability `accounts`: A claim - Step 1' \
+  'an add with no step|Step|- Adds to `accounts`: A claim with no step'; do
+  IFS='|' read -r label needle line <<<"$c"
+  cap_spec "$w/bad.md" '- Adds to `accounts`: A good claim that must not land alone - Step 1' "$line"
+  before="$(cap_tree "$w")"
+  assert_refuses "refuses $label" "$needle" "$MC" "$w/bad.md" fixes/bad --target "$w"
+  assert_eq "and leaves every file byte-identical ($label)" "$before" "$(cap_tree "$w")"
+done
+printf '# Feature: x\n\n## Build steps\n- [x] **Step 1 - a** - a.\n' >"$w/nosection.md"
+assert_refuses "a missing section is missing evidence, not None" "Behaviour changes" "$MC" "$w/nosection.md" fixes/m --target "$w"
+# A rollback's inverse takes the claims back to their prior text.
+r=$(workdir)
+cap_spec "$r/f.md" '- New capability `lists`: Lists can be shared - Step 1' '- New capability `lists`: Lists can be archived - Step 2'
+"$MC" "$r/f.md" features/01-lists --target "$r" >/dev/null 2>&1
+cap_spec "$r/g.md" '- Changes `lists.1` from "Lists can be shared" to "Lists can be shared by link" - Step 1' '- Removes `lists.2`: obsolete'
+"$MC" "$r/g.md" features/02-link --target "$r" >/dev/null 2>&1
+cap_spec "$r/rb.md" '- Changes `lists.1` from "Lists can be shared by link" to "Lists can be shared" - Step 1' \
+  '- Adds to `lists`: Lists can be archived - Step 2'
+"$MC" "$r/rb.md" rollbacks/2026-10-01-01-link --target "$r" >/dev/null 2>&1
+assert_eq "a rollback's inverse restores the changed claim's text" \
+  "- **lists.1** - Lists can be shared *Since:* features/01-lists · *Changed:* rollbacks/2026-10-01-01-link" \
+  "$(sed -n '3p' "$r/blueprint/capabilities/lists.md")"
+assert_ok "and re-adds the removed claim under a new ID; the tombstone stays" \
+  grep -qxF -- '- **lists.3** - Lists can be archived *Since:* rollbacks/2026-10-01-01-link' "$r/blueprint/capabilities/lists.md"
+assert_ok "the tombstone is kept" grep -qxF -- '- lists.2 - removed by features/02-link' "$r/blueprint/capabilities/lists.md"
+# The file is rebuilt from what was parsed out of it, and only claims and
+# tombstones were parsed - a note a person wrote there vanished on the next merge.
+n=$(workdir)
+cap_spec "$n/a.md" '- New capability `auth`: A user can sign in - Step 1'
+"$MC" "$n/a.md" features/01-auth --target "$n" >/dev/null 2>&1
+printf '\nSign-in is email only until item 9.\n' >>"$n/blueprint/capabilities/auth.md"
+cap_spec "$n/b.md" '- Adds to `auth`: A user can sign out - Step 1'
+"$MC" "$n/b.md" features/02-out --target "$n" >/dev/null 2>&1
+assert_ok "a note a person wrote in a capability file survives the next merge" \
+  grep -qxF 'Sign-in is email only until item 9.' "$n/blueprint/capabilities/auth.md"
+assert_ok "and the merge still landed beside it" \
+  grep -qF -- '**auth.2** - A user can sign out' "$n/blueprint/capabilities/auth.md"
+# ...but a broken claim line is not a note: kept as prose, its ID is reused.
+printf -- '- **auth.3** - A claim with its provenance lost\n' >>"$n/blueprint/capabilities/auth.md"
+cap_spec "$n/c.md" '- Adds to `auth`: Sessions expire - Step 1'
+before="$(cap_tree "$n")"
+assert_refuses "a claim line it cannot read is refused, not kept as a note" "cannot read" \
+  "$MC" "$n/c.md" features/03-expiry --target "$n"
+assert_eq "and leaves every file byte-identical (broken claim)" "$before" "$(cap_tree "$n")"
+
+section "the capability merge reaches a project - a skill's script must exist where it runs"
+# ship and verify run the merge inside a project, which has no lib/. A fresh
+# project once had none of it: every test above ran the pack's copy by path.
+w=$(workdir); (cd "$w" && "$NP" cm >/dev/null 2>&1); p="$w/cm"
+assert_ok "a new project holds an executable copy" test -x "$p/.agents/bin/merge-capabilities.sh"
+assert_ok "identical to the pack's" cmp -s "$MC" "$p/.agents/bin/merge-capabilities.sh"
+cap_spec "$p/s.md" '- New capability `count`: Prints the total - Step 1'
+out="$(cd "$p" && .agents/bin/merge-capabilities.sh s.md features/01-count 2>&1)"
+assert_eq "and runs from the project, by the path the skills give" "count.1" "$out"
+echo '# stale' >"$p/.agents/bin/merge-capabilities.sh"
+"$IN" --target "$p" >/dev/null 2>&1
+assert_ok "a re-install replaces a stale copy" cmp -s "$MC" "$p/.agents/bin/merge-capabilities.sh"
+w=$(workdir); (cd "$w" && "$NP" mp --parts api,web >/dev/null 2>&1)
+assert_ok "a part of a multi-part project has it" test -x "$w/mp/api/.agents/bin/merge-capabilities.sh"
+assert_ok "and so does the product root" test -x "$w/mp/.agents/bin/merge-capabilities.sh"
+
+section "the project checker, D23 - each check fires, names itself and its skill"
+# A checker that never fires reads exactly like a clean project, so every check
+# is broken once here, alone, and must both fail and name what it found. The
+# fresh projects and well-formed entries passing is the other half: a check that
+# fires on correct output is a wrong check, and well-formed projects must pass.
+CK="$REPO/lib/check-project.sh"
+w=$(workdir); (cd "$w" && "$NP" sp >/dev/null 2>&1 && "$NP" mp --parts api,web >/dev/null 2>&1)
+SPB="$w/sp"; MPB="$w/mp"
+ck_copy() { local d; d=$(workdir); cp -R "$1/." "$d/"; printf '%s' "$d"; }
+ck_finding() {  # dir, heading, lines under it...; writes the entry file too
+  local d="$1" h="$2"; shift 2
+  { printf '\n%s\n' "$h"; printf '%s\n' "$@"; } >>"$d/blueprint/context/findings.md"
+  mkdir -p "$d/blueprint/findings"; : >"$d/blueprint/findings/$(grep -oE 'F-[0-9]+' <<<"$h").md"
+}
+assert_ok "a fresh single-part project is clean" "$CK" "$SPB"
+assert_ok "a fresh multi-part product is clean" "$CK" "$MPB"
+assert_ok "and clean from git's index" "$CK" --staged "$MPB"
+
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] deferred - Backups' 'File: ops/backup.sh' 'Deferred to: host'
+ck_finding "$d" '### F-02 [P3] open - Slow list' 'File: src/list.ts:9'
+# review records an unproven lead as `unverified`; the first checker left it out
+# of its set and refused it - found by the D23 trial, on a real agent's ledger.
+ck_finding "$d" '### F-03 [P2] unverified - Maybe a race' 'File: src/save.ts'
+assert_ok "well-formed findings pass, an unverified lead among them" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 P1 open - No brackets' 'File: a'
+assert_refuses "a malformed heading is named, with review" "is not '### F-NN [Px] <status> - <title>'" "$CK" "$d"
+assert_refuses "and the skill that repairs it" "fix with review" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] wontfix - x' 'File: a'
+assert_refuses "an unknown status" "has status 'wontfix'" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] open - x'
+assert_refuses "a heading with no File: line" "F-01 has no File: line" "$CK" "$d"
+d=$(ck_copy "$SPB"); printf '\n### F-01 [P1] open - x\nFile: a\n' >>"$d/blueprint/context/findings.md"
+assert_refuses "a heading with no entry file" "no entry at blueprint/findings/F-01.md" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] deferred - x' 'File: a'
+assert_refuses "a deferral with no target" "deferred with no Deferred to: line" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P1] open - x' 'File: a'; ck_finding "$d" '### F-01 [P2] open - y' 'File: b'
+assert_refuses "an ID listed twice" "F-01 is listed twice" "$CK" "$d"
+d=$(ck_copy "$SPB"); ck_finding "$d" '### F-01 [P3] open - x' 'File: a'
+printf '### F-01 [P3] open - x\nFile: a\n' >"$d/blueprint/findings/backlog.md"
+assert_refuses "an ID in the index and the backlog" "in the index and in blueprint/findings/backlog.md" "$CK" "$d"
+
+d=$(ck_copy "$SPB")
+sed -i 's/^## Open$/## Open\n- [x] **Buy the domain** - spend. Closed by host, registered. Status: done./' "$d/blueprint/context/needs-you.md"
+assert_refuses "a closed needs-you line left under Open" "a closed line is still under Open" "$CK" "$d"
+d=$(ck_copy "$SPB")
+sed -i 's/^## Done$/## Done\n- [x] **Buy the domain** - spend. Closed by host, registered. Status: done./' "$d/blueprint/context/needs-you.md"
+assert_ok "the same line under Done passes" "$CK" "$d"
+
+# D27: the file held open lines only and was still the largest loaded - each "line" was a paragraph of steps, loaded every
+# session. $2 is the heading, the rest are the lines put under it.
+ny_put() { python3 - "$@" <<'PYNY'
+import sys
+p = sys.argv[1] + "/blueprint/context/needs-you.md"; s = open(p).read()
+head = "## " + sys.argv[2] + "\n"
+assert s.count(head) == 1, "the template lost its " + head.strip() + " heading"
+open(p, "w").write(s.replace(head, head + "\n".join(sys.argv[3:]) + "\n"))
+PYNY
+}
+w60="word word word word word word word word word word word word"   # 59 bytes
+long1="- [ ] **A check** - $w60 $w60 $w60 $w60 $w60 $w60 $w60 open"
+d=$(ck_copy "$SPB"); ny_put "$d" Open "$long1"
+assert_refuses "an open needs-you line over 400 bytes" "an open line is 444 bytes, over 400" "$CK" "$d"
+d=$(ck_copy "$SPB"); ny_put "$d" Open "- [ ] **A check** - $w60" "      $w60 $w60" "      $w60 $w60" "      $w60 $w60 open"
+assert_refuses "the lines indented under a bullet count as that line" "an open line is 444 bytes" "$CK" "$d"
+half="- [ ] **A check** - $w60 $w60 $w60 open"
+d=$(ck_copy "$SPB"); ny_put "$d" Open "$half" "$half"
+assert_ok "two lines that are each under the limit are not added together" "$CK" "$d"
+d=$(ck_copy "$SPB"); ny_put "$d" Open "- [ ] **A check** - $w60" "                    $w60 $w60" "                    $w60 $w60" "                    $w60 open"
+assert_ok "wrapping and indentation are not counted" "$CK" "$d"
+d=$(ck_copy "$SPB"); ny_put "$d" Done "$long1"
+assert_ok "and a long line under Done is left for ship to move" "$CK" "$d"
+
+spec_hdr() { printf '# Feature: export\n\n**From build plan:** item 2\n**Type:** Feature\n**Verified:** %s\n**Reviewed:** %s\n\n## Goal\nx\n' "$2" "$3" >"$1/blueprint/context/current-work.md"; }
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' '2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking'
+assert_ok "a spec's header, as spec, verify and review write it, passes" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'not yet'; sed -i '/^\*\*Reviewed:/d' "$d/blueprint/context/current-work.md"
+assert_refuses "a spec missing a header field" "no **Reviewed:** line - fix with spec" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'all good' 'not yet'
+assert_refuses "a Verified: line in no recorded form, with verify" "fix with verify" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'looked at it'
+assert_refuses "a Reviewed: line in no recorded form, with review" "**Reviewed:** is neither" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'not yet'
+sed -i 's/^\*\*Verified:/**Full verify:** 2026-03-02, 6f06b62b2f2c, passed\n&/' "$d/blueprint/context/current-work.md"
+assert_ok "a Full verify: line as build writes it passes" "$CK" "$d"
+sed -i 's/^\*\*Full verify:.*/**Full verify:** green/' "$d/blueprint/context/current-work.md"
+assert_refuses "a Full verify: line in no recorded form, with build" "**Full verify:** is neither" "$CK" "$d"
+assert_refuses "and build is named as its fix" "fix with build" "$CK" "$d"
+d=$(ck_copy "$SPB"); printf '# Export\n' >"$d/blueprint/context/current-work.md"
+assert_refuses "a current-work file that is neither stub nor spec" "neither the reset stub nor a spec" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); head -c 60000 /dev/zero | tr '\0' 'x' >>"$d/CLAUDE.md"
+assert_refuses "loaded context over the budget AGENTS.md states" "KB budget in AGENTS.md" "$CK" "$d"
+d=$(ck_copy "$SPB"); head -c 9000 /dev/zero | tr '\0' 'x' >>"$d/blueprint/context/project-overview.md"
+assert_refuses "an overview over its cap, with distill" "over its 8 KB cap - fix with distill" "$CK" "$d"
+# An overview several times its cap passed, because the project's AGENTS.md
+# predated the cap and with none stated there was nothing to hold it to.
+d=$(ck_copy "$SPB"); sed -i 's/ - at most 8 KB; it links, never restates//' "$d/AGENTS.md"
+assert_ok "the cap is gone from that copy" test "$(grep -c 'at most 8 KB' "$d/AGENTS.md")" -eq 0
+assert_ok "an AGENTS.md stating no cap passes while the overview is small" "$CK" "$d"
+head -c 9000 /dev/zero | tr '\0' 'x' >>"$d/blueprint/context/project-overview.md"
+assert_refuses "and is held to the pack's cap once it is not" "AGENTS.md states none, so this is the pack's" "$CK" "$d"
+# With one command for every gate, the browser
+# suite ran after every build step. The second line is what gives it a place.
+d=$(ck_copy "$SPB"); sed -i '/^- Full verify:/,/^$/{/^- Full verify:/d;/^  /d}' "$d/AGENTS.md"
+printf -- '\n- Verify: `make verify`\n' >>"$d/AGENTS.md"
+assert_ok "the full verify line is gone from that copy" test "$(grep -c '^- Full verify:' "$d/AGENTS.md")" -eq 0
+assert_refuses "a Verify command with no Full verify line is named" "no '- Full verify:' line" "$CK" "$d"
+printf -- '- Full verify: `make verify-full`\n' >>"$d/AGENTS.md"
+assert_ok "and passes once the line is there" "$CK" "$d"
+# The standards file once kept its own copy of the verify command. The command
+# in AGENTS.md changed, the copy did not, and the copy is in the file that wins.
+std="$d/blueprint/context/coding-standards.md"
+printf '\n## Verify command\n\n`make verify`, run from `web/`.\n' >>"$std"
+assert_ok "a copy in the standards file that matches AGENTS.md passes" "$CK" "$d"
+sed -i 's/^`make verify`, run/`make verify \&\& make test`, run/' "$std"
+assert_refuses "a copy that no longer matches is a second definition" "neither command AGENTS.md records" "$CK" "$d"
+assert_refuses "and setup is named as its fix" "fix with setup" "$CK" "$d"
+# A section can name `pnpm verify` and `pnpm e2e` beside a full
+# verify of both, and be told `pnpm e2e` was neither recorded command.
+sed -i 's/^- Full verify: .*/- Full verify: `make verify \&\& make e2e --all`/' "$d/AGENTS.md"
+sed -i 's/^`make verify .*/`make verify`, then `make e2e --all` separately./' "$std"
+assert_ok "that copy names a part of full verify" grep -q '`make e2e --all` separately' "$std"
+assert_ok "a part of a recorded command is a matching copy" "$CK" "$d"
+sed -i 's/`make e2e --all` separately/`make e2e --some` separately/' "$std"
+assert_refuses "and a command that is no part of one is still named" "'make e2e --some', which is neither command AGENTS.md records nor a part of one" "$CK" "$d"
+# A re-install brought this rule to a project that did not meet it and closed
+# on "nothing of yours was changed"; the finding showed only to whoever ran
+# the checker afterwards.
+up=$("$IN" --target "$d" 2>&1)
+assert_ok "a re-install says what the checker it installed names" \
+  bash -c 'printf "%s" "$1" | grep -A3 "The project checker names, as installed now:" | grep -q "make e2e --some"' _ "$up"
+sed -i 's/^`make verify`, then .*/In `AGENTS.md`, under Commands./' "$std"
+up=$("$IN" --target "$d" 2>&1)
+assert_ok "that re-install was an upgrade" bash -c 'printf "%s" "$1" | grep -q "already had the workflow"' _ "$up"
+assert_fails "and says nothing of the checker on a project that passes it" \
+  bash -c 'printf "%s" "$1" | grep -q "The project checker names"' _ "$up"
+assert_ok "a pointer to AGENTS.md passes" "$CK" "$d"
+# A project installed before the budget line existed can load a large amount into
+# every session and the checker pass, because with no line there was nothing
+# to hold the total to. An absent declaration is a finding, not a pass.
+d=$(ck_copy "$SPB"); sed -i '/^\*\*Context budget:/d' "$d/AGENTS.md"
+assert_refuses "an AGENTS.md stating no budget is named, not passed" "states no context budget" "$CK" "$d"
+d=$(ck_copy "$MPB"); sed -i '/^\*\*Context budget:/d' "$d/api/AGENTS.md"
+assert_refuses "and in a part, from the root" "api/AGENTS.md: states no context budget" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
+printf '# Capability: count\n\n- **count.1** - Prints the total *Since:* features/01-count\n\n## Removed\n- count.2 - removed by features/02-x\n' >"$d/blueprint/capabilities/count.md"
+assert_ok "a capability file as the merge writes it passes" "$CK" "$d"
+printf -- '- **count.3** - No provenance\n' >>"$d/blueprint/capabilities/count.md"
+assert_refuses "a claim line the merge cannot read, with ship" "the merge script cannot read" "$CK" "$d"
+d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
+printf -- '- **count.1** - A *Since:* features/01\n- count.1 - removed by features/02\n' >"$d/blueprint/capabilities/count.md"
+assert_refuses "a claim ID used twice" "count.1 appears twice" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); echo 'preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14' >>"$d/dev-notes/status.md"
+assert_ok "a preflight: line as preflight writes it passes" "$CK" "$d"
+echo 'preflight: go, 2026-03-03, a1b2c3d' >>"$d/dev-notes/status.md"
+assert_refuses "two verdicts, where each replaces the last" "2 preflight: lines" "$CK" "$d"
+d=$(ck_copy "$SPB"); echo 'preflight: looks good to me' >>"$d/dev-notes/status.md"
+assert_refuses "a verdict deploy cannot read, with preflight" "fix with preflight" "$CK" "$d"
+
+d=$(ck_copy "$MPB"); printf '\n### F-01 bad\n' >>"$d/api/blueprint/context/findings.md"
+assert_refuses "a root run checks every part, and names the part" "api/blueprint/context/findings.md: line" "$CK" "$d"
+d=$(ck_copy "$MPB"); echo live >"$d/blueprint/status/web.md"; git -C "$d" add -f blueprint/status/web.md
+# Named by the project file that states the rule: the pack's decision numbers
+# mean nothing inside a project - the trial's agent went looking for D9.
+assert_refuses "a force-added part status file is named at the root, with where the rule is" \
+  "never committed (blueprint/orchestration.md)" "$CK" "$d"
+
+d=$(ck_copy "$SPB"); printf '\n### F-01 bad\n' >>"$d/blueprint/context/findings.md"
+assert_ok "--staged ignores a bad file that is not staged" "$CK" --staged "$d"
+git -C "$d" add -A
+assert_refuses "and refuses it once staged" "is not '### F-NN" "$CK" --staged "$d"
+git -C "$d" checkout -q -- . 2>/dev/null; git -C "$d" show :blueprint/context/findings.md >/dev/null
+cp "$SPB/blueprint/context/findings.md" "$d/blueprint/context/findings.md"
+assert_ok "with the tree fixed but not staged, a plain run passes" "$CK" "$d"
+assert_fails "while --staged still sees the bad staged copy" "$CK" --staged "$d"
+
+assert_eq "no python3: exit 2, nothing checked" "2" "$(env PATH=/nonexistent /bin/bash "$CK" "$SPB" >/dev/null 2>&1; echo $?)"
+assert_eq "outside a project: exit 2" "2" "$("$CK" "$(workdir)" >/dev/null 2>&1; echo $?)"
+assert_eq "--staged outside a repository: exit 2" "2" "$(d=$(workdir); mkdir -p "$d/blueprint/context"; "$CK" --staged "$d" >/dev/null 2>&1; echo $?)"
+
+section "the project checker reaches a project, D23"
+# progress, ci and ship run it inside a project, which has no lib/ - the merge
+# script's lesson: a skill's script must exist where it runs, and stay current.
+w=$(workdir); (cd "$w" && "$NP" ckp >/dev/null 2>&1); p="$w/ckp"
+assert_ok "a new project holds an executable checker" test -x "$p/.agents/bin/check-project.sh"
+assert_ok "identical to the pack's" cmp -s "$CK" "$p/.agents/bin/check-project.sh"
+assert_ok "and it runs clean from the project, by the path the skills give" \
+  bash -c 'cd "$1" && .agents/bin/check-project.sh' _ "$p"
+echo '# stale' >"$p/.agents/bin/check-project.sh"
+"$IN" --target "$p" >/dev/null 2>&1
+assert_ok "a re-install replaces a stale copy" cmp -s "$CK" "$p/.agents/bin/check-project.sh"
+w=$(workdir); (cd "$w" && "$NP" ckm --parts api,web >/dev/null 2>&1)
+assert_ok "a part of a multi-part project has it" test -x "$w/ckm/api/.agents/bin/check-project.sh"
+assert_ok "and so does the product root, where one run checks every part" \
+  bash -c 'cd "$1" && .agents/bin/check-project.sh' _ "$w/ckm"
+
+section "the pack version, D25 - an install says what it came from, and --status compares"
+# An installed project can run skills far behind the pack, even from the day it
+# was created, and nothing in it could say so.
+w=$(workdir); (cd "$w" && "$NP" pv >/dev/null 2>&1); p="$w/pv"
+assert_ok "a new project records the pack commit and its date" \
+  grep -qE '^[0-9a-f]{7,40} [0-9]{4}-[0-9]{2}-[0-9]{2}( \+changes)?$' "$p/.agents/pack-version"
+git -C "$p" add -A >/dev/null 2>&1; before=$(git -C "$p" status --porcelain; git -C "$p" write-tree)
+out=$("$IN" --status --target "$p" 2>&1); rc=$?
+assert_eq "--status on a fresh install: exit 0" "0" "$rc"
+assert_ok "and says it is current" grep -q 'current' <<<"$out"
+git -C "$p" add -A >/dev/null 2>&1
+assert_eq "--status writes nothing" "$before" "$(git -C "$p" status --porcelain; git -C "$p" write-tree)"
+echo '# stale' >"$p/.agents/skills/ship/SKILL.md"; echo '0000000 2020-01-01' >"$p/.agents/pack-version"
+out=$("$IN" --status --target "$p" 2>&1); rc=$?
+assert_eq "a skill that differs from the pack: exit 1" "1" "$rc"
+assert_ok "names the skill" grep -qE 'differ.*\bship\b' <<<"$out"
+assert_ok "and the version it was installed from" grep -q '0000000 2020-01-01' <<<"$out"
+assert_eq "--status left the stale skill alone" "# stale" "$(cat "$p/.agents/skills/ship/SKILL.md")"
+out=$("$IN" --target "$p" 2>&1)
+assert_ok "a re-install says what it replaced" grep -q 'was 0000000 2020-01-01' <<<"$out"
+assert_eq "and --status is clean again" "0" "$("$IN" --status --target "$p" >/dev/null 2>&1; echo $?)"
+echo '# stale' >"$p/.agents/bin/check-project.sh"
+assert_refuses "a stale script beside the skills counts too" "check-project.sh" "$IN" --status --target "$p"
+"$IN" --target "$p" >/dev/null 2>&1; rm "$p/.agents/pack-version"
+assert_refuses "no recorded version is named, though every file matches" "records no pack version" "$IN" --status --target "$p"
+out=$("$IN" --target "$p" 2>&1)
+assert_ok "and the re-install says none was recorded" grep -q 'none recorded before' <<<"$out"
+assert_refuses "--status where the workflow is not installed" "not installed" "$IN" --status --target "$(workdir)"
+sed -i '/^\*\*Context budget:/d' "$p/AGENTS.md"
+out=$("$IN" --target "$p" 2>&1)
+assert_ok "an AGENTS.md from before the budget line is told the line to add" \
+  grep -q 'Context budget: 48 KB' <<<"$out"
+
+section "the git pre-commit hook, D23 - every tool's commits run the checker"
+# Every tool commits through git, so this is the one place a rule holds in all
+# of them. It is a tripwire, not a wall: it fails open when the checker cannot
+# run, and --no-verify skips it - CI is the wall.
+gc() { git -C "$1" -c user.email=t@t -c user.name=t commit -q -m "$2" 2>&1; }
+bad_finding() { printf '\n### F-01 bad\n' >>"$1/blueprint/context/findings.md"; }
+w=$(workdir); (cd "$w" && "$NP" gh --git-hooks >/dev/null 2>&1); p="$w/gh"
+assert_eq "new-project --git-hooks makes it the active hooks path" ".agents/git-hooks" \
+  "$(git -C "$p" config core.hooksPath)"
+assert_ok "the hook is executable" test -x "$p/.agents/git-hooks/pre-commit"
+assert_ok "identical to the pack's" cmp -s "$REPO/lib/git-pre-commit.sh" "$p/.agents/git-hooks/pre-commit"
+assert_eq "and the first commit, which ran it, was made" "1" "$(git -C "$p" rev-list --count HEAD 2>/dev/null)"
+bad_finding "$p"; git -C "$p" add -A
+assert_refuses "a malformed staged state file refuses the commit, naming its skill" \
+  "fix with review" gc "$p" bad
+assert_eq "and nothing was committed" "1" "$(git -C "$p" rev-list --count HEAD)"
+git -C "$p" reset -q --hard
+echo z >>"$p/README.md"; git -C "$p" add -A
+assert_ok "with the state files well-formed, it commits" gc "$p" good
+printf '#!/bin/sh\nexit 2\n' >"$p/.agents/bin/check-project.sh"; echo x >>"$p/README.md"; git -C "$p" add README.md
+out=$(gc "$p" x2); rc=$?
+assert_eq "a checker that could not run lets the commit through" "0" "$rc"
+assert_ok "with one line saying so" grep -q 'could not run' <<<"$out"
+rm "$p/.agents/bin/check-project.sh"; echo y >>"$p/README.md"; git -C "$p" add README.md
+out=$(gc "$p" nock); rc=$?
+assert_eq "so does a project with no checker" "0" "$rc"
+assert_ok "naming what is missing" grep -q 'no .agents/bin/check-project.sh' <<<"$out"
+
+w=$(workdir); (cd "$w" && "$NP" ghm --parts api,web --git-hooks >/dev/null 2>&1); p="$w/ghm"
+assert_eq "a multi-part product gets one hook, at the root" ".agents/git-hooks" "$(git -C "$p" config core.hooksPath)"
+assert_absent "and none in a part" "$p/api/.agents/git-hooks"
+bad_finding "$p/api"; git -C "$p" add -A
+assert_refuses "a bad file in a part refuses a commit at the root, naming the part" \
+  "api/blueprint/context/findings.md" gc "$p" bad
+
+# An existing hook manager owns the repository's hooks: write nothing to git
+# config, name the line to add, install the rest.
+gh_repo() { local d; d=$(workdir); git -C "$d" init -q -b main; printf '%s' "$d"; }
+for mgr in .husky .pre-commit-config.yaml lefthook.yml core.hooksPath; do
+  d=$(gh_repo)
+  case "$mgr" in
+    .husky) mkdir "$d/.husky" ;;
+    core.hooksPath) git -C "$d" config core.hooksPath .githooks ;;
+    *) touch "$d/$mgr" ;;
+  esac
+  before=$(git -C "$d" config core.hooksPath || true)
+  out=$("$IN" --target "$d" --git-hooks 2>&1)
+  assert_eq "$mgr: git config is left alone" "$before" "$(git -C "$d" config core.hooksPath || true)"
+  assert_ok "$mgr: the line to add to it is named" grep -qF '.agents/git-hooks/pre-commit' <<<"$out"
+  assert_ok "$mgr: and the rest is installed" test -x "$d/.agents/git-hooks/pre-commit"
+done
+
+d=$(gh_repo); mkdir "$d/sub"; echo keep >"$d/sub/f"
+before=$(cd "$d" && find . -path ./.git -prune -o -type f -print | sort | xargs cksum)
+assert_refuses "below a repository's top level it refuses, sending it to the root" "run --git-hooks there" \
+  "$IN" --target "$d/sub" --git-hooks
+assert_eq "with every file byte-identical" "$before" \
+  "$(cd "$d" && find . -path ./.git -prune -o -type f -print | sort | xargs cksum)"
+d=$(workdir)
+assert_refuses "outside any repository it refuses" "not a git repository" "$IN" --target "$d" --git-hooks
+assert_eq "having written nothing" "" "$(ls -A "$d")"
+assert_refuses "new-project --git-hooks --no-git refuses" "--git-hooks needs git" \
+  "$NP" --in "$d" nogit --git-hooks --no-git
+assert_absent "before creating anything" "$d/nogit"
+
+d=$(gh_repo); "$IN" --target "$d" --git-hooks >/dev/null 2>&1
+out=$("$IN" --target "$d" --git-hooks 2>&1)
+assert_eq "a re-run is idempotent: one hooksPath" "1" "$(git -C "$d" config --get-all core.hooksPath | grep -c .)"
+assert_fails "and its own path is not taken for a hook manager" grep -qF 'not activated' <<<"$out"
+
+section "the check runs are counted from the session logs (D35)"
+# The skills say when a check runs; whether an agent did that was only ever
+# counted by hand. The first hand count read too high because a log repeats
+# records, so each rule below is one a wrong count has already broken or would.
+CR="$REPO/lib/count-check-runs.sh"
+_rec() { printf '{"type":"assistant","timestamp":"%s","isSidechain":%s,"message":{"content":[{"type":"tool_use","id":"%s","name":"%s","input":{"command":"%s"}}]}}\n' "$@"; }
+d=$(workdir); mkdir -p "$d/p" "$d/logs/s1/subagents"
+printf -- '- Test: `npm test`\n- Verify: `npm run verify`\n- Full verify: `npm run verify && npm run test:e2e`\n' >"$d/p/AGENTS.md"
+{ _rec 2026-01-01T10:00 false a Bash "npm run verify 2>&1 | tail -3"
+  _rec 2026-01-01T10:00 false a Bash "npm run verify 2>&1 | tail -3"
+  _rec 2026-01-01T10:02 false b Edit ""
+  _rec 2026-01-01T10:06 false d Bash "npm run verify"
+  _rec 2026-01-01T10:07 false e Bash "npm run verify:full"
+  _rec 2026-01-01T10:08 false f Bash "npm run verify && npm run test:e2e"
+  _rec 2026-01-01T10:09 false g Bash "sed -i s/a/b/ src/x.js"
+  _rec 2026-01-01T10:10 false h Bash "npm run test:e2e"
+} >"$d/logs/s1.jsonl"
+_rec 2026-01-01T10:04 false c Bash "npm run verify; npm test -- src/a.test.js" >"$d/logs/s1/subagents/agent-1.jsonl"
+out=$("$CR" --project "$d/p" --logs "$d/logs")
+_row() { grep -F "$1 " <<<"$out" | grep -F "$2" | awk '{print $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF}'; }
+# runs main handed-off same-tree named
+assert_eq "a record repeated in the log is one run, and a longer command name is not this one" \
+  "4 3 1 2 0" "$(_row 'npm run verify' 'verify, full verify')"
+assert_eq "a run after a shell command that writes is not the same tree" \
+  "2 2 0 0 0" "$(_row 'npm run test:e2e' 'full verify')"
+assert_eq "a subagent's run is handed off, and a test given a file is named" \
+  "1 0 1 0 1" "$(_row 'npm test' 'test')"
+assert_eq "--since counts only what came after" \
+  "2 2 0 1 0" "$("$CR" --project "$d/p" --logs "$d/logs" --since 2026-01-01T10:05 | grep -F 'verify, full verify' | awk '{print $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF}')"
+# Found on the first real count: a third of the runs were the command's name in
+# a pgrep, a note or a heredoc, and an edit made in the same call read as none.
+_rec2() { python3 -c 'import json,sys; t,i,c=sys.argv[1:]; print(json.dumps({"type":"assistant","timestamp":t,"isSidechain":False,"message":{"content":[{"type":"tool_use","id":i,"name":"Bash","input":{"command":c}}]}}))' "$@"; }
+mkdir -p "$d/logs2"
+{ _rec2 2026-01-02T10:00 a 'cd web && nohup npm run verify > v.log 2>&1'
+  _rec2 2026-01-02T10:01 b 'tail -2 v.log; pgrep -f "npm run verify" | head -2'
+  _rec2 2026-01-02T10:02 c 'echo "- `npm run verify` green" >/dev/null'
+  _rec2 2026-01-02T10:03 d "$(printf 'python3 - <<EOF\nnote = 1\nnpm run verify\nEOF')"
+  _rec2 2026-01-02T10:04 e 'timeout 300 npm run verify'
+  _rec2 2026-01-02T10:05 f 'sed -i s/a/b/ src/x.js && npm run verify'
+  _rec2 2026-01-02T10:06 g "$(printf 'python3 - <<EOF\nopen(p, "w").write(s)\nEOF')"
+  _rec2 2026-01-02T10:07 h 'npm run verify'
+} >"$d/logs2/s1.jsonl"
+out2=$("$CR" --project "$d/p" --logs "$d/logs2" | grep -F 'verify, full verify' | awk '{print $(NF-4), $(NF-1)}')
+assert_eq "a command named in a pgrep, a quoted note or a heredoc is not a run, and one behind nohup or timeout is" \
+  "4" "${out2% *}"
+assert_eq "an edit in the same call before the check, or by a script's write, is a new tree" \
+  "1" "${out2#* }"
+# A write after the check, in the same command, was not seen: the next run read
+# as the same tree. The run's own log is not such a write.
+mkdir -p "$d/logs3"
+{ _rec2 2026-01-03T10:00 a 'npm run verify && sed -i s/a/b/ src/x.js'
+  _rec2 2026-01-03T10:01 b 'npm run verify 2>&1 | tee v.log; rm v.log'
+  _rec2 2026-01-03T10:02 c 'npm run verify'
+} >"$d/logs3/s1.jsonl"
+assert_eq "an edit after the check in one command is a new tree, and the run's own log is not" \
+  "3 1" "$("$CR" --project "$d/p" --logs "$d/logs3" | grep -F 'verify, full verify' | awk '{print $(NF-4), $(NF-1)}')"
+before=$(cd "$d" && find . -type f | sort | xargs cksum)
+"$CR" --project "$d/p" --logs "$d/logs" >/dev/null
+assert_eq "it writes nothing" "$before" "$(cd "$d" && find . -type f | sort | xargs cksum)"
+assert_refuses "no logs where it looked is said, not counted as zero" "No session logs" "$CR" --project "$d/p" --logs "$d/none"
+printf -- '- Verify: <one command>\n' >"$d/p/AGENTS.md"
+assert_refuses "a template's placeholder is not a command" "records no Verify" "$CR" --project "$d/p" --logs "$d/logs"
+
+finish

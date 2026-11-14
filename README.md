@@ -1,0 +1,389 @@
+# AI Project Starter
+
+One command creates a project directory with every skill already in it. Open it
+with Claude Code — or any AI coding tool, or nothing at all — and the whole
+lifecycle is there: ideate, architect, stack, layout, scaffold, build, ship,
+host, deploy, monitor.
+
+## Install
+
+Clone it anywhere. There is nothing to build and nothing to install — no
+dependencies and no network calls. It needs `bash`, `python3`, and the usual
+Unix tools (`sed`, `awk`), which is what the scripts here actually shell out to.
+
+```bash
+git clone https://github.com/habr33/ai-project-starter.git ~/ai-project-starter
+```
+
+Then create your first project:
+
+```bash
+~/ai-project-starter/new-project.sh my-app
+cd my-app
+# open it with your AI tool and run: ideate
+```
+
+The command **creates** the directory. That is the point — there is never a
+moment where you have a tool open in an empty folder with no skills in it.
+
+To type `new-project.sh` and `install.sh` without the path — as the rest of this
+README does — put the clone on your `PATH`:
+
+```bash
+echo 'export PATH="$HOME/ai-project-starter:$PATH"' >> ~/.bashrc && exec bash
+```
+
+To update the pack later, `git pull` in the clone; to push those updates into a
+project you already created, see [Updating](#updating).
+
+### Where it creates it
+
+By default, in your current directory. Any of these work:
+
+```bash
+new-project.sh my-app                # ./my-app
+new-project.sh projects/my-app       # ./projects/my-app
+new-project.sh ~/code/my-app         # /home/you/code/my-app
+new-project.sh my-app --in ~/code    # /home/you/code/my-app
+```
+
+It refuses rather than guessing when the target already exists, when the parent
+directory does not, or when an absolute path is combined with `--in`.
+
+## What you get
+
+```
+my-app/
+├── README.md          what it is, how to run it
+├── AGENTS.md          entry point every AI tool reads
+├── CLAUDE.md          imports AGENTS.md
+├── dev-notes/         why it is shaped this way, and where it stands
+├── blueprint/         plans, the current spec, findings, history, and the design kit
+├── .agents/skills/    the 27 skills - the one copy every tool reads
+├── .claude/skills     a link to .agents/skills, where Claude Code looks
+└── .opencode/command/ a `/name` wrapper per skill, for opencode
+```
+
+**No source directory yet** — that is deliberate. `scaffold` creates it once
+`architect` has decided what the system's shape is, `stack` has decided what it
+is built with, and `layout` has decided where the files go, using the framework's
+own conventions rather than one imposed here.
+
+## The loop
+
+```
+ideate → architect → stack → layout → scaffold → ci → distill  plan it
+     → prototype                                    settle the look and navigation (any UI)
+     → spec → build → verify → review → ship        build it
+     → preflight → host → deploy → monitor          run it
+```
+
+| | |
+|---|---|
+| **Plan** | `ideate` `architect` `stack` `layout` `scaffold` `ci` `distill` |
+| **Design** | `prototype` |
+| **Build** | `spec` `build` `verify` `review` `ship` |
+| **Operate** | `preflight` `host` `deploy` `monitor` `migrate` `integrate` |
+| **Learn** | `monitor` back into the plan, `docs` for release notes |
+| **Support** | `setup` `progress` `prepare` `debug` `docs` `rollback` `autopilot` `orchestrate` |
+
+A small fix can take the short path: `spec --quick` writes one test-first step,
+and `build` hands it straight to `ship` — as long as it stays within two files
+and touches no data, contract or anything the quality bar names.
+
+No framework is assumed. `stack` asks what you want to build with — language and
+version included — and `scaffold` installs it, whether that is Next.js, Astro,
+Expo, Flutter, or nothing at all.
+
+## What holds it together
+
+**Every piece of state is a file.** A session that starts cold is the normal
+case, not a degraded one — the plans, the current spec with its ticked steps, and
+the open findings all load automatically, so "continue" picks up at the first
+unchecked step without any conversation history.
+
+**Findings have teeth.** `review` records them with durable IDs and a status; an
+`open` *or* `fixed` P0/P1 blocks the merge. `fixed` blocking is deliberate — a
+repair isn't done until a review has seen the result.
+
+**Evidence, or it didn't happen.** "Passes" names a command, output, or
+screenshot. "I couldn't verify that" is a valid answer.
+
+**Two different questions get asked.** `ship` asks "is this change safe to
+merge?" `preflight` asks "is this product ready to be live at all?" — the whole
+project, once, before launch. It can say no, and that is the point.
+
+**The project records its own bar, and later checks measure against it.**
+`ideate` writes any non-negotiable commitment the project holds itself to —
+"none" is a real answer; `architect` writes what performance, scale, security
+and availability this project holds itself to; `scaffold` writes the
+conventions the code actually follows; `prototype` writes the design decisions
+and the contrast values it measured, starting from the pack's **design kit** -
+neutral tokens, every core component in every state, and a UX checklist of the
+screens and journeys every app or website needs. Without those, `review`'s lenses can only
+report generic smells — **a clean result then means "not checked", not
+"consistent"**, and the skills say so rather than letting silence read as a
+pass.
+
+**Every skill checks its inputs before it acts.** Each opens by naming what must
+already be true and what to run when it is not. Some stop; some report and carry
+on. **A skill stopping is it working** — it is refusing to build confident output
+on an empty file.
+
+**Work only a person can do is recorded, not just mentioned.** Nine skills write
+to `blueprint/context/needs-you.md` the moment they hit something an agent
+cannot do — an account, a card, an SDK, a device, a decision, a permission —
+each with what it blocks and when it is needed. `prepare` reports it, `progress`
+says when the next action is yours, and `preflight` treats anything open and
+required as a blocker. Without it the only way to discover you needed a paid
+account was to run the skill that spends money and watch it refuse.
+
+**Standards have two owners and never share a file.** The conventions that hold
+regardless of stack are the pack's, refreshed on every install so improvements
+reach projects that already exist. Everything specific to your project is yours
+and is never overwritten — **and where they disagree, yours wins.**
+
+**Every place the code runs is written down.** `AGENTS.md` carries a table of
+environments — what each is for, where its configuration comes from, and
+**whether it holds data anyone would miss.** `deploy` names its target from it and
+`migrate` reads it before touching a schema, treating anything unrecorded as
+holding real data.
+
+## Guides
+
+| | |
+|---|---|
+| **[docs/walkthrough.md](docs/walkthrough.md)** | Start to shipped, for an ordinary single project. **Read this first.** |
+| **[docs/mobile.md](docs/mobile.md)** | The mobile route, and where it differs from web |
+| **[docs/multi-part.md](docs/multi-part.md)** | A backend and front ends built in parallel, one session per part |
+| **[docs/anatomy.md](docs/anatomy.md)** | How each part does its job — what it reads, writes, and gates on. For changing the workflow, not using it |
+
+## Building several parts in parallel
+
+```bash
+new-project.sh shop --parts web,api          # from scratch
+convert-to-parts.sh --parts web,api --existing web   # or split an existing one
+```
+
+Each part gets its own loop and its own state, so parallel sessions cannot
+overwrite each other. They coordinate through a board at the product root, and
+`integrate` checks the parts actually agree — which is what per-part verification
+cannot tell you.
+
+**Converting is usually the better route**, because the boundary is a decision
+you understand properly only once `architect` has run. The two produce the same
+structure, so nothing downstream depends on which you used.
+
+**Most projects should not do this.** Single session is the default and usually
+right; see the guide for the two constraints that decide it.
+
+## Which tools this works in
+
+Skills install once, to `.agents/skills/<name>/SKILL.md`, where opencode, Codex
+and most other tools look. **Claude Code looks only in `.claude/skills/`**, so
+that is a directory symlink to `.agents/skills` - checked with Claude Code
+2.1.280, which found no skill in `.agents/skills` alone and ran one through the
+link. Where a symlink does not work - Windows without symlink support - `install.sh`
+copies instead and says so. A tool with no skill support at all is told by
+`AGENTS.md` where each `SKILL.md` is, and follows it when a skill is named.
+`AGENTS.md` is the entry point; `CLAUDE.md` imports it, so there is one source
+of truth.
+
+**[opencode](https://opencode.ai)** reads `AGENTS.md` (and prefers it over
+`CLAUDE.md` when both exist), and finds the skills in `.agents/skills/` without
+any extra install — verified with `opencode debug skill`, which lists all 27.
+
+But **loading a skill is not the same as being able to type `/spec`.** opencode
+has no `/name` for a skill; the model picks one by matching your request against
+its description. This pack's whole documented UX is "run `spec`", so `install.sh`
+also writes `.opencode/command/<name>.md` — one thin wrapper per skill, in
+opencode's own command format. Those are wrappers, not copies: the skill body
+stays the single source. `opencode debug config` shows all 27 registered.
+
+So in opencode you can type `/spec`, and in Claude Code `/spec`, and both reach
+the same file.
+
+Its frontmatter rules are what `check.sh` enforces: `name` lowercase with single
+hyphens matching the directory, `description` at most 1024 characters. A skill
+that breaks either does not report an error — **it silently does not load**,
+which looks exactly like the agent choosing not to use it.
+
+Anything else that reads `AGENTS.md` and plain markdown works too; the skills use
+plain names for cross-references rather than any tool's `/command` syntax, which
+is why they read correctly everywhere.
+
+## Adding it to a project that already exists
+
+```bash
+cd existing-app
+~/ai-project-starter/install.sh
+```
+
+Then run `setup`, which reads the real repo — stack, versions, commands — and
+records what is actually there. It never installs or upgrades anything.
+
+## Updating
+
+```bash
+install.sh
+```
+
+Replaces the skills with the pack's current ones - always, since an installed
+skill is a copy of `skills/`, and a stale one behaves exactly like a current one.
+If you had edited one, the report names it and git has your version. **Files you
+own are never touched**: the plans, the specs, `dev-notes/`, `AGENTS.md`.
+`--force` is still accepted, and changes nothing.
+
+**Optional, Claude Code only: `--hooks`** (on `install.sh` or `new-project.sh`)
+adds two hooks to `.claude/settings.json`, merged beside anything already there.
+A `git commit` on `main` then needs your yes in the UI however the model was
+told to proceed - unless it holds only workflow state (`blueprint/`,
+`dev-notes/`, `CHANGELOG.md`), which goes through unasked (`D24`); setup commits
+holding code and `ship`'s merge still work, they just ask;
+headless (`claude -p`) there is nobody to ask, so they are refused -
+and a session opens with a warning when the always-loaded files are over the
+budget `AGENTS.md` states. With `--git-hooks` active too, a commit with
+`--no-verify` or `-n` and a change to `core.hooksPath` are refused outright.
+It also allows the checker, read-only git, `git add` and `git commit`, so
+they stop prompting, and lets `ship` push `main` unasked once you set
+`**Push main without asking:** yes` in `AGENTS.md` and commit it.
+Other tools ignore them; the rules still hold as prose.
+
+**Optional, every tool: `--git-hooks`** (on `install.sh` or `new-project.sh`,
+at the repository's top level) installs a git pre-commit hook in
+`.agents/git-hooks/` and points `core.hooksPath` at it. A commit whose state
+files are out of the form the skills write - the findings index, the spec's
+header, a `blueprint/status/` file staged at all - is refused, each line naming
+the skill that repairs it. If husky, pre-commit or lefthook already runs your
+hooks, nothing in git config changes; the line to add to it is printed instead.
+`core.hooksPath` does not travel with a clone - `progress` names a clone where
+it is not set. It is a tripwire, skippable with `--no-verify`; CI is the wall.
+
+No manifest, no conflict detection, no backups. That is a deliberate trade at
+this size — the repo is the version control.
+
+## Using it without an AI tool
+
+Every skill is a numbered worksheet. Open `.claude/skills/spec/SKILL.md` and work
+through `## Step 1`, `## Step 2` yourself. Cross-references are plain names, so
+they read correctly on paper. Skip the approval gates — those exist so an agent
+stops before writing to a file you own, and doing it yourself you already have.
+
+## Working on this repo
+
+```bash
+./check.sh
+```
+
+Validates frontmatter, that each skill's name matches its filename, that step
+numbers run in order, and that **no skill refers to another by tool-specific
+syntax** — `/spec` or `$spec` instead of a plain name. That last one is not
+theoretical: a rename left stale `/status` references in a predecessor of this
+repo, wrong for every tool but one, and nothing caught it.
+
+It also checks the things that span files rather than living in one, because
+that is where every serious bug here has been: **no skill is unreachable**,
+**every script is referenced** by some doc or skill or other script, **every
+field on the coordination board has a writer**, **every state file the skills
+read has a declared writer**, named alike in the table and in that skill's own
+`Writes:` line, **every skill states its
+preconditions**, **every skill that writes a foundational decision says what
+happens when that decision already exists**, **every mode a skill declares is
+named in its description** — the description is what an agent matches on, so a
+mode missing from it cannot be reached — and **every file that lives at the
+product root is named as such** by each skill that reads it — and **no script
+refuses after it has started writing**, which is what leaves a half-made project
+that blocks the corrected retry — and **every field of the product root's
+contract block has a writer and a reader that name it**, because a paraphrase
+binds nothing — and **a new project's always-loaded context fits in half the
+declared budget**, because every session pays for it before a word is typed.
+**18 rules.**
+
+A skill nothing routes to, a script nothing
+mentions, a field every reader sees as permanently empty, and a path that
+resolves to the wrong directory inside a part are all invisible to a
+file-by-file check — and every one of them has actually shipped.
+
+**Each of those is driven by a list in `template/AGENTS.md`, not by cleverness.**
+That is the pattern worth copying: a class becomes checkable at the moment it is
+written down. The path one was recorded here as unlintable for months, and
+became rule 13 the day the product-level files were declared — which promptly
+found five more skills reading a plan that does not exist inside a part.
+
+Skills live in `skills/`, one file each. `install.sh` writes them once, to
+`.agents/skills/`, and links `.claude/skills` to it, so there is one copy to
+edit here and one in a project.
+
+The scripts:
+
+| | |
+|---|---|
+| `new-project.sh` | create a project, single-part or `--parts` |
+| `install.sh` | add the workflow to a project that already exists |
+| `convert-to-parts.sh` | split a single-part project into a multi-part product |
+| `check.sh` | lint the skill sources |
+| `tests/run.sh` | run the test suite |
+| `lib/seed-part.sh` | seed one part; also adds a part to an existing product |
+| `lib/seed-product-root.sh` | seed a product root |
+| `lib/part-name.sh` | part-name checks shared by `new-project.sh` and `convert-to-parts.sh` |
+| `lib/migrate-findings.sh` | split a findings ledger from before `D15` - `install.sh` names it when it finds one |
+| `lib/count-check-runs.sh` | count how often a project's checks ran, from Claude Code's session logs (`D35`) |
+| `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
+| `lib/check-project.sh` | checks a project's state files are in the form the skills write them (`D23`) |
+| `lib/git-pre-commit.sh` | the git pre-commit hook `--git-hooks` installs, which runs that checker (`D23`) |
+| `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
+
+The two `lib/` scripts exist because `new-project.sh --parts` and
+`convert-to-parts.sh` must produce **exactly** the same shape. Sharing them is
+what makes that true by construction rather than by two implementations agreeing
+for as long as nobody edits one of them.
+
+### Upgrading a project
+
+`install.sh` over an existing project is the upgrade path, and it draws one line
+throughout: **what the pack owns, it replaces; what you own, it never touches.**
+
+- **Skills are always replaced.** `skills/` is the one source and install fans it
+  out, so an installed copy is a generated artifact — and a stale skill is
+  invisible, loading and behaving exactly like a current one.
+- **The opencode command wrappers are always rewritten too.** They are generated
+  from each skill's frontmatter, so they are pack-owned for the same reason —
+  and a stale one is the visible copy, since opencode shows the wrapper's
+  description in its command menu and matches requests against it.
+- **To see whether a project is behind, without changing it:**
+  `./install.sh --status --target <dir>`. It names the pack version the project
+  recorded in `.agents/pack-version` and every skill or script that differs
+  from this pack, and exits 1 if any does (`D25`).
+- **Skills the pack retired are removed by name**, from `lib/retired-names`.
+  Anything else it does not recognise is **reported and left alone** — it is
+  yours.
+- **`blueprint/context/fundamentals.md` is refreshed**, so improvements reach
+  projects that already exist. Your `coding-standards.md`, plans and state files
+  are never overwritten.
+- **A shape the pack no longer produces is named, never rewritten** — along with
+  the skill that fixes it. Merging needs judgement a script has not got.
+
+### Tests
+
+```bash
+./tests/run.sh
+```
+
+`tests/lib.sh` holds the assertions; `tests/test-lint.sh` negative-tests every
+linter rule, `tests/test-scripts.sh` runs the scripts and checks what they
+produced, `tests/test-seams.sh` checks the invariants that span files - which is
+where every serious defect here has been - and `tests/test-routing.sh` checks
+that a realistic user prompt still reaches the right skill's description.
+
+The runner **fails every assertion function, and test files broken on purpose,
+before running anything else**, to prove the harness reports a failure. A rule in this repo once shipped unable
+to fail, and a test suite with that flaw hides every defect beneath it.
+
+## Credit
+
+The `blueprint/` layout, the findings ledger, and the plan → spec → build →
+verify → review → ship loop come from
+[ai-blueprint](https://github.com/bradtraversy/ai-blueprint) by
+[Brad Traversy](https://github.com/bradtraversy), MIT licensed — worth your time
+if this is useful to you. The skill text, scripts, linter and tests here are
+written from scratch. See [LICENSE](LICENSE).
