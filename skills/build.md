@@ -360,11 +360,45 @@ say which limit it crossed** - it is an ordinary fix now, and `verify` and
 `review` apply. A repair that needed a third file is exactly the one whose
 reach nobody predicted.
 
-When every step is built, **run full verify once** - the command `AGENTS.md`
-records, on the tree as it now stands. This is the one place `build` runs the
-whole browser or database suite, and what it catches is a step that broke
-another step's test. If it cannot run here - no database, no browser - say so
-in the packet as a skipped check; `ship` will not merge without it.
+When every step is built, **run this item's own tests together, once** - every
+test the spec's done-whens name, in one run, on the tree as it now stands. What
+it catches is a step that broke another step's test, and it costs this item's
+tests, not the project's. Where the verification command already runs them all,
+that run was it.
+
+**Then decide whether the whole suite runs here.** Full verify is the command
+`AGENTS.md` records, and this is the one place `build` runs the whole browser
+or database suite. **Run full verify once, here, when any of these holds** -
+and then it stands in for the run above, each test once:
+
+- **the spec's `**Reach:**` line says `wide`** - `spec` looked up what this
+  item can break outside its own tests, and named the trigger.
+- **the diff went wider than a `local` line declared.** Compare what was
+  actually changed - `git diff --stat` against the branch point, not what was
+  planned - with the list under Reach in `spec`: stored data, a contract, a
+  dependency, how the project is built or tested, an existing file that code
+  outside this item imports, a changed or removed behaviour claim, anything
+  `blueprint/context/quality-bar.md` names. If any holds, rewrite the line as
+  `wide - <trigger>, found by build` and run the suite. **A spec with no Reach
+  line is judged from the diff alone**, the same way.
+- **it added or changed a test that needs a database or browser state.** A test
+  that passes alone and fails in suite order or on left-over data is found only
+  by the suite, and found late it is a red pipeline per test.
+- **the user asks.**
+
+If it cannot run here - no database, no browser - say so in the packet as a
+skipped check; `ship` will not merge without it.
+
+**Otherwise leave it for the merge.** Do not run the suite here: leave the
+`**Full verify:**` line as it is and say in the packet **full verify: left to
+the merge**, with the Reach line and that the diff stayed inside it. `ship` runs it where the item
+is merged - its pull-request route gates on the pipeline's run, and a local
+merge finds the line `not yet` and runs the suite once there - so the item
+still passes the whole suite before `main`, with or without CI. What moves is
+when a break in an older feature's test is found: at the merge, not here -
+after `verify` and `review`, so its repair changes the fingerprint and both are
+paid for again. **The rule is the same under `autopilot`**: an unattended run
+is not a reason to run the suite, and not a reason to skip it.
 
 **When it fails, do not run the whole command again to see.** Repair the
 failure, then run only the part that failed - one of the command's `&&` parts,

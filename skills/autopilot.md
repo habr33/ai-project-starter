@@ -253,8 +253,8 @@ the coordinator no way to know - it sees a part that simply went quiet.
 
 - a verification command is known and **passes right now**, with the tests
   the spec's done-whens name - **what the spec touches, never full verify.**
-  `build` runs full verify once when every step is built, and that run is
-  the whole-suite check; a baseline full run only repeats it - **only when
+  `build`'s closing decides where the whole suite runs - there, or at the
+  merge - and a baseline full run only repeats it - **only when
   `scaffold` is not in the range.** If it is, there is no project yet to verify;
   the run creates the command, and it must pass **before the first `build` step**
   instead. That is the same guarantee, checked at the point it can be.
@@ -282,8 +282,10 @@ Before starting, state:
 
 Work the spec's build steps in order, following `build`'s rules -
 smallest change per step, the verification command and the step's own test
-after each - never full verify - tick the step off when it passes. Full verify
-runs once, when every step is built. The difference is that it does not stop for approval between
+after each - never full verify - tick the step off when it passes. When every
+step is built, `build`'s closing rule applies unchanged: this item's own tests
+together, and the whole suite here only where `build` says so. **Being
+unattended changes neither half.** The difference is that it does not stop for approval between
 steps.
 
 **Hand each step off the way `build` does** - the same packet, to a subagent
@@ -416,7 +418,9 @@ unread too. **A finished run left at `building` with no packet is invisible to t
 review cap** - it is the count that stops a third unattended run, and a packet
 that lives only in this report counts as zero.
 
-**Say plainly that nothing has been merged, pushed, or deployed**, and that the
+**Say plainly that nothing has been merged, pushed, or deployed**, and whether
+the whole suite ran - `full verify: passed`, or `full verify: not run, left to
+the merge` - and that the
 work needs a real read before it ships - an unattended pass has had no human eyes
 on the diffs, and this packet is where those eyes go. **The longer the range, the
 more true that is**: a run from `architect` produced a system design, a stack

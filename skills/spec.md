@@ -310,6 +310,7 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
     **From build plan:** item <n>        (omit for a fix)
     **Type:** Feature | Fix
     **Quick:** yes - <files it touches; each criterion held>   (only for --quick)
+    **Reach:** local | wide - <which trigger>
     **Full verify:** not yet
     **Verified:** not yet
     **Reviewed:** not yet
@@ -361,6 +362,35 @@ says so, nothing carries that to the deploy, and several items can merge
 before anyone notices production lacks them. Name every variable the item's code reads that did not exist
 before, and every migration it adds.
 
+**Reach is whether this item can break a test it never opens.** `build` reads
+the line when every step is built: `wide` runs the whole suite there, `local`
+leaves it for the merge, and a suite of hundreds of browser tests is too much
+to pay on a guess. It is `wide` when the item does any one of these, and the
+line names which:
+
+- **changes stored data** - a schema, a migration, a stored shape.
+- **changes a contract other code consumes** - an API shape, a shared type, a
+  route.
+- **adds, upgrades or removes a dependency**, or changes the runtime version.
+- **changes how the project is built or tested** - an environment variable,
+  build, test-runner or CI configuration, global test setup, fixtures, seed data.
+- **edits shared code** - an existing file that code outside this item's own
+  area imports: a layout, middleware, a shared component, a utility, global
+  styles.
+- **changes or removes a behaviour claim** rather than adding one.
+- **touches anything `blueprint/context/quality-bar.md` names.**
+
+**Shared code is the one that has to be looked up, not judged.** For every
+existing file under Files and areas that this item edits rather than creates,
+search the source for what imports or references it. One importer outside this
+item's area makes it `wide`. **Its area is the capabilities its Behaviour
+changes name** - the files in `blueprint/capabilities/` - so an importer is
+outside when it serves a capability this item does not list, or the whole
+product: a layout, an entry point, the router. **An importer that cannot be
+placed is outside.** A file's name does not say who depends on it, and
+this is the trigger a spec written from memory gets wrong. Everything else is
+`local`: new files, and edits to files only this item's feature uses.
+
 The build steps are a live checklist. `build` ticks each one off as it
 lands, so a session that resumes after a context clear reads which boxes are
 checked and continues from the first unchecked step. Write them to be read that
@@ -379,8 +409,8 @@ the file or the test name - "the sign-in journey spec passes", with its path -
 not the bare command that runs every browser or database test. `build` runs
 what the done-when names after the step, so a done-when naming the suite runs
 the suite on every step that has one; that is most of the
-full runs. The whole suite is full verify, and it has one place: `build` runs
-it once when every step is built. Do not add a done-when or a step for it.
+full runs. The whole suite is full verify, and it has one place: `build`'s closing
+runs it once where the spec's `**Reach:**` is `wide`, or leaves it to the merge. Do not add a done-when or a step for it.
 
 **A done-when that needs a new kind of test says where that test runs.** A test
 that needs a database, a browser, a device or a network service cannot run
@@ -486,6 +516,9 @@ step. Run the draft against each of these:
 - **Done-whens.** Is each one observable and checkable by `verify`, or is
   it a vague "it works"? Make it concrete. Where does the test behind it run?
   Can the command that checks it actually run there?
+- **Reach.** Is `local` true of every file the steps edit, or only of the ones
+  the draft thought of? Run the importer search for any file added to Files and
+  areas since the line was written.
 - **Contradiction.** Does this item contradict a claim in
   `blueprint/capabilities/` that its Behaviour changes did not declare as
   changed or removed? Declare it, or change the item.

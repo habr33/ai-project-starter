@@ -3483,8 +3483,95 @@ for w in scaffold setup; do
 done
 assert_ok "a build step runs its own test, never full verify" \
   grep -qF 'never full verify and never a whole browser or database suite' <<< "$b3"
-assert_ok "build runs full verify once, when every step is built" \
-  grep -qF 'When every step is built, **run full verify once**' <<< "$b4"
+# The closing run is two things. The item's own tests together catch a step
+# that broke another step's test; the whole suite catches what the item broke
+# elsewhere, and runs here only for the items likely to. Measured 2026-11-14:
+# the suite took as long as the build, and every red was shared test state.
+assert_ok "build's closing runs the item's own tests together" \
+  grep -qF "When every step is built, **run this item's own tests together, once**" <<< "$b4"
+assert_ok "the whole suite runs here only for a named reason" \
+  grep -qF '**Run full verify once, here, when any of these holds**' <<< "$b4"
+# Whether an item is a major change is decided where the research is done.
+# spec declares it in a Reach: line and looks up who imports each file it
+# edits; build reads the line, then holds the diff against it - a reader and a
+# writer of one field, in two skills.
+_spec_f=$(_flat skills/spec.md)
+assert_ok "spec's header declares the item's reach" \
+  grep -qF '**Reach:** local | wide - <which trigger>' skills/spec.md
+assert_ok "spec says what the line decides" \
+  grep -qF '`wide` runs the whole suite there, `local` leaves it for the merge' <<< "$_spec_f"
+for trig in '**changes stored data**' '**changes a contract other code consumes**' \
+    '**adds, upgrades or removes a dependency**' '**changes how the project is built or tested**' \
+    '**edits shared code**' '**changes or removes a behaviour claim**' \
+    '**touches anything `blueprint/context/quality-bar.md` names.**'; do
+  assert_ok "reach is wide when the item $trig" grep -qF -- "- $trig" <<< "$_spec_f"
+done
+assert_ok "shared code is looked up, not judged" \
+  grep -qF 'search the source for what imports or references it' <<< "$_spec_f"
+assert_ok "and 'outside this item' is a declared thing, not a feeling" \
+  grep -qF '**Its area is the capabilities its Behaviour changes name**' <<< "$_spec_f"
+assert_ok "a doubtful importer counts as outside" \
+  grep -qF '**An importer that cannot be placed is outside.**' <<< "$_spec_f"
+assert_ok "spec's red-team pass challenges the line" \
+  grep -qF -- '- **Reach.** Is `local` true of every file the steps edit' <<< "$(_step 4 skills/spec.md)"
+assert_ok "build runs the suite on a wide line" \
+  grep -qF -- "- **the spec's \`**Reach:**\` line says \`wide\`**" <<< "$b4"
+assert_ok "and on a diff that went wider than a local line" \
+  grep -qF -- '- **the diff went wider than a `local` line declared.**' <<< "$b4"
+assert_ok "from what was changed, not what was planned" \
+  grep -qF '`git diff --stat` against the branch point, not what was planned' <<< "$b4"
+assert_ok "build rewrites the line it overruled" \
+  grep -qF 'rewrite the line as `wide - <trigger>, found by build`' <<< "$b4"
+assert_ok "a spec with no line is still judged" \
+  grep -qF '**A spec with no Reach line is judged from the diff alone**' <<< "$b4"
+assert_ok "check-project knows the line's form from spec" \
+  grep -qF '"**Reach:** local | wide - <which trigger>"' lib/check-project.sh
+assert_ok "anatomy names build as the line's second writer" \
+  grep -qF 'its `Reach:` line when the diff went wider than declared' docs/anatomy.md
+assert_ok "an item whose tests share state" \
+  grep -qF '**it added or changed a test that needs a database or browser state.**' <<< "$b4"
+assert_ok "and for no other reason - a missing pipeline is ship's to cover" \
+  test "$(grep -c '^- \*\*' <<< "$(sed -n '/when any of these holds/,/^If it cannot run here/p' skills/build.md)")" -eq 4
+assert_ok "build still says full verify once, never per step or twice" \
+  test "$(grep -oF 'un full verify once' <<< "$b4" | wc -l)" -eq 1
+# The whole-suite run is the one the merge repeats. build leaves it for the
+# merge unless the item is the kind that breaks other tests, and the seam is ship: the line build leaves untouched must make the
+# local route run the suite, and the pull-request route must gate on CI's run -
+# or an item reaches main having passed the whole suite nowhere.
+assert_ok "build otherwise leaves full verify for the merge" \
+  grep -qF '**Otherwise leave it for the merge.**' <<< "$b4"
+assert_ok "with or without CI, since ship covers both routes" \
+  grep -qF 'still passes the whole suite before `main`, with or without CI' <<< "$b4"
+assert_ok "and it leaves the line for ship to read" \
+  grep -qF 'leave the `**Full verify:**` line as it is' <<< "$b4"
+_ship1f=$(_flat skills/ship.md)
+assert_ok "ship's local route runs the suite on a line left 'not yet'" \
+  grep -qF 'When it reads `not yet`, is absent, or names another fingerprint, run full verify once here' <<< "$_ship1f"
+assert_ok "ship's pull-request route gates on the pipeline's run" \
+  grep -qF 'that run on the pushed commit is the gate instead' <<< "$_ship1f"
+assert_ok "and does not merge a red one" \
+  grep -qF '**A red run is not merged**' <<< "$_ship1f"
+assert_ok "ship settles the route before it decides whether to run the suite" \
+  grep -qF '**The route is settled here, not in Step 4**' <<< "$(_step 1 skills/ship.md | tr '\n' ' ' | tr -s ' ')"
+assert_ok "ship's work commit does not wait on a pipeline that has not run" \
+  grep -qF 'that run gates the merge in Step 4, not this commit' <<< "$(_step 3 skills/ship.md | tr '\n' ' ' | tr -s ' ')"
+assert_ok "ship's merge step takes the route Step 1 settled" \
+  grep -qF 'or take the answer Step 1 already got' <<< "$(_step 4 skills/ship.md | tr '\n' ' ' | tr -s ' ')"
+# autopilot has no rule of its own for the suite: what decides it is what the
+# item touched, and the report says what was not run.
+_auto_f=$(_flat skills/autopilot.md)
+assert_ok "autopilot follows build's closing rule, with no rule of its own" \
+  grep -qF '**Being unattended changes neither half.**' <<< "$_auto_f"
+assert_ok "and build says the same from its side" \
+  grep -qF '**The rule is the same under `autopilot`**' <<< "$b4"
+assert_ok "autopilot's report says whether the whole suite ran" \
+  grep -qF 'full verify: not run, left to the merge' <<< "$_auto_f"
+assert_ok "and autopilot no longer promises a whole-suite run of its own" \
+  test "$(grep -oF 'that run is the whole-suite check' <<< "$_auto_f" | wc -l)" -eq 0
+assert_ok "build says what a late red costs" \
+  grep -qF 'both are paid for again' <<< "$b4"
+assert_ok "spec no longer says build is the only place the suite runs" \
+  grep -qF "or leaves it to the merge." <<< "$(_flat skills/spec.md)"
 assert_ok "build's per-step text never asks for full verify" \
   test "$(grep -oF 'run full verify' <<< "$b3" | wc -l)" -eq 0
 assert_ok "a done-when names one test, not the suite" \

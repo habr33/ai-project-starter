@@ -56,6 +56,8 @@ SOURCES = [
     ("spec-header", "spec", "blueprint/context/current-work.md", "skills/spec.md", "**Verified:** not yet"),
     ("spec-header", "spec", "blueprint/context/current-work.md", "skills/spec.md", "**Reviewed:** not yet"),
     ("spec-header", "spec", "blueprint/context/current-work.md", "skills/spec.md", "**Full verify:** not yet"),
+    ("spec-reach", "spec", "blueprint/context/current-work.md", "skills/spec.md",
+     "**Reach:** local | wide - <which trigger>"),
     ("spec-full-verify", "build", "blueprint/context/current-work.md", "skills/build.md",
      "`**Full verify:** 2026-03-02, 6f06b62b2f2c, "),
     ("spec-verified", "verify", "blueprint/context/current-work.md", "skills/verify.md",
@@ -220,6 +222,11 @@ def check_spec(part):
     if m and m[1].strip() != "not yet" and not DATED.match(m[1].strip()):
         say(p, "spec-full-verify",
             f"**Full verify:** is neither 'not yet' nor '<date>, <fingerprint>, <result>': '{m[1].strip()}'")
+
+    # Optional for the same reason: with no line, build judges the diff.
+    m = re.search(r"^\*\*Reach:\*\* *(.*)$", text, re.M)
+    if m and not re.match(r"^(local|wide - \S.*)$", m[1].strip()):
+        say(p, "spec-reach", f"**Reach:** is neither 'local' nor 'wide - <trigger>': '{m[1].strip()}'")
 
 def check_budget(d, required=False):
     claude, agents = read(os.path.join(d, "CLAUDE.md")), read(os.path.join(d, "AGENTS.md"))

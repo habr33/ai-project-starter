@@ -79,7 +79,13 @@ blockers**:
   fingerprint, run full verify once here and write the line as `build` does.
   **On the pull-request route, where the pipeline runs full verify on the
   branch, that run on the pushed commit is the gate instead** - wait for it in
-  Step 4 and do not run the suite here as well.
+  Step 4 and do not run the suite here as well. **The route is settled here,
+  not in Step 4**: when the line does not match and Step 4's condition for the
+  pull-request route holds, ask now - pull request or local merge - because the
+  answer decides whether the suite runs here. Choosing the route is not the yes
+  to push; Step 4 still asks for that. **A red run is not merged**:
+  say which check failed and route the repair to `build`, whose failure rule
+  says what to re-run.
   This is the gate that runs the browser and database tests, so the
   verification command alone is not enough. If none is
   declared, the build passed, and the tests passed when the project has a test
@@ -302,13 +308,15 @@ logging - and make **one** conventional commit: `feat: <name>`, `fix: <name>`,
 `revert: roll back <name>`.
 
 The project's full verify command must have passed first - the precondition
-above, by its recorded fingerprint or the pipeline's run. Do not run it again
+above, by its recorded fingerprint. **On the pull-request route chosen in
+Step 1 it has not run yet**: the pipeline runs it on this commit once pushed,
+and that run gates the merge in Step 4, not this commit. Do not run it again
 for this commit: the commit changes no file the fingerprint covers.
 
 ## Step 4 - merge, then stop
 
 **If the repository has a remote and CI that runs on pull requests, offer that
-route first.** A local merge lands the item on `main` without CI ever having run
+route first** - or take the answer Step 1 already got. A local merge lands the item on `main` without CI ever having run
 on it: the branch was never pushed, so the only pre-merge check was this
 machine's verification command, and CI first sees the code after `main` is
 pushed. A feature can reach `main` that way. The pull-request
