@@ -114,9 +114,8 @@ made it is where you go:
 - `stack` - there is no skill that changes a stack once there is code, and that
   is deliberate: it is a rewrite. `stack` names the order to do it in.
 
-Each step is a skill: a plain markdown worksheet any capable agent can follow,
-and any person can work through by hand. Cross-references use plain names, so
-they read correctly in every tool.
+Each step is a skill: a plain markdown worksheet any capable agent, or any
+person, can follow, in any tool.
 
 **Every skill checks its inputs before it acts.** Each one opens with a
 `## Before you start` section naming what must already be true and what to run
@@ -226,6 +225,7 @@ newer than you know well, check its documentation rather than guess.
   - Takes: <~N min, <date> | over budget, <date> | not measured yet>
   - Budget: 10 min - over it, the merge runs it
   - Fresh state: <named tests on an empty, migrated database, or "none">
+  - Affected: <changed files' tests, then smoke - what a small PR runs>
 
 **More than one part** - list each separately, and **say which directory each
 runs from**:

@@ -1960,4 +1960,90 @@ w=$(workdir); (cd "$w" && "$NP" prr >/dev/null 2>&1)
 assert_ok "a new project holds it where ship runs it" cmp -s "$PR" "$w/prr/.agents/bin/pipeline-ran.sh"
 assert_ok "executable" test -x "$w/prr/.agents/bin/pipeline-ran.sh"
 
+section "pipeline-ran - a gate job lets a job skipped by scope pass (D40)"
+# D40 runs only the tests a diff needs, so a skipped job is expected - but only
+# the gate job knows whether it was skipped by decision or by a failure.
+assert_eq "a passing gate counts a job skipped beside it" "0" \
+  "$(_pr '[{"name":"verify","bucket":"pass"},{"name":"full","bucket":"skipping"},{"name":"gate","bucket":"pass"}]')"
+assert_eq "a passing gate does not hide a failed job" "1" \
+  "$(_pr '[{"name":"affected","bucket":"fail"},{"name":"full","bucket":"skipping"},{"name":"gate","bucket":"pass"}]')"
+assert_eq "a failed gate is a failure" "1" \
+  "$(_pr '[{"name":"verify","bucket":"pass"},{"name":"gate","bucket":"fail"}]')"
+assert_eq "a skipped gate ran nothing" "1" \
+  "$(_pr '[{"name":"verify","bucket":"pass"},{"name":"gate","bucket":"skipping"}]')"
+assert_eq "a gate still running asks to wait" "3" \
+  "$(_pr '[{"name":"verify","bucket":"pass"},{"name":"full","bucket":"skipping"},{"name":"gate","bucket":"pending"}]')"
+out="$(printf '%s' '[{"name":"ci","bucket":"pass"},{"name":"full","bucket":"skipping"}]' | "$PR" --gate ci 2>&1)"; rc=$?
+assert_eq "the gate's name can be given" "0" "$rc"
+assert_ok "and the skip is named as the gate's call" grep -qF 'skipped by scope' <<< "$out"
+
+section "pipeline-ran --main - a red default branch is fixed first (D40)"
+_pm() { printf '%s' "$1" | "$PR" --main >/dev/null 2>&1; echo $?; }
+assert_eq "the last completed run passed" "0" \
+  "$(_pm '[{"status":"in_progress","conclusion":"","headSha":"bbb"},{"status":"completed","conclusion":"success","headSha":"aaa"}]')"
+assert_eq "the last completed run failed, whatever is running now" "1" \
+  "$(_pm '[{"status":"in_progress","conclusion":"","headSha":"bbb"},{"status":"completed","conclusion":"failure","headSha":"aaa"},{"status":"completed","conclusion":"success","headSha":"000"}]')"
+assert_eq "a cancelled run proves nothing either way" "1" \
+  "$(_pm '[{"status":"completed","conclusion":"cancelled","headSha":"aaa"}]')"
+out="$(printf '%s' '[{"status":"completed","conclusion":"failure","headSha":"abc1234567"}]' | "$PR" --main 2>&1)"
+assert_ok "it names the red commit" grep -qF 'abc1234' <<< "$out"
+out="$(printf '%s' '[]' | "$PR" --main 2>&1)"; rc=$?
+assert_eq "no completed run yet blocks nothing" "0" "$rc"
+assert_ok "and says so" grep -qF 'no completed run' <<< "$out"
+assert_eq "input it cannot read is not a verdict" "2" "$(_pm 'nope')"
+
+section "test-scope - what a diff needs run (D40)"
+# A CSS change once paid for the whole suite on every pull request. The scope
+# is decided from the diff, and anything it cannot place runs everything.
+TS="$REPO/lib/test-scope.sh"
+d=$(workdir)
+(
+  cd "$d" && git init -q -b main . && git config user.email t@t && git config user.name t
+  mkdir -p src docs blueprint/context db/migrations web .github/workflows
+  printf '## Commands\n\n- Full verify: npm run e2e\n  - Affected: npx vitest --changed $BASE\n' > AGENTS.md
+  echo a > src/app.js; echo a > src/button.css; echo a > docs/x.md; echo a > package-lock.json
+  printf '**Reach:** local\n' > blueprint/context/current-work.md
+  git add -A && git commit -qm init && git checkout -qb item
+) >/dev/null 2>&1
+_ts() { # <files to touch...> -> level; resets the branch first
+  (cd "$d" && git checkout -q . && git reset -q --hard main >/dev/null 2>&1
+   for f in "$@"; do mkdir -p "$(dirname "$f")"; echo b >> "$f"; done
+   git add -A && git commit -qm change) >/dev/null 2>&1
+  (cd "$d" && "$TS" --base main 2>/dev/null)
+}
+assert_eq "docs only needs only Verify" "none" "$(_ts docs/x.md)"
+assert_eq "workflow state only needs only Verify" "none" "$(_ts blueprint/context/current-work.md)"
+assert_eq "a stylesheet runs the affected tests, not the suite" "affected" "$(_ts src/button.css)"
+assert_eq "a lockfile runs everything" "full" "$(_ts package-lock.json)"
+assert_eq "so does a manifest in a subdirectory" "full" "$(_ts web/package.json)"
+assert_eq "and a migration" "full" "$(_ts db/migrations/002.sql)"
+assert_eq "and the pipeline's own config" "full" "$(_ts .github/workflows/ci.yml)"
+assert_eq "and AGENTS.md, which holds the commands" "full" "$(_ts AGENTS.md)"
+assert_eq "nothing changed needs only Verify" "none" "$(cd "$d" && git reset -q --hard main && "$TS" --base main 2>/dev/null)"
+(cd "$d" && git reset -q --hard main && printf '**Reach:** wide - shared code\n' > blueprint/context/current-work.md \
+  && echo c >> src/app.js && git add -A && git commit -qm w) >/dev/null 2>&1
+assert_eq "a spec marked wide runs everything" "full" "$(cd "$d" && "$TS" --base main 2>/dev/null)"
+out="$(cd "$d" && "$TS" --base main 2>&1 >/dev/null)"
+assert_ok "and says it was the Reach line" grep -qF 'Reach' <<< "$out"
+out="$(cd "$d" && git reset -q --hard main && echo b >> package-lock.json && git add -A && git commit -qm l && "$TS" --base main 2>&1 >/dev/null)"
+assert_ok "a full run names the file that forced it" grep -qF 'full - package-lock.json' <<< "$out"
+assert_eq "a push to the default branch runs everything" "full" "$(cd "$d" && "$TS" --push 2>/dev/null)"
+assert_eq "a base it cannot read runs everything" "full" "$(cd "$d" && "$TS" --base no-such-ref 2>/dev/null)"
+(cd "$d" && git reset -q --hard main && sed -i 's/^  - Affected:.*/  - Affected: <changed-file tests>/' AGENTS.md && git commit -qam p) >/dev/null 2>&1
+(cd "$d" && git branch -qf main HEAD) >/dev/null 2>&1
+assert_eq "code changed with no Affected command recorded runs everything" "full" "$(_ts src/app.js)"
+(cd "$d" && git reset -q --hard main && printf '## Commands\n\n- Full verify: npm run e2e\n  - Affected: npx vitest --changed $BASE\n  - Scope: none storybook/** | full src/styles/global.css\n' > AGENTS.md \
+  && git commit -qam s && git branch -qf main HEAD) >/dev/null 2>&1
+assert_eq "a project's Scope line can make a path need everything" "full" "$(_ts src/styles/global.css)"
+assert_eq "or nothing beyond Verify" "none" "$(_ts storybook/a.js)"
+assert_eq "and the rest of the code stays affected" "affected" "$(_ts src/styles/card.css)"
+(cd "$d" && git reset -q --hard main && mkdir -p api web && printf '  - Affected: npm run affected\n' > web/AGENTS.md \
+  && git add -A && git commit -qm parts && git branch -qf main HEAD) >/dev/null 2>&1
+(cd "$d" && echo b >> api/x.js && git add -A && git commit -qm api) >/dev/null 2>&1
+assert_eq "a part reads only its own files" "none" "$(cd "$d/web" && "$TS" --base main 2>/dev/null)"
+assert_refuses "an unknown option is refused" "usage" "$TS" --bogus
+w=$(workdir); (cd "$w" && "$NP" tsp >/dev/null 2>&1)
+assert_ok "a new project holds it where ci and ship run it" cmp -s "$TS" "$w/tsp/.agents/bin/test-scope.sh"
+assert_ok "executable" test -x "$w/tsp/.agents/bin/test-scope.sh"
+
 finish

@@ -216,15 +216,18 @@ directory - never a second runner. With no such test, record full verify as
 "same as Verify". **Under it, write `Takes:` - measured if full verify runs
 here, else `not measured yet` - `Budget:` as 10 minutes, and `Fresh state:`**:
 the project's command for running named tests on an empty, migrated database,
-or `none`.
+or `none`. **And `Affected:`, where the runner can select tests for changed
+files** - that selection, then any smoke tests the project tags; without it,
+leave the line out and every code change runs the whole suite (`D40`).
 
 **Then report what will make full verify slow as it grows** - as gaps, not
 changes, since each one alters how the tests run: browser tests served by the
 dev server rather than a production build; database tests pinned to one worker
 because they share one database, rather than a database per worker cloned from
 a migrated template; no fresh-state command; and a pipeline that runs a part of
-full verify only on a label or by hand, or has no final job that fails when
-another was skipped - `ci`'s to fix. Each is a line the user decides on.
+full verify only on a label or by hand, has no final job that fails when
+another was skipped, or runs the whole suite on every pull request whatever
+it changed - `ci`'s to fix. Each is a line the user decides on.
 
 **Both commands are recorded in `AGENTS.md` and nowhere else.** Where
 `coding-standards.md` restates either one, or carries its own table of what

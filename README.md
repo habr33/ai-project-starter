@@ -330,7 +330,8 @@ The scripts:
 | `lib/count-check-runs.sh` | count how often a project's checks ran, from Claude Code's session logs (`D35`) |
 | `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
 | `lib/check-project.sh` | checks a project's state files are in the form the skills write them (`D23`) |
-| `lib/pipeline-ran.sh` | reads a pull request's checks for `ship`: passes only when every job ran and passed - a skipped job is not a pass (`D39`) |
+| `lib/pipeline-ran.sh` | reads a pull request's checks for `ship`: passes only when every job ran and passed - a skipped job is not a pass (`D39`), unless the `gate` job passed; `--main` reads the default branch's last run (`D40`) |
+| `lib/test-scope.sh` | sorts a diff into `none`, `affected` or `full` - what its pull request runs, for `ci` and `ship` (`D40`) |
 | `lib/git-pre-commit.sh` | the git pre-commit hook `--git-hooks` installs, which runs that checker (`D23`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 

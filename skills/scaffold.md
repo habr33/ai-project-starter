@@ -374,6 +374,9 @@ Installed is not the same as usable:
   - **record `Fresh state:`** - one command that runs named tests on an
     empty, migrated database - and write `Takes:` as `not measured yet` and
     `Budget:` as 10 minutes, under Full verify in `AGENTS.md`.
+  - **record `Affected:`** - the runner's changed-file selection, then the
+    smoke tests, tagged as they are written - so a small pull request runs
+    those, not the suite (`D40`; `ci` gives the commands).
 
 ## Editing what the scaffolder generated
 

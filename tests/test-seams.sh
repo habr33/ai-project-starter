@@ -3499,7 +3499,7 @@ _spec_f=$(_flat skills/spec.md)
 assert_ok "spec's header declares the item's reach" \
   grep -qF '**Reach:** local | wide - <which trigger>' skills/spec.md
 assert_ok "spec says what the line decides" \
-  grep -qF '`wide` runs the whole suite there, `local` leaves it for the merge' <<< "$_spec_f"
+  grep -qF '`wide` makes the pull request run the whole suite, `local` runs the tests for the changed files and leaves the rest to `main` after the merge' <<< "$_spec_f"
 for trig in '**changes stored data**' '**changes a contract other code consumes**' \
     '**adds, upgrades or removes a dependency**' '**changes how the project is built or tested**' \
     '**edits shared code**' '**changes or removes a behaviour claim**' \
@@ -3540,15 +3540,15 @@ assert_ok "build still says full verify once, never per step or twice" \
 # or an item reaches main having passed the whole suite nowhere.
 assert_ok "build otherwise leaves full verify for the merge" \
   grep -qF '**Otherwise leave it for the merge.**' <<< "$b4"
-assert_ok "with or without CI, since ship covers both routes" \
-  grep -qF 'still passes the whole suite before `main`, with or without CI' <<< "$b4"
+assert_ok "and says the whole suite still runs, on main behind a scoped merge (D40)" \
+  grep -qF 'with the whole suite run on `main` behind the merge (`D40`)' <<< "$b4"
 assert_ok "and it leaves the line for ship to read" \
   grep -qF 'leave the `**Full verify:**` line as it is' <<< "$b4"
 _ship1f=$(_flat skills/ship.md)
 assert_ok "ship's local route runs the suite on a line left 'not yet'" \
   grep -qF 'When it reads `not yet`, is absent, or names another fingerprint, run full verify once here' <<< "$_ship1f"
 assert_ok "ship's pull-request route gates on the pipeline's run" \
-  grep -qF 'that run on the pushed commit is the gate instead' <<< "$_ship1f"
+  grep -qF "the pipeline's run on the pushed commit is the gate instead" <<< "$_ship1f"
 assert_ok "and does not merge a red one" \
   grep -qF '**A red run is not merged**' <<< "$_ship1f"
 assert_ok "ship settles the route before it decides whether to run the suite" \
@@ -3690,7 +3690,7 @@ assert_ok "ship reuses the run while the fingerprint matches" \
 assert_ok "and no longer hangs the reuse on nothing having changed" \
   test "$(grep -c 'nothing has changed since' skills/ship.md)" -eq 0
 assert_ok "the pipeline's run is the gate on the pull-request route" \
-  grep -qF 'that run on the pushed commit is the gate instead' <<< "$(_flat skills/ship.md)"
+  grep -qF "the pipeline's run on the pushed commit is the gate instead" <<< "$(_flat skills/ship.md)"
 assert_ok "ship's work commit does not run it again" \
   grep -qF 'Do not run it again for this commit' <<< "$(_flat skills/ship.md)"
 assert_eq "build and ship fingerprint the same tree" \
@@ -3775,5 +3775,51 @@ assert_ok "setup records the three lines on an existing project" \
   grep -qF "write \`Takes:\` - measured if full verify runs here, else \`not measured yet\` - \`Budget:\` as 10 minutes, and \`Fresh state:\`" <<< "$_su"
 assert_ok "and reports what will make the suite slow, as gaps" \
   grep -qF '**Then report what will make full verify slow as it grows**' <<< "$_su"
+
+section "a pull request runs what its diff needs, main runs everything (D40)"
+# The whole suite on every pull request made a stylesheet fix wait as long as
+# a migration. A scope sorts the diff, one gate job judges what it chose, and
+# every push to main runs everything behind the merge.
+assert_ok "the template declares 'Affected:' under Full verify" grep -qF -- "- Affected:" <<< "$_tf"
+assert_ok "install ships the scope script to every project" \
+  grep -qE '^PACK_SCRIPTS=".*test-scope\.sh' install.sh
+assert_ok "ci runs the scope script" grep -qF '.agents/bin/test-scope.sh' <<< "$_ci"
+assert_ok "ci names the job ship reads" grep -qF '**Name it `gate`.**' <<< "$_ci"
+assert_ok "ci never filters the workflow's triggers by path" \
+  grep -qF "**Never filter the workflow's triggers by path**" <<< "$_ci"
+assert_ok "ship reads the scope before trusting a skip" \
+  grep -qF '**It runs what the diff needs, not always everything**' <<< "$_s1"
+assert_ok "ship fixes a red main first" grep -qF '**A red `main` is fixed first.**' <<< "$_s1"
+assert_ok "and reads it with the pack's script" grep -qF 'pipeline-ran.sh --main' <<< "$_s1"
+assert_ok "ship says a local merge has no backstop" \
+  grep -qF '**Without a pipeline there is no backstop**' <<< "$_s1"
+_dp=$(_flat skills/deploy.md)
+assert_ok "deploy does not wait for main's whole suite" \
+  grep -qF '**Do not wait for the whole suite a scoped merge left to `main`**' <<< "$_dp"
+assert_ok "but a red main blocks it" grep -qF '**A red `main` blocks**' <<< "$_dp"
+assert_ok "the anatomy holds the schedule in one table" \
+  grep -qF '**Where each test runs**' docs/anatomy.md
+# The gate step in ci is what a project copies: run it, word by word.
+_gate=$(awk '/^        - run: \|$/{on=1; next} on && /^$/{exit} on' skills/ci.md | sed 's/^            //')
+_g() { # level scope verify affected full -> exit of the gate step
+  local x="$_gate"
+  x=${x//'${{ needs.scope.outputs.level }}'/$1}; x=${x//'${{ needs.scope.result }}'/$2}
+  x=${x//'${{ needs.verify.result }}'/$3}; x=${x//'${{ needs.affected.result }}'/$4}
+  x=${x//'${{ needs.full.result }}'/$5}
+  bash -c "$x" >/dev/null 2>&1; echo $?
+}
+assert_ok "ci's gate step was found" grep -qF 'need verify' <<< "$_gate"
+assert_eq "gate: docs only, the rest skipped, passes" "0" "$(_g none success success skipped skipped)"
+assert_eq "gate: affected passed, full skipped, passes" "0" "$(_g affected success success success skipped)"
+assert_eq "gate: affected chosen and skipped fails" "1" "$(_g affected success success skipped skipped)"
+assert_eq "gate: full chosen and failed fails" "1" "$(_g full success success skipped failure)"
+assert_eq "gate: Verify failed fails whatever the scope" "1" "$(_g none success failure skipped skipped)"
+assert_eq "gate: a scope job that failed leaves no word, and fails" "1" "$(_g '' failure success skipped skipped)"
+# Every word the gate cases on is one the script prints, and the reverse.
+_words=$(grep -oE 'print\("(none|affected|full)"\)|say (none|affected|full)' lib/test-scope.sh | grep -oE 'none|affected|full' | sort -u | tr '\n' ' ')
+assert_eq "the script prints exactly the words the gate reads" "affected full none " "$_words"
+for w in none affected full; do
+  assert_ok "the gate has a case for '$w'" grep -qE "^ *$w\)" <<< "$_gate"
+done
 
 finish

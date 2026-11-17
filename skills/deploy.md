@@ -94,7 +94,12 @@ Check, and report only what blocks:
   quietly makes every check upstream advisory, since `verify`, `review` and
   `preflight` all examined a different binary.
 - **full verify** passes - or CI ran it green on the exact commit being
-  deployed, which is the same evidence and need not be repeated here
+  deployed, which is the same evidence and need not be repeated here. **Do
+  not wait for the whole suite a scoped merge left to `main`** (`D40`): the
+  pull request's `gate` passing on the same tree is the evidence, the
+  backstop still running is said, not waited on. **A red `main` blocks**
+  - `.agents/bin/pipeline-ran.sh --main` exit 1 - unless this deploy is
+  its fix
 - **every environment variable** the code reads is set in the target, with no
   development default reaching it
 - **migrations** that need to run are known, reversible, and understood. A

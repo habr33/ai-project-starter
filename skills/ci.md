@@ -83,8 +83,9 @@ Keep it to what the project actually has. For most projects that is one job:
 2. set up the recorded runtime version
 3. install dependencies **from the lockfile**, not a fresh resolve
 4. run the full verify command - the verification command, then the tests that
-   need a browser, a database or a service. CI is the one place every test runs
-   on every change, which is what lets `build` run only a step's own. Where
+   need a browser, a database or a service. CI is where the whole suite runs -
+   on every push to the default branch, and on a pull request whose diff needs
+   it, below - which is what lets `build` run only a step's own. Where
    the browser tests get their own job, below, this job runs the verification
    command and that one runs the rest - each test once, not twice
 5. run `.agents/bin/check-project.sh` from the repository root - the state files
@@ -156,9 +157,48 @@ tests that cannot share one database still run at once - on separate
 machines. Merge the shards' reports into one. That is the one matrix this
 skill adds unasked: it changes how long the gate takes, not what it checks.
 
+**Run what the diff needs on a pull request, and everything after the
+merge** (`D40`). A whole suite on every pull request makes a stylesheet fix
+wait as long as a migration. Start with a `scope` job, from a checkout with
+full history (`fetch-depth: 0`): `.agents/bin/test-scope.sh --base
+origin/<default branch>` on a pull request, `--push` on a push, its one word
+as the job's output. The Verify job always runs; an `affected` job runs the
+`Affected:` command under Full verify when the word is `affected`; the full
+verify jobs - browser, shards - run when it is `full`, which every push to
+the default branch is. **Record `Affected:` when it is missing**: the
+runner's own selection - `vitest --changed $BASE`, `jest --changedSince`,
+`playwright test --only-changed`, `pytest --testmon` - then the smoke tests
+(a tag such as `@smoke`: sign-in, the main journey, a page per area), never
+a whole browser suite. With no such selection, leave it out: any code change
+is then `full` - slower, never wrong. A project path that needs everything or
+nothing - global styles, a component catalogue - goes on a `- Scope: none
+<globs> | full <globs>` line beneath it. **Never filter the workflow's
+triggers by path**: a workflow that never started reports nothing, so a
+required check waits forever or, made optional, gates nothing.
+
 **End with one job that needs every other and fails unless each one
 succeeded** - `if: always()`, then a step that checks each needed job's
-result. A skipped job reports success, even to a required check, and so does
+result. **Name it `gate`.** With a scope job, "each one" is each the word
+selected: `scope` and Verify must succeed, and so must `affected` or `full`
+when chosen; one left out may be skipped, and nothing else may:
+
+    gate:
+      if: always()
+      needs: [scope, verify, affected, full]
+      runs-on: ubuntu-latest
+      steps:
+        - run: |
+            need() { [ "$2" = success ] || { echo "$1: $2"; exit 1; }; }
+            need scope "${{ needs.scope.result }}"
+            need verify "${{ needs.verify.result }}"
+            case "${{ needs.scope.outputs.level }}" in
+              none) ;;
+              affected) need affected "${{ needs.affected.result }}" ;;
+              full) need full "${{ needs.full.result }}" ;;
+              *) echo "no scope"; exit 1 ;;
+            esac
+
+A skipped job reports success, even to a required check, and so does
 a job skipped because one it needs failed; this job is the one to require
 before merging, and it is what lets `ship` read one check instead of
 trusting a green list.
@@ -215,7 +255,9 @@ project's own dependencies do not support.
 
 Then **stop**. Report:
 
-- what the config runs, and when
+- what the config runs, and when - which diffs run less than the whole
+  suite, as `test-scope.sh` gave them on a docs-only and a code change run
+  here, and that every push to the default branch runs all of it
 - **every test command the project has that the pipeline does not run**, and
   why. Browser tests are run by default, above; if the user chose to leave them
   out, say so here with the reason they gave. Record the answer in the `ci` row of the Environments table, so "CI is

@@ -363,9 +363,10 @@ before anyone notices production lacks them. Name every variable the item's code
 before, and every migration it adds.
 
 **Reach is whether this item can break a test it never opens.** `build` reads
-the line when every step is built: `wide` runs the whole suite there, `local`
-leaves it for the merge, and a suite of hundreds of browser tests is too much
-to pay on a guess. It is `wide` when the item does any one of these, and the
+the line when every step is built, and the pipeline reads it too: `wide`
+makes the pull request run the whole suite, `local` runs the tests for the
+changed files and leaves the rest to `main` after the merge (`D40`). A suite
+of hundreds of browser tests is too much to pay on a guess. It is `wide` when the item does any one of these, and the
 line names which:
 
 - **changes stored data** - a schema, a migration, a stored shape.

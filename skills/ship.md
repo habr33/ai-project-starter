@@ -70,28 +70,42 @@ blockers**:
   that is not this item's goes is the user's call. **If it is set aside** - a
   stash, another branch - add a `needs-you.md` line saying where and what it
   is: a stash is invisible to every skill, and no skill reads an archive for it.
-- The project's **full verify** command passed on the tree being merged.
+- The project's **full verify** command passed on the tree being merged - or,
+  on the pull-request route, what the diff's scope needs.
   **Read the spec's `**Full verify:**` line and compare its fingerprint with
   the one above: when they match, that run is the gate and it is not run
   again** - whichever session made it. `review`'s findings and the
   `**Verified:**` line live in `blueprint/`, outside the fingerprint, so they
   do not make it stale. When it reads `not yet`, is absent, or names another
   fingerprint, run full verify once here and write the line as `build` does.
-  **On the pull-request route, where the pipeline runs full verify on the
-  branch, that run on the pushed commit is the gate instead** - wait for it in
-  Step 4 and do not run the suite here as well. **The pipeline is the gate
+  **On the pull-request route, the pipeline's run on the pushed commit is the
+  gate instead** - wait for it in Step 4 and do not run the suite here as
+  well. **It runs what the diff needs, not always everything** (`D40`):
+  `.agents/bin/test-scope.sh` sorts the diff into `none` (docs and workflow
+  state - Verify alone), `affected` (the `Affected:` command - the tests for
+  the changed files, plus smoke) or `full`, which a `wide` Reach line, a
+  manifest, a migration or CI config forces; every push to `main` then runs
+  the whole suite behind the merge. **The pipeline is the gate
   only for what it ran.** A skipped job reports success - to a required check
   too - so a green pull request whose browser job was skipped, gated on a
   label or left for someone to start by hand has run none of those tests.
-  Read the commit's checks job by job: every part of full verify must be in a
-  job that **ran and passed**; skipped, neutral or cancelled is not run, and
-  so is anything the `ci` row in `AGENTS.md` records the pipeline leaving out.
+  Read the commit's checks job by job: every part of full verify the scope
+  needed must be in a job that **ran and passed**; skipped, neutral or
+  cancelled is not run - unless the `gate` job `ci` ends the pipeline on
+  passed, which fails when a job the scope needed did not succeed - and so is
+  anything the `ci` row in `AGENTS.md` records the pipeline leaving out.
   On GitHub, `gh pr checks <number> --json name,bucket |
   .agents/bin/pipeline-ran.sh` reads it: exit 0 only when every check ran and
-  passed, 3 while one is still running, 1 otherwise, naming each. Elsewhere,
-  read the host's list the same way.
+  passed, or the gate passed with nothing failed; 3 while one is still
+  running; 1 otherwise, naming each. Elsewhere, read the host's list the same way.
   For a part not run, start it (the label, the manual trigger) with the
   user's yes - that is visible on the pull request - or run that part here.
+  **A red `main` is fixed first.** Before merging, read the default branch's
+  last completed run - `gh run list --branch main --event push --json
+  status,conclusion,headSha | .agents/bin/pipeline-ran.sh --main`. Exit 1 is
+  the backstop finding what a scoped run did not: only the fix for it merges,
+  and its cause is a P1 finding routed to `build`. A run still going blocks
+  nothing - waiting for it is the wait this rule exists to remove.
   **The route is settled here,
   not in Step 4**: when the line does not match and Step 4's condition for the
   pull-request route holds, ask now - pull request or local merge - because the
@@ -100,7 +114,12 @@ blockers**:
   run will take before starting it** - `Takes:` under Full verify in
   `AGENTS.md` - and where that is over `Budget:` and a pipeline that runs
   every part exists, recommend the pull-request route: there the wait is the
-  pipeline's, not this session's. Otherwise run it: it is the only gate. A
+  pipeline's, not this session's. Otherwise run it: it is the only gate.
+  **Without a pipeline there is no backstop**, so the local route runs
+  `test-scope.sh --base main`'s choice only when full verify is over
+  `Budget:`: `none` runs nothing more, `affected` the `Affected:` command - and
+  then says the whole suite has not run since the date in `Takes:`, and that
+  `ci` is what closes that. Within budget it runs full verify, every time. A
   completed run writes `Takes:` as `build` does. **A red run is not merged**:
   say which check failed and route the repair to `build`, whose failure rule
   says what to re-run.

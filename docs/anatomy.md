@@ -130,7 +130,7 @@ against *this project's* recorded values rather than a generic standard.
 | `build` | current-work, overview, standards, findings | source, current-work ticks, the spec's `Full verify:` line, its `Reach:` line when the diff went wider than declared, `Takes:` in `AGENTS.md` after a full run, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every claim in `capabilities/`** (archives without a `Behaviour changes` section are walked and offered for seeding) | findings (a regression), needs-you (a could-not-verify), the spec's `Verified:` line, and with `--all` the seeded capability claims — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
 | `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line, naming what it did not read — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
-| `ship` | current-work, findings, build-plan, the pipeline's checks job by job | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1; a part of full verify that ran nowhere - a skipped job is not a pass | `ci`, `deploy`, `integrate`, `docs` |
+| `ship` | current-work, findings, build-plan, the pipeline's checks job by job, `main`'s last run | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1; a part of full verify the scope needed that ran nowhere - a skipped job is not a pass unless the `gate` job passed; a red `main` | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the
 point:
@@ -152,6 +152,19 @@ seen red and then green, is the evidence `verify` would have been**, and the
 limits are what make skipping `review` safe - so `build` drops the `**Quick:**`
 line if the diff crosses one, and `ship` checks them again before merging. The
 findings gate and the one commit are unchanged.
+
+**Where each test runs** (`D30`, `D38`-`D40`) - each one as late as is safe and
+no later, so a small change never waits for the whole suite:
+
+| When | What runs | Who decides |
+|---|---|---|
+| after each build step | Verify, plus the test the done-when names | `build` |
+| `build`'s closing | the item's own tests together, on fresh state; full verify only for a `wide` item measured within `Budget:`, else the `Affected:` command | `build`, from `Reach:` and `Takes:` |
+| `verify`, `review` | no suite - the running app, then the code | - |
+| the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `ship` through `pipeline-ran.sh` |
+| a local merge, no pipeline | full verify within budget; over it, the scope's choice, said | `ship` |
+| every push to `main` | full verify, sharded - the backstop; nothing waits for it, and a red result blocks the next merge and deploy until fixed | `ci`; `ship`, `deploy` via `pipeline-ran.sh --main` |
+| deploy | nothing new: the pull request's gate on the same tree | `deploy` |
 
 **`debug` sits outside the line and is reached from inside it** — from `build`
 after a step fails twice unexplained, from `verify` when a criterion fails for a

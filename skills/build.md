@@ -398,8 +398,9 @@ Full verify in `AGENTS.md` - no `Budget:` line means 10 minutes. **When
 `Takes:` is over the budget, do not start it**: a session that waits an hour
 for a suite has stopped working, and the merge runs it anyway. Run what the
 suite was for at this item's cost instead - **the tests the runner selects for
-the changed files**, where it can (`vitest related`, `jest
---findRelatedTests`, `pytest --testmon`), and for a browser suite the files
+the changed files**, where it can - the `Affected:` command under Full verify
+where one is recorded, else `vitest related`, `jest
+--findRelatedTests`, `pytest --testmon` - and for a browser suite the files
 covering each capability the Reach trigger names - and say in the packet
 **full verify: left to the merge - over budget**, with the `Takes:` figure.
 **`not measured yet`, or no `Takes:` line, runs - stopped at the budget.** A
@@ -411,10 +412,11 @@ measurement is what turns this rule from a guess into a number.
 
 **Otherwise leave it for the merge.** Do not run the suite here: leave the
 `**Full verify:**` line as it is and say in the packet **full verify: left to
-the merge**, with the Reach line and that the diff stayed inside it. `ship` runs it where the item
-is merged - its pull-request route gates on the pipeline's run, and a local
-merge finds the line `not yet` and runs the suite once there - so the item
-still passes the whole suite before `main`, with or without CI. What moves is
+the merge**, with the Reach line and that the diff stayed inside it. `ship` gates on it where the item
+is merged - its pull-request route on the pipeline's run, which for a `local`
+diff is the `Affected:` command, with the whole suite run on `main` behind
+the merge (`D40`); a local merge finds the line `not yet` and runs the suite
+there. What moves is
 when a break in an older feature's test is found: at the merge, not here -
 after `verify` and `review`, so its repair changes the fingerprint and both are
 paid for again. **The rule is the same under `autopilot`**: an unattended run
