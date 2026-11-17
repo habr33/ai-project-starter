@@ -1932,4 +1932,32 @@ assert_refuses "no logs where it looked is said, not counted as zero" "No sessio
 printf -- '- Verify: <one command>\n' >"$d/p/AGENTS.md"
 assert_refuses "a template's placeholder is not a command" "records no Verify" "$CR" --project "$d/p" --logs "$d/logs"
 
+section "pipeline-ran - a skipped job is not a pass"
+# A skipped GitHub Actions job reports success, to a required check too. A pull
+# request was once read as green with its whole browser job skipped behind a
+# label: types and integration tests had run, the browser tests had not.
+PR="$REPO/lib/pipeline-ran.sh"
+_pr() { printf '%s' "$1" | "$PR" >/dev/null 2>&1; echo $?; }
+assert_eq "every job ran and passed is a pass" "0" \
+  "$(_pr '[{"name":"Verify","bucket":"pass"},{"name":"Browser","bucket":"pass"}]')"
+assert_eq "a skipped job beside a passing one is not" "1" \
+  "$(_pr '[{"name":"Verify","bucket":"pass"},{"name":"Browser","bucket":"skipping"}]')"
+assert_eq "nor is a cancelled one" "1" "$(_pr '[{"name":"Verify","bucket":"cancel"}]')"
+assert_eq "nor a failed one" "1" "$(_pr '[{"name":"Verify","bucket":"fail"}]')"
+assert_eq "one still running asks to wait, not to merge" "3" \
+  "$(_pr '[{"name":"Verify","bucket":"pass"},{"name":"Browser","bucket":"pending"}]')"
+assert_eq "a failure beside one still running is a failure already" "1" \
+  "$(_pr '[{"name":"Verify","bucket":"fail"},{"name":"Browser","bucket":"pending"}]')"
+assert_eq "no checks at all ran nothing" "1" "$(_pr '[]')"
+assert_eq "input it cannot read is not a verdict" "2" "$(_pr 'not json')"
+out="$(printf '%s' '[{"name":"Browser tests","bucket":"skipping"}]' | "$PR" 2>&1)"
+assert_ok "it names the job it did not count" grep -qF 'not run (skipped' <<< "$out"
+assert_ok "by its name" grep -qF 'Browser tests' <<< "$out"
+d=$(workdir); printf '%s' '[{"name":"V","bucket":"pass"}]' >"$d/c.json"
+assert_ok "it reads a file as well as stdin" "$PR" "$d/c.json"
+assert_refuses "and says so when the file is missing" "cannot read" "$PR" "$d/none.json"
+w=$(workdir); (cd "$w" && "$NP" prr >/dev/null 2>&1)
+assert_ok "a new project holds it where ship runs it" cmp -s "$PR" "$w/prr/.agents/bin/pipeline-ran.sh"
+assert_ok "executable" test -x "$w/prr/.agents/bin/pipeline-ran.sh"
+
 finish

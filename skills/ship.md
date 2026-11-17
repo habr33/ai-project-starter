@@ -79,11 +79,29 @@ blockers**:
   fingerprint, run full verify once here and write the line as `build` does.
   **On the pull-request route, where the pipeline runs full verify on the
   branch, that run on the pushed commit is the gate instead** - wait for it in
-  Step 4 and do not run the suite here as well. **The route is settled here,
+  Step 4 and do not run the suite here as well. **The pipeline is the gate
+  only for what it ran.** A skipped job reports success - to a required check
+  too - so a green pull request whose browser job was skipped, gated on a
+  label or left for someone to start by hand has run none of those tests.
+  Read the commit's checks job by job: every part of full verify must be in a
+  job that **ran and passed**; skipped, neutral or cancelled is not run, and
+  so is anything the `ci` row in `AGENTS.md` records the pipeline leaving out.
+  On GitHub, `gh pr checks <number> --json name,bucket |
+  .agents/bin/pipeline-ran.sh` reads it: exit 0 only when every check ran and
+  passed, 3 while one is still running, 1 otherwise, naming each. Elsewhere,
+  read the host's list the same way.
+  For a part not run, start it (the label, the manual trigger) with the
+  user's yes - that is visible on the pull request - or run that part here.
+  **The route is settled here,
   not in Step 4**: when the line does not match and Step 4's condition for the
   pull-request route holds, ask now - pull request or local merge - because the
   answer decides whether the suite runs here. Choosing the route is not the yes
-  to push; Step 4 still asks for that. **A red run is not merged**:
+  to push; Step 4 still asks for that. **On the local route, say how long the
+  run will take before starting it** - `Takes:` under Full verify in
+  `AGENTS.md` - and where that is over `Budget:` and a pipeline that runs
+  every part exists, recommend the pull-request route: there the wait is the
+  pipeline's, not this session's. Otherwise run it: it is the only gate. A
+  completed run writes `Takes:` as `build` does. **A red run is not merged**:
   say which check failed and route the repair to `build`, whose failure rule
   says what to re-run.
   This is the gate that runs the browser and database tests, so the
@@ -320,7 +338,8 @@ route first** - or take the answer Step 1 already got. A local merge lands the i
 on it: the branch was never pushed, so the only pre-merge check was this
 machine's verification command, and CI first sees the code after `main` is
 pushed. A feature can reach `main` that way. The pull-request
-route is: push the branch, open a pull request, wait for its checks, then
+route is: push the branch, open a pull request, wait for its checks - each
+job ran and passed, as Step 1 reads them - then
 squash-merge on the host and delete the remote branch - **the push is a push, so
 it needs its own explicit yes**, like step 4 below. If the user declines, or there
 is no remote or no CI, merge locally as below and **say that CI has not seen this

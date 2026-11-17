@@ -364,7 +364,11 @@ When every step is built, **run this item's own tests together, once** - every
 test the spec's done-whens name, in one run, on the tree as it now stands. What
 it catches is a step that broke another step's test, and it costs this item's
 tests, not the project's. Where the verification command already runs them all,
-that run was it.
+that run was it. **Where `AGENTS.md` records a `Fresh state:` command and these
+tests need a database, run them through it** - on an empty, migrated database,
+not the seeded one this machine has used all along. A test that leans on data
+it did not create passes here and fails on the pipeline's empty database, and
+this run is minutes where the suite is the hour that would find it.
 
 **Then decide whether the whole suite runs here.** Full verify is the command
 `AGENTS.md` records, and this is the one place `build` runs the whole browser
@@ -388,6 +392,22 @@ and then it stands in for the run above, each test once:
 
 If it cannot run here - no database, no browser - say so in the packet as a
 skipped check; `ship` will not merge without it.
+
+**Nor does it run here past the budget.** Read `Takes:` and `Budget:` under
+Full verify in `AGENTS.md` - no `Budget:` line means 10 minutes. **When
+`Takes:` is over the budget, do not start it**: a session that waits an hour
+for a suite has stopped working, and the merge runs it anyway. Run what the
+suite was for at this item's cost instead - **the tests the runner selects for
+the changed files**, where it can (`vitest related`, `jest
+--findRelatedTests`, `pytest --testmon`), and for a browser suite the files
+covering each capability the Reach trigger names - and say in the packet
+**full verify: left to the merge - over budget**, with the `Takes:` figure.
+**`not measured yet`, or no `Takes:` line, runs - stopped at the budget.** A
+run still going then is stopped, its failures so far reported, and `Takes:`
+written as `over budget, <date>`, so the next item knows before it starts.
+**Whoever completes a full verify run writes `Takes:`** - `~N min, <date>` -
+`build` here, `ship` at a local merge, `ci` when it proves the pipeline; one
+measurement is what turns this rule from a guess into a number.
 
 **Otherwise leave it for the merge.** Do not run the suite here: leave the
 `**Full verify:**` line as it is and say in the packet **full verify: left to

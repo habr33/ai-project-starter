@@ -3714,4 +3714,66 @@ assert_ok "ship says the next item starts in one" \
 assert_ok "and the walkthrough still holds the table they summarise" \
   _says docs/walkthrough.md 'Where to start a fresh session'
 
+section "the whole suite runs where it is cheapest, and the gate checks it ran"
+# A full verify took hours in a session and its pipeline skipped the browser
+# job - which reports success - so a wide item could reach main having passed
+# the browser suite nowhere. Three declarations close it: a measured Takes:
+# and a Budget: in AGENTS.md, read before a run starts; a pipeline counted only
+# for jobs that ran; and a project wired so the suite stays affordable.
+_tf=$(_flat template/AGENTS.md)
+for f in 'Takes:' 'Budget: 10 min' 'Fresh state:'; do
+  assert_ok "the template declares '$f' under Full verify" grep -qF -- "- $f" <<< "$_tf"
+done
+b4=$(_step 4 skills/build.md)
+assert_ok "build reads the budget before starting the suite" \
+  grep -qF '**Nor does it run here past the budget.**' <<< "$b4"
+assert_ok "and does not start a run measured over it" \
+  grep -qF "**When \`Takes:\` is over the budget, do not start it**" <<< "$b4"
+assert_ok "it runs the related tests instead" \
+  grep -qF '**the tests the runner selects for the changed files**' <<< "$b4"
+assert_ok "an unmeasured run is bounded by the budget" \
+  grep -qF "**\`not measured yet\`, or no \`Takes:\` line, runs - stopped at the budget.**" <<< "$b4"
+assert_ok "and whoever completes a run measures it" \
+  grep -qF "**Whoever completes a full verify run writes \`Takes:\`**" <<< "$b4"
+assert_ok "build runs the item's tests on fresh state where the project can" \
+  grep -qF "**Where \`AGENTS.md\` records a \`Fresh state:\` command and these" <<< "$b4"
+_s1=$(_step 1 skills/ship.md)
+assert_ok "ship counts a pipeline only for what it ran" \
+  grep -qF '**The pipeline is the gate only for what it ran.**' <<< "$_s1"
+assert_ok "because a skipped job reports success" \
+  grep -qF 'A skipped job reports success' <<< "$_s1"
+assert_ok "and ship reads the checks with the pack's script" \
+  grep -qF '.agents/bin/pipeline-ran.sh' <<< "$_s1"
+assert_ok "install ships that script to every project" \
+  grep -qE '^PACK_SCRIPTS=".*pipeline-ran\.sh' install.sh
+assert_ok "ship says how long a local run takes before starting it" \
+  grep -qF '**On the local route, say how long the run will take before starting it**' <<< "$_s1"
+assert_ok "ship's merge step waits on each job, not the list" \
+  grep -qF 'each job ran and passed, as Step 1 reads them' <<< "$(_step 4 skills/ship.md)"
+_ci=$(_flat skills/ci.md)
+assert_ok "ci counts a label-gated job as left out" \
+  grep -qF '**A job gated on a label or a manual start is a job left out**' <<< "$_ci"
+assert_ok "ci serves browser tests a production build" \
+  grep -qF '**Serve the browser tests a production build**' <<< "$_ci"
+assert_ok "ci splits a long suite, a database per shard" \
+  grep -qF '**each with its own database service**' <<< "$_ci"
+assert_ok "ci ends with one job that fails on a skip" \
+  grep -qF '**End with one job that needs every other and fails unless each one succeeded**' <<< "$_ci"
+assert_ok "ci measures full verify when it proves the pipeline" \
+  grep -qF '**Time the full verify part and write it as `Takes:`**' <<< "$_ci"
+_sc=$(_flat skills/scaffold.md)
+assert_ok "scaffold wires browser tests to a production build" \
+  grep -qF '**the browser tests run against a production build**' <<< "$_sc"
+assert_ok "scaffold gives database tests a database each" \
+  grep -qF '**tests that need a database get one each**' <<< "$_sc"
+assert_ok "and never pins the workers to one" \
+  grep -qF '**Never pin the workers to one**' <<< "$_sc"
+assert_ok "scaffold records the three lines" \
+  grep -qF '**record `Fresh state:`**' <<< "$_sc"
+_su=$(_flat skills/setup.md)
+assert_ok "setup records the three lines on an existing project" \
+  grep -qF "write \`Takes:\` - measured if full verify runs here, else \`not measured yet\` - \`Budget:\` as 10 minutes, and \`Fresh state:\`" <<< "$_su"
+assert_ok "and reports what will make the suite slow, as gaps" \
+  grep -qF '**Then report what will make full verify slow as it grows**' <<< "$_su"
+
 finish

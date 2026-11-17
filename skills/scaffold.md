@@ -361,6 +361,19 @@ Installed is not the same as usable:
   inside the first runs on every step. Split a mixed runner with what it already
   has - a marker, a tag, a directory. With no such test, full verify is recorded
   as "same as Verify".
+- **wire the slow tests to stay fast as they grow** - a suite of hundreds is
+  built one item at a time, and its shape is set here:
+  - **the browser tests run against a production build** - build, then start
+    it - not the dev server, which compiles each route on first use; keep the
+    dev server for watching a test by hand.
+  - **tests that need a database get one each**: per worker, cloned from one
+    migrated template database (`CREATE DATABASE ... TEMPLATE`, or the
+    runner's own fixture), so the runner keeps its parallel workers. **Never
+    pin the workers to one** to stop tests racing on shared data - that is the
+    whole suite in series, for good.
+  - **record `Fresh state:`** - one command that runs named tests on an
+    empty, migrated database - and write `Takes:` as `not measured yet` and
+    `Budget:` as 10 minutes, under Full verify in `AGENTS.md`.
 
 ## Editing what the scaffolder generated
 

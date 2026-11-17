@@ -213,7 +213,18 @@ the whole browser suite behind every step. Full verify is run once per
 item - `build`'s closing check, `ship`, `ci`. Where the runner mixes both kinds
 in one command, split them with what it already has - a marker, a tag, a
 directory - never a second runner. With no such test, record full verify as
-"same as Verify".
+"same as Verify". **Under it, write `Takes:` - measured if full verify runs
+here, else `not measured yet` - `Budget:` as 10 minutes, and `Fresh state:`**:
+the project's command for running named tests on an empty, migrated database,
+or `none`.
+
+**Then report what will make full verify slow as it grows** - as gaps, not
+changes, since each one alters how the tests run: browser tests served by the
+dev server rather than a production build; database tests pinned to one worker
+because they share one database, rather than a database per worker cloned from
+a migrated template; no fresh-state command; and a pipeline that runs a part of
+full verify only on a label or by hand, or has no final job that fails when
+another was skipped - `ci`'s to fix. Each is a line the user decides on.
 
 **Both commands are recorded in `AGENTS.md` and nowhere else.** Where
 `coding-standards.md` restates either one, or carries its own table of what

@@ -140,6 +140,28 @@ tests that need one, the browser the tool installs, and the migrations applied
 before the tests start. Leaving it out is the user's call, asked for by name
 with its cost - never the default because it is more work. Browser tests tend
 to cover the defects that matter most, and a suite CI never runs gates nothing.
+**A job gated on a label or a manual start is a job left out** of every pull
+request nobody remembered to label: the same call, the same cost said, the
+same line in the `ci` row.
+
+**Serve the browser tests a production build**, built once in the job - or
+once for the whole run and handed to each job as an artifact. A dev server
+compiles each route the first time a test reaches it and runs code production
+never does, so it is both the slow way and the less true one.
+
+**When the suite is long, split it** - over `Budget:` under Full verify in
+`AGENTS.md`, or a few hundred browser tests: the test tool's own sharding
+(`--shard=1/4`), one job per shard, **each with its own database service**, so
+tests that cannot share one database still run at once - on separate
+machines. Merge the shards' reports into one. That is the one matrix this
+skill adds unasked: it changes how long the gate takes, not what it checks.
+
+**End with one job that needs every other and fails unless each one
+succeeded** - `if: always()`, then a step that checks each needed job's
+result. A skipped job reports success, even to a required check, and so does
+a job skipped because one it needs failed; this job is the one to require
+before merging, and it is what lets `ship` read one check instead of
+trusting a green list.
 
 **Branch on the platform:**
 
@@ -158,8 +180,9 @@ to cover the defects that matter most, and a suite CI never runs gates nothing.
   runtime version the plan says it must support - that is the one place a matrix
   earns its keep.
 
-Do not add matrices, coverage gates, security scanners, or caching beyond the
-dependency cache the Rules ask for, just because they exist. Each one is a thing that can break and needs maintaining.
+Do not add matrices - beyond the shard split above - coverage gates, security
+scanners, or caching beyond the dependency cache the Rules ask for, just
+because they exist. Each one is a thing that can break and needs maintaining.
 Start with one job that works.
 
 ## Step 3 - show the config, then write it
@@ -181,7 +204,9 @@ Run the same command sequence locally, in the same order the pipeline will, and
 confirm it passes. **From a clean checkout** - the same check as Step 1, run
 again now that the command may have changed: remove the build and dependency
 directories, install from the lockfile, and run the sequence. Anything still
-present from earlier work is something the runner will not have.
+present from earlier work is something the runner will not have. **Time the
+full verify part and write it as `Takes:`** under Full verify in `AGENTS.md`
+- `~N min, <date>`; it is what `build` and `ship` read before starting one.
 
 **Add `ci` to the Environments table in `AGENTS.md`.** It is an environment: a
 different machine, a pinned runtime, and no `.env`. Recording the pin there is

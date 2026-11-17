@@ -84,7 +84,7 @@ pack_version() {
   echo "$v"
 }
 PACK_VERSION="$(pack_version)"
-PACK_SCRIPTS="merge-capabilities.sh check-project.sh"
+PACK_SCRIPTS="merge-capabilities.sh check-project.sh pipeline-ran.sh"
 
 if [ "$STATUS" -eq 1 ]; then
   [ -d "$TARGET/.agents/skills" ] || { echo "$TARGET: the workflow is not installed here" >&2; exit 1; }

@@ -410,7 +410,8 @@ not the bare command that runs every browser or database test. `build` runs
 what the done-when names after the step, so a done-when naming the suite runs
 the suite on every step that has one; that is most of the
 full runs. The whole suite is full verify, and it has one place: `build`'s closing
-runs it once where the spec's `**Reach:**` is `wide`, or leaves it to the merge. Do not add a done-when or a step for it.
+runs it once where the spec's `**Reach:**` is `wide` and it fits the project's
+budget, or leaves it to the merge. Do not add a done-when or a step for it.
 
 **A done-when that needs a new kind of test says where that test runs.** A test
 that needs a database, a browser, a device or a network service cannot run

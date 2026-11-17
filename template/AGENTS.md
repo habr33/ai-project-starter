@@ -209,8 +209,7 @@ the root of whichever part owns them. They are not source.
 
 **These are facts about this repository, and they beat recollection.** If a
 pattern differs between major versions, the version recorded here wins. If it is
-newer than you can speak about confidently, say so and check its documentation
-rather than guessing.
+newer than you know well, check its documentation rather than guess.
 
 ## Commands
 
@@ -218,25 +217,27 @@ rather than guessing.
 
 **One application:**
 
-- Dev: <command, and the URL if it serves one>
+- Dev: <command, and its URL if any>
 - Build: <command>
 - Test: <command, or "none configured">
 - Verify: <one command: the fast checks that need nothing running. Run every step>
 - Full verify: <Verify, then the tests needing a browser, a database or a
   service. Once per item and in CI, never per step. Or "same as Verify">
+  - Takes: <~N min, <date> | over budget, <date> | not measured yet>
+  - Budget: 10 min - over it, the merge runs it
+  - Fresh state: <named tests on an empty, migrated database, or "none">
 
 **More than one part** - list each separately, and **say which directory each
-runs from**, because that is the difference between a working instruction and a
-confusing one:
+runs from**:
 
     web/    dev: npm run dev (http://localhost:5173)   test: npm test
     api/    dev: dotnet watch (http://localhost:5080)  test: dotnet test
 
 - Verify (everything), Full verify (everything): <one command each, above both
-  parts - a Makefile target or a script. Where the parts share no package
-  manager, npm scripts cannot cross the boundary: keep it ecosystem-neutral.>
-- Run both in development: <a process runner, docker compose, or honestly "two
-  terminals" - say which>
+  parts - a Makefile target or a script, ecosystem-neutral where the parts
+  share no package manager.>
+- Run both in development: <a process runner, docker compose, or "two
+  terminals">
 
 ## Environments
 
