@@ -13,6 +13,12 @@
 # and `fail` are each a check that did not pass, and `pending` is one still
 # running. No checks at all is not a pass either - nothing ran.
 #
+# Any CI tool's results reach it through .agents/bin/ci-checks.sh, which
+# turns each into these buckets. Two more come from there: `blocked`, a job
+# that never started - no minutes left, no runner, a quota - and `queued`, a
+# job still waiting for a runner. Blocked is not red: nothing was tested, so
+# it is neither a pass nor a defect to route to build.
+#
 # With a job named `gate` (or --gate NAME) - the one ci ends the pipeline on,
 # which fails unless every job the diff's scope needed succeeded (D40) - a
 # skip elsewhere is the gate's call: the gate passing is the verdict, and a
@@ -23,13 +29,15 @@
 # merges or deploys. No completed run yet blocks nothing.
 #
 # Exit: 0 every check ran and passed; 1 one did not; 3 one is still running
-# (wait and ask again); 2 the input could not be read. Reads only.
+# (wait and ask again); 4 CI could not start a job, and no job failed - run
+# it locally with .agents/bin/ci-local.sh; 2 the input could not be read.
+# Reads only.
 set -uo pipefail
 
 mode=checks gate=gate
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --main) mode=main; shift ;;
     --gate) gate="${2:-}"; shift 2 || { echo "pipeline-ran: --gate needs a job name" >&2; exit 2; } ;;
     *) break ;;
@@ -57,6 +65,9 @@ if mode == "main":
         print("main: no completed run yet - nothing to hold a merge on")
         sys.exit(0)
     _, c, sha = done[0]
+    if c == "blocked":
+        print(f"main: the last run at {sha[:7]} could not start - CI is unavailable, not red; nothing was tested")
+        sys.exit(4)
     if c == "success":
         print(f"main is green at {sha[:7]}")
         sys.exit(0)
@@ -73,6 +84,8 @@ if not rows:
     sys.exit(1)
 said = {"pass": "ran and passed", "pending": "still running", "fail": "failed",
         "cancel": "not run (cancelled)",
+        "blocked": "could not start (no minutes, runner or quota - CI did not run it)",
+        "queued": "still running (waiting for a runner)",
         "skipping": "not run (skipped - a skip reports success, it ran nothing)"}
 gated = any(n == gate for n, _ in rows)
 if gated:
@@ -80,10 +93,14 @@ if gated:
 for n, b in rows:
     print(f"{said.get(b, b)}: {n}")
 bad = [b for n, b in rows if b != "pass" and not (gated and b == "skipping" and n != gate)]
-if bad and all(b == "pending" for b in bad):
+if "fail" in bad:
+    sys.exit(1)
+if "blocked" in bad:
+    sys.exit(4)
+if bad and all(b in ("pending", "queued") for b in bad):
     sys.exit(3)
 sys.exit(1 if bad else 0)
 ' "$input" "$mode" "$gate"
 rc=$?
 # A crash in the reader is not a verdict on the pipeline.
-case $rc in 0|1|3) exit $rc ;; *) exit 2 ;; esac
+case $rc in 0|1|3|4) exit $rc ;; *) exit 2 ;; esac

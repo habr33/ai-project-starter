@@ -99,15 +99,28 @@ blockers**:
   cancelled is not run - unless the `gate` job `ci` ends the pipeline on
   passed, which fails when a job the scope needed did not succeed - and so is
   anything the `ci` row in `AGENTS.md` records the pipeline leaving out.
-  On GitHub, `gh pr checks <number> --json name,bucket |
-  .agents/bin/pipeline-ran.sh` reads it: exit 0 only when every check ran and
-  passed, or the gate passed with nothing failed; 3 while one is still
-  running; 1 otherwise, naming each. Elsewhere, read the host's list the same way.
+  Whichever tool runs it, `.agents/bin/ci-checks.sh --commit <pushed sha> |
+  .agents/bin/pipeline-ran.sh` reads it - `CI tool:` in `AGENTS.md` says
+  which: exit 0 only when every check ran and passed, or the gate passed with
+  nothing failed; 3 while one is still running; 1 otherwise, naming each; 4
+  when **CI could not start a job** - no minutes left, no runner, a quota -
+  and none failed. **Exit 4 is not red and not a pass**: nothing was tested,
+  so it routes nothing to `build`. Say why it could not run, and with the
+  user's yes run `.agents/bin/ci-local.sh --base origin/main --commit <pushed
+  sha>`, the same jobs on this machine from a clean worktree; its gate is the
+  gate for this merge, and the pull request is told so in a comment - the
+  pipeline did not see it. **Exit 3 for longer than twice `Takes:`, with every
+  job `waiting for a runner`, is exit 4**: the runner is offline.
+  **`ci-checks.sh` exiting 2 is no verdict**: it could not ask - not logged
+  in, no token - or no `CI tool:` is recorded, as in a project set up before
+  that field existed. Pass `--tool` for this run and route recording it to
+  `ci`; never read it as a pass.
   For a part not run, start it (the label, the manual trigger) with the
   user's yes - that is visible on the pull request - or run that part here.
   **A red `main` is fixed first.** Before merging, read the default branch's
-  last completed run - `gh run list --branch main --event push --json
-  status,conclusion,headSha | .agents/bin/pipeline-ran.sh --main`. Exit 1 is
+  last completed run - `.agents/bin/ci-checks.sh --main |
+  .agents/bin/pipeline-ran.sh --main`. Exit 4 is a `main` CI never tested,
+  not a red one: say so, and blocks nothing. Exit 1 is
   the backstop finding what a scoped run did not: only the fix for it merges,
   and its cause is a P1 finding routed to `build`. A run still going blocks
   nothing - waiting for it is the wait this rule exists to remove.

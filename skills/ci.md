@@ -1,6 +1,6 @@
 ---
 name: ci
-description: "Set up automatic checks that run on push and on pull requests, using the project's own verification command rather than an invented one. Detects the real stack and any existing workflow, writes one config file, runs the same checks locally first to prove they pass, and stops before pushing or changing any remote setting. Use when the user runs `ci`, wants checks to run automatically, asks about GitHub Actions or a pipeline, or when review finds that nothing runs on push."
+description: "Set up automatic checks that run on push and on pull requests, using the project's own verification command rather than an invented one. Detects the real stack and any existing workflow, asks which CI tool and runner - GitHub Actions, GitLab CI, Forgejo or Gitea Actions, Woodpecker, another tool, a self-hosted runner, or this machine - writes one config file, runs the same checks locally first to prove they pass, and stops before pushing or changing any remote setting. Use when the user runs `ci`, wants checks to run automatically, asks about a pipeline or a CI/CD tool, runs out of CI minutes on a free plan, wants to self-host CI or run it locally, or when review finds that nothing runs on push."
 ---
 
 # ci - make the checks run without being asked
@@ -71,6 +71,51 @@ replacement, and the existing one is preserved.
   the evidence (a logged-in CLI, the other projects' remotes), but let the user
   answer: "say which host you are assuming" is an instruction that is easily
   skipped, writing a GitHub workflow and explaining it afterwards
+- **which CI tool runs it, and on what machine** - below. The host suggests a
+  tool but does not decide it: a GitHub repository can run on its own runner,
+  and any repository can run on this machine
+
+### Pick the tool and the runner - the user's call
+
+**Ask, with a recommendation and its evidence** - the remote's host, a
+logged-in CLI (`gh`, `glab`, `tea`), a runner already registered, whether the
+repository is public. Record the answer as `- CI tool: <tool> on <runner>` in
+the Environments section of `AGENTS.md`, and the dependency install the
+pipeline runs as `- Install:`. `.agents/bin/ci-checks.sh` reads `CI tool:`, and
+it is how `ship` and `deploy` read every pipeline, whichever tool it is.
+
+| `CI tool:` | Config | Results read by |
+|---|---|---|
+| `github-actions` | `.github/workflows/ci.yml` | `gh`, logged in |
+| `forgejo-actions` | `.forgejo/workflows/ci.yml` (Gitea: `.gitea/workflows/`) | the API, with `FORGEJO_TOKEN` |
+| `gitlab-ci` | `.gitlab-ci.yml` | `glab`, logged in |
+| `woodpecker` | `.woodpecker/ci.yaml` | the API, with `WOODPECKER_SERVER` and `WOODPECKER_TOKEN` |
+| `local` | none - `.agents/bin/ci-local.sh` is the pipeline | the results it writes in `.git/ci-local/` |
+| `other: <name>` | that tool's own format | `- Read checks:` - a command the user gives, printing each job as `{"name","bucket"}`, written beside `CI tool:` |
+
+**The runner is a separate question**, and it decides what CI costs:
+
+- **hosted** - the tool's own machines. **On a free plan, minutes run out**:
+  GitHub's free plan meters private repositories by the minute, every job is
+  billed whole minutes, and a sharded suite multiplies it. **Estimate the
+  month** - jobs per run × minutes per job × (pull requests + pushes to the
+  default branch) - and say it beside the plan's allowance before writing the
+  file. A public repository on GitHub's standard runners is not metered.
+- **self-hosted** - the same config on a machine the user runs, labelled in
+  `runs-on` or `tags`. No minutes to run out, and the machine is theirs to keep
+  up. **Never on a public repository's pull requests from forks**: a fork's
+  pull request runs its own code on that machine, with whatever it can reach.
+  Use it for a private repository, or require approval for outside
+  contributors' runs and keep the runner ephemeral, holding no secret a job
+  does not need. **Registering a runner is the user's** - a remote setting and
+  a machine; give the steps, do not do it.
+- **this machine** - `local`: nothing runs without being asked, so say plainly
+  that "without anyone asking" is lost - `ship` runs `ci-local.sh` before each
+  merge instead, and that is the only gate.
+
+**Whatever the tool, `.agents/bin/ci-local.sh` is the fallback**: when the
+pipeline cannot start a job - minutes gone, a runner offline - `ship` and
+`deploy` run the same jobs here, from a clean worktree of the commit.
 
 **If the verification command fails locally, stop.** Setting up CI to run a
 failing command just moves the failure somewhere less visible.
@@ -198,6 +243,16 @@ when chosen; one left out may be skipped, and nothing else may:
               *) echo "no scope"; exit 1 ;;
             esac
 
+**In another tool, keep the same jobs and the same gate.** Forgejo and Gitea
+Actions read the workflow above nearly unchanged - `runs-on` names a label the
+registered runner has. **Where a later job cannot be skipped by an earlier
+job's output** - GitLab CI and Woodpecker decide which jobs exist before any
+runs - each optional job reads the scope word from the `scope` job's artifact
+and ends at once when the scope did not choose it, saying so in its log; and
+`gate` is the last stage, run only when everything before it succeeded
+(GitLab's default `when: on_success`, Woodpecker's default `status: success`).
+For `local` there is no file: `ci-local.sh` runs these jobs in this order.
+
 A skipped job reports success, even to a required check, and so does
 a job skipped because one it needs failed; this job is the one to require
 before merging, and it is what lets `ship` read one check instead of
@@ -248,6 +303,14 @@ present from earlier work is something the runner will not have. **Time the
 full verify part and write it as `Takes:`** under Full verify in `AGENTS.md`
 - `~N min, <date>`; it is what `build` and `ship` read before starting one.
 
+**`.agents/bin/ci-local.sh --push` is that run**, from a worktree of the
+commit with no `.env` and a clean environment - but it tests only what is
+committed, so the commands must be. Where they are not yet, run the sequence by
+hand now and `ci-local.sh --push` after the commit below. For `local` it is the
+pipeline itself; for any tool it is the proof the fallback works. **For
+`other`, run `.agents/bin/ci-checks.sh --commit HEAD`** and confirm `Read
+checks:` prints the form - a command that prints nothing gates nothing.
+
 **Add `ci` to the Environments table in `AGENTS.md`.** It is an environment: a
 different machine, a pinned runtime, and no `.env`. Recording the pin there is
 what stops someone later "tidying" the workflow to a floating version the
@@ -265,7 +328,10 @@ Then **stop**. Report:
 - that it passed locally
 - **that nothing has been pushed**, and that pushing is the user's call
 - what would still need doing on the remote by hand - requiring the check before
-  merge is a repository setting, not a file
+  merge is a repository setting, not a file; registering a self-hosted runner
+- **the tool and runner chosen, the month's estimated minutes against the
+  plan's allowance, and the fallback**: when the pipeline cannot start,
+  `.agents/bin/ci-local.sh` runs it here
 
 Record the verification command in `dev-notes/status.md` under running it by
 hand, so the same checks can be run without the pipeline.
@@ -287,8 +353,10 @@ loop reads, and it is the last planning step before `spec` starts on items.
 
 ## Rules
 
-- **Never push, and never change a remote setting.** Branch protection and
-  required checks are the user's to configure.
+- **Never push, and never change a remote setting.** Branch protection,
+  required checks and registering a runner are the user's to configure.
+- **Never point a self-hosted runner at a public repository's fork pull
+  requests.** Their code runs on that machine.
 - **Never invent a check.** CI runs what the project has; a gap is reported as a
   gap.
 - **Check full verify actually runs what the project has configured.** A

@@ -1994,6 +1994,123 @@ assert_eq "no completed run yet blocks nothing" "0" "$rc"
 assert_ok "and says so" grep -qF 'no completed run' <<< "$out"
 assert_eq "input it cannot read is not a verdict" "2" "$(_pm 'nope')"
 
+section "pipeline-ran - a pipeline that could not start is not a red one"
+# A free account out of minutes fails every job before its first step, and an
+# offline self-hosted runner leaves every job queued. Read as `fail`, the first
+# sent build looking for a bug that does not exist and blocked every merge.
+assert_eq "a job that never started is its own verdict" "4" \
+  "$(_pr '[{"name":"verify","bucket":"blocked"},{"name":"gate","bucket":"blocked"}]')"
+assert_eq "beside a pass, still not a pass" "4" \
+  "$(_pr '[{"name":"verify","bucket":"pass"},{"name":"full","bucket":"blocked"}]')"
+assert_eq "a real failure beside it is a failure" "1" \
+  "$(_pr '[{"name":"verify","bucket":"fail"},{"name":"full","bucket":"blocked"}]')"
+assert_eq "waiting cannot turn it into a pass" "4" \
+  "$(_pr '[{"name":"verify","bucket":"blocked"},{"name":"full","bucket":"pending"}]')"
+assert_eq "a passing gate does not excuse it" "4" \
+  "$(_pr '[{"name":"full","bucket":"blocked"},{"name":"gate","bucket":"pass"}]')"
+out="$(printf '%s' '[{"name":"verify","bucket":"blocked"}]' | "$PR" 2>&1)"
+assert_ok "it says CI could not run, not that the code failed" grep -qF 'could not start' <<< "$out"
+assert_eq "a job waiting for a runner is still waiting" "3" \
+  "$(_pr '[{"name":"verify","bucket":"queued"}]')"
+out="$(printf '%s' '[{"name":"verify","bucket":"queued"}]' | "$PR" 2>&1)"
+assert_ok "and says it has no runner yet" grep -qF 'waiting for a runner' <<< "$out"
+assert_eq "main's last run could not start" "4" \
+  "$(_pm '[{"status":"completed","conclusion":"blocked","headSha":"aaa"},{"status":"completed","conclusion":"success","headSha":"000"}]')"
+out="$(printf '%s' '[{"status":"completed","conclusion":"blocked","headSha":"abc1234567"}]' | "$PR" --main 2>&1)"
+assert_ok "and main is not called red" grep -qF 'could not start' <<< "$out"
+
+section "ci-checks - any CI tool's answer, in the form pipeline-ran reads"
+# ship and deploy once read a pipeline only through gh, so a project on
+# GitLab, Forgejo, Woodpecker or its own machine had no gate but trust. Each
+# fixture is the shape that tool's API returns; the bucket is the claim.
+CC="$REPO/lib/ci-checks.sh"
+_cc() { # TOOL RAW [--main]: the buckets, or the conclusions, space-separated
+  printf '%s' "$2" | "$CC" --map "$1" ${3:-} 2>/dev/null | python3 -c '
+import json,sys; d=json.load(sys.stdin)
+print(" ".join(x.get("bucket") or x.get("conclusion") or x["status"] for x in d))'
+}
+assert_eq "github: a failed job with steps failed" "fail" \
+  "$(_cc github-actions '[{"name":"v","status":"completed","conclusion":"failure","steps":[{"name":"t"}]}]')"
+assert_eq "github: a failed job with no steps never started - out of minutes" "blocked" \
+  "$(_cc github-actions '[{"name":"v","status":"completed","conclusion":"failure","steps":[]}]')"
+assert_eq "github: queued waits for a runner, in_progress runs, skipped and cancelled say so" \
+  "queued pending skipping cancel pass blocked" \
+  "$(_cc github-actions '[{"name":"a","status":"queued"},{"name":"b","status":"in_progress"},{"name":"c","status":"completed","conclusion":"skipped"},{"name":"d","status":"completed","conclusion":"cancelled"},{"name":"e","status":"completed","conclusion":"success","steps":[{}]},{"name":"f","status":"completed","conclusion":"startup_failure"}]')"
+assert_eq "github main: a run whose jobs never started is blocked, not red" "in_progress blocked success" \
+  "$(_cc github-actions '[{"status":"in_progress","conclusion":"","headSha":"c"},{"status":"completed","conclusion":"failure","headSha":"b","jobs":[{"name":"v","status":"completed","conclusion":"failure","steps":[]}]},{"status":"completed","conclusion":"success","headSha":"a"}]' --main | sed 's/^ //')"
+assert_eq "github main: a run with a real failure stays red" "failure" \
+  "$(_cc github-actions '[{"status":"completed","conclusion":"failure","headSha":"b","jobs":[{"name":"v","status":"completed","conclusion":"failure","steps":[{}]},{"name":"w","status":"completed","conclusion":"failure","steps":[]}]}]' --main)"
+assert_eq "gitlab: quota and runner reasons are blocked, a test failure fails, manual is left out" \
+  "blocked blocked fail skipping queued" \
+  "$(_cc gitlab-ci '[{"name":"a","status":"failed","failure_reason":"ci_quota_exceeded"},{"name":"b","status":"failed","failure_reason":"no_matching_runner"},{"name":"c","status":"failed","failure_reason":"script_failure"},{"name":"d","status":"manual"},{"name":"e","status":"pending"}]')"
+assert_eq "gitlab main: failed only by quota is blocked" "blocked" \
+  "$(_cc gitlab-ci '[{"status":"failed","sha":"b","jobs":[{"name":"a","status":"failed","failure_reason":"ci_quota_exceeded"}]}]' --main)"
+assert_eq "forgejo: commit statuses, error is the runner's not the code's" "pass fail blocked pending" \
+  "$(_cc forgejo-actions '{"state":"failure","statuses":[{"context":"ci / verify","status":"success"},{"context":"ci / full","status":"failure"},{"context":"ci / e2e","status":"error"},{"context":"ci / gate","status":"pending"}]}')"
+assert_eq "woodpecker: workflows, error blocked, awaiting approval left out" "pass blocked skipping" \
+  "$(_cc woodpecker '{"number":7,"workflows":[{"name":"verify","state":"success"},{"name":"full","state":"error"},{"name":"deploy","state":"blocked"}]}')"
+assert_eq "local: the result ci-local wrote is already the form" "pass fail" \
+  "$(_cc local '{"sha":"a","jobs":[{"name":"verify","bucket":"pass"},{"name":"gate","bucket":"fail"}]}')"
+assert_refuses "an answer it cannot read is said, not mapped to nothing" "not JSON" \
+  "$CC" --map github-actions <<< 'nope'
+assert_refuses "an answer in another shape is said too" "not in the shape" \
+  "$CC" --map gitlab-ci <<< '[{"status":"failed"}]'
+assert_eq "--main before --map is still --main" "blocked" \
+  "$(printf '%s' '[{"status":"failed","sha":"b","jobs":[{"name":"a","status":"failed","failure_reason":"ci_quota_exceeded"}]}]' | "$CC" --main --map gitlab-ci | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["conclusion"])')"
+d=$(workdir); (cd "$d" && git init -q -b main . && printf -- '- CI tool: <one of them - ci writes it>\n' > AGENTS.md)
+assert_refuses "a placeholder is not a tool" "no CI tool recorded" bash -c "cd '$d' && '$CC' --commit HEAD"
+printf -- '- CI tool: jenkins\n' > "$d/AGENTS.md"
+assert_refuses "an unknown tool is named" "unknown CI tool 'jenkins'" bash -c "cd '$d' && '$CC' --commit HEAD"
+printf -- '- CI tool: other: a script of ours\n- Read checks: echo "[{\\"name\\":\\"$CI_MODE-$CI_SHA\\",\\"bucket\\":\\"pass\\"}]"\n' > "$d/AGENTS.md"
+out="$(cd "$d" && "$CC" --commit abc123 2>&1)"
+assert_ok "other: the recorded command answers, told what is asked" grep -qF '"commit-abc123"' <<< "$out"
+printf -- '- CI tool: other\n- Read checks: exit 3\n' > "$d/AGENTS.md"
+assert_refuses "and its failure is not an empty pass" "Read checks command failed" bash -c "cd '$d' && '$CC' --commit HEAD"
+printf -- '- CI tool: forgejo-actions\n' > "$d/AGENTS.md"
+assert_refuses "a tool needing a token says so before asking" "FORGEJO_TOKEN" \
+  env -u FORGEJO_TOKEN -u GITEA_TOKEN bash -c "cd '$d' && '$CC' --commit HEAD"
+w=$(workdir); (cd "$w" && "$NP" ccp >/dev/null 2>&1)
+assert_ok "a new project holds it where ship runs it" cmp -s "$CC" "$w/ccp/.agents/bin/ci-checks.sh"
+
+section "ci-local - the pipeline on this machine, from what is committed"
+# The fallback when CI cannot run: a free account out of minutes, a runner
+# offline. It must test the commit and nothing else on the disk.
+CL="$REPO/lib/ci-local.sh"
+d=$(workdir)
+(
+  cd "$d" && git init -q -b main . && git config user.email t@t && git config user.name t
+  mkdir -p src && touch src/ok && echo .env > .gitignore && echo 'SECRET=1' > .env
+  printf -- '- Install: echo installed\n- Verify: test -f src/ok && test -z "$SECRET" && test ! -e .env\n- Full verify: same as Verify\n' > AGENTS.md
+  git add -A && git commit -qm init
+) >/dev/null 2>&1
+sha="$(git -C "$d" rev-parse HEAD)"
+out="$(cd "$d" && SECRET=x "$CL" --push 2>&1)"; rc=$?
+assert_eq "a passing commit passes - though this shell and this disk hold a secret" "0" "$rc"
+assert_exists "it records the result where ci-checks reads it" "$d/.git/ci-local/$sha.json"
+assert_eq "and only the main worktree is left" "1" "$(git -C "$d" worktree list | wc -l | tr -d ' ')"
+assert_eq "ci-checks reads it back as a gate that passed" "0" \
+  "$(cd "$d" && "$CC" --tool local --commit HEAD | "$PR" >/dev/null 2>&1; echo $?)"
+rm "$d/src/ok"
+out="$(cd "$d" && "$CL" --push 2>&1)"; rc=$?
+assert_eq "an uncommitted deletion is not tested - the commit still passes" "0" "$rc"
+assert_ok "and it says so" grep -qF 'uncommitted changes are not tested' <<< "$out"
+(cd "$d" && git commit -qam break) >/dev/null 2>&1
+out="$(cd "$d" && "$CL" --push 2>&1)"; rc=$?
+assert_eq "a committed break fails" "1" "$rc"
+assert_ok "naming the job and its log" grep -qF 'full failed' <<< "$out"
+assert_eq "main is red through ci-checks" "1" \
+  "$(cd "$d" && "$CC" --tool local --main | "$PR" --main >/dev/null 2>&1; echo $?)"
+out="$(cd "$d" && "$CL" --push --commit "$sha" --keep 2>&1)"; rc=$?
+kept="$(sed -n 's/^ci-local: kept the tested worktree at //p' <<< "$out")"
+assert_eq "an earlier commit can be run by name" "0" "$rc"
+assert_ok "--keep leaves its tested tree for deploy to build in" test -f "$kept/src/ok"
+[ -n "$kept" ] && git -C "$d" worktree remove --force "$kept" >/dev/null 2>&1
+printf -- '- Verify: <one command>\n' > "$d/AGENTS.md"; (cd "$d" && git commit -qam placeholder) >/dev/null 2>&1
+assert_refuses "a placeholder Verify is nothing to run" "no Verify command" bash -c "cd '$d' && '$CL' --push"
+assert_refuses "--base and --push are two runs" "two different runs" bash -c "cd '$d' && '$CL' --push --base main"
+w=$(workdir); (cd "$w" && "$NP" clp >/dev/null 2>&1)
+assert_ok "a new project holds it" cmp -s "$CL" "$w/clp/.agents/bin/ci-local.sh"
+
 section "test-scope - what a diff needs run (D40)"
 # A CSS change once paid for the whole suite on every pull request. The scope
 # is decided from the diff, and anything it cannot place runs everything.

@@ -87,6 +87,16 @@ Check, and report only what blocks:
   - **There is no build** - a script, an interpreted app, a static tree already
     in the repository. Then this does not apply; say so rather than inventing a
     step.
+  - **Built here, because CI could not run** - `.agents/bin/ci-checks.sh
+    --main | .agents/bin/pipeline-ran.sh --main` exits 4: minutes gone, a
+    runner offline. Only with the user's yes, and only this way:
+    `.agents/bin/ci-local.sh --push --commit <sha> --keep` runs the whole
+    pipeline from a clean worktree of the commit, with no `.env`, and leaves
+    that tree; **the Build command runs in it**, and that artifact ships. Never
+    the working tree: it holds uncommitted files and this machine's
+    environment. **Record it as built locally** in `dev-notes/status.md`,
+    beside the commit, with why CI could not - so the next deploy does not read
+    it as one CI built. Remove the worktree after (`git worktree remove`).
 
   **What is never acceptable is building on the machine that serves traffic.**
   It puts a toolchain and the dev dependencies - where most advisories live - on
@@ -98,8 +108,9 @@ Check, and report only what blocks:
   not wait for the whole suite a scoped merge left to `main`** (`D40`): the
   pull request's `gate` passing on the same tree is the evidence, the
   backstop still running is said, not waited on. **A red `main` blocks**
-  - `.agents/bin/pipeline-ran.sh --main` exit 1 - unless this deploy is
-  its fix
+  - `.agents/bin/ci-checks.sh --main | .agents/bin/pipeline-ran.sh --main`
+  exit 1 - unless this deploy is its fix. Exit 4 is a `main` CI never
+  tested: the `ci-local.sh` run above is then the evidence, or nothing is
 - **every environment variable** the code reads is set in the target, with no
   development default reaching it
 - **migrations** that need to run are known, reversible, and understood. A

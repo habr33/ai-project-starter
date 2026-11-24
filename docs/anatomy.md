@@ -84,7 +84,7 @@ rows.
 | `stack` | project-plan Architecture + **quality-bar** | project-plan Tech, decisions | Architecture section empty or placeholder | `layout` |
 | `layout` | project-plan Tech + Architecture | project-plan Architecture (the tree), decisions | Tech or Architecture still placeholder | `scaffold` |
 | `scaffold` | project-plan Tech + Architecture, incl. the layout | the app, AGENTS.md, **coding-standards**, decisions | Tech section empty or placeholder | `ci` |
-| `ci` | AGENTS.md commands + runtime, contracts | one workflow file, its Environments row, status, findings→`fixed` | no verification command exists | `distill` |
+| `ci` | AGENTS.md commands + runtime, contracts | one workflow file for the tool chosen (none for `local`), its Environments row with `CI tool:` and `Install:`, status, findings→`fixed` | no verification command exists | `distill` |
 | `distill` | both plans | project-overview | either plan missing | `prototype` or `spec` |
 | `prototype` | project-plan UI/UX, project-overview; or the built UI, for an app that already has a look | `prototypes/`, **design.md** | project-overview absent; design.md already exists | `spec` |
 
@@ -162,9 +162,10 @@ no later, so a small change never waits for the whole suite:
 | after each build step | Verify, plus the test the done-when names | `build` |
 | `build`'s closing | the item's own tests together, on fresh state - a quick fix skips this; full verify only for a `wide` item measured within `Budget:`, else the `Affected:` command; records `Verified:` when every behavioral done-when ran live | `build`, from `Reach:` and `Takes:` |
 | `verify`, `review` | no suite - the running app, then the code | - |
-| the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `ship` through `pipeline-ran.sh` |
+| the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `ship` through `ci-checks.sh` and `pipeline-ran.sh`, whichever tool runs it |
 | a local merge, no pipeline | full verify within budget; over it, the scope's choice, said | `ship` |
-| every push to `main` | full verify, sharded - the backstop; nothing waits for it, and a red result blocks the next merge and deploy until fixed | `ci`; `ship`, `deploy` via `pipeline-ran.sh --main` |
+| CI could not start - no minutes, no runner (`pipeline-ran.sh` exit 4) | the same jobs here, `ci-local.sh` from a clean worktree of the commit; never read as red | `ship`, `deploy`, with the user's yes |
+| every push to `main` | full verify, sharded - the backstop; nothing waits for it, and a red result blocks the next merge and deploy until fixed | `ci`; `ship`, `deploy` via `ci-checks.sh --main` and `pipeline-ran.sh --main` |
 | deploy | nothing new: the pull request's gate on the same tree | `deploy` |
 
 **`debug` sits outside the line and is reached from inside it** — from `build`

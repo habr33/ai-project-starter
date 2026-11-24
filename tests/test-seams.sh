@@ -3839,4 +3839,22 @@ for w in none affected full; do
   assert_ok "the gate has a case for '$w'" grep -qE "^ *$w\)" <<< "$_gate"
 done
 
+section "every CI tool the template offers can be read back, and ci says how (D41)"
+# ship and deploy read every pipeline through ci-checks.sh. A tool the template
+# offers with no mapping there, or no row in ci's table, is a CI whose result
+# nothing can read - so its green tick gates nothing.
+_tools="$(sed -n 's/^- CI tool: <\([^>]*\)>.*/\1/p' template/AGENTS.md | tr '|' ' ')"
+assert_ok "the template offers the tools as a list" test -n "$_tools"
+for t in $_tools; do
+  assert_ok "ci-checks.sh reads '$t'" grep -qE "^$t\)" lib/ci-checks.sh
+  assert_ok "ci's table names '$t'" grep -qE "^\| \`$t[\`:]" skills/ci.md
+done
+for f in skills/ship.md skills/deploy.md; do
+  assert_ok "$f reads the pipeline through ci-checks.sh" grep -qF '.agents/bin/ci-checks.sh' "$f"
+  assert_ok "$f names exit 4, CI that could not start" grep -qF 'Exit 4' "$f"
+  assert_lacks "$f no longer calls gh to read checks" "$f" 'gh pr checks'
+done
+assert_ok "ship and deploy fall back to ci-local.sh" bash -c 'grep -qF ci-local.sh skills/ship.md && grep -qF ci-local.sh skills/deploy.md'
+assert_ok "the self-hosted warning is in ci" grep -qF 'public repository' skills/ci.md
+
 finish

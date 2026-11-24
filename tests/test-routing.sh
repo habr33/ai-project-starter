@@ -46,7 +46,7 @@ architect   | before we pick any technology, what are the screens and the data m
 stack       | what should i build this with
 layout      | where should the source files actually sit in this repo
 scaffold    | create the actual app now that we know the framework
-ci          | i want the checks to run automatically on every pull request
+ci          | our free plan ran out of minutes, can we self-host the checks on our own runner
 distill     | regenerate the overview, i just edited both planning docs
 prototype   | can i see roughly how the screens will look before we write any code
 spec        | break down the next thing on the build plan into steps i can build

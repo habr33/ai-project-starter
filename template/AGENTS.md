@@ -245,13 +245,16 @@ runs from**:
      itself if a pipeline exists, `host` adds the rest. Never guess one. -->
 
 **`development` always exists** - it is created the moment there is code, not the
-moment something is hosted. Listing it is what makes "no development default
-reaching production" a comparison between two recorded things rather than a
-figure of speech.
+moment something is hosted. Listing it makes "no development default reaching
+production" a comparison of two recorded things, not a figure of speech.
 
 | Environment | What it is for | Config comes from | Holds real data |
 |---|---|---|---|
 | `development` | local work | <`.env`, a local file, nothing> | no |
+
+<!-- `ci` writes these. -->
+- CI tool: <github-actions|forgejo-actions|gitlab-ci|woodpecker|local|other> on <hosted|self-hosted: label|this machine>
+- Install: <from the lockfile, as CI runs it>
 
 Add a row per environment as it comes into existence. For each, say **where its
 configuration comes from and where its secrets live** - never the repository -
@@ -262,15 +265,11 @@ reads before touching a schema.
 
 - `deploy` targets **one environment at a time**, named from this table.
   **Approval for one is never approval for another.**
-- `migrate` treats an environment holding real data completely differently from
-  one that does not. A wrong row here is how a destructive migration gets an
-  easy yes.
+- `migrate` treats an environment holding real data differently. A wrong row
+  here is how a destructive migration gets an easy yes.
 - A staging database pointed at production data **is not staging**, and this
   table is where that is visible.
-- `ci` is an environment too when it exists: a different machine, a pinned
-  runtime, and no `.env`. The runtime pin belongs in the row, because a pipeline
-  that installs a different version than this project supports fails in the one
-  place nobody is watching.
+- `ci` is an environment too: another machine, no `.env`, and a runtime
+  pinned in its row - a pipeline on another version fails where nobody watches.
 - **Say which environment builds.** Normally `ci`, sometimes the platform, never
-  the one serving traffic - because a target that rebuilds is running something
-  no check ever examined. `deploy` reads this before it ships.
+  the one serving traffic - a target that rebuilds runs what no check examined. `deploy` reads this before it ships.
