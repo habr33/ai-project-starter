@@ -53,7 +53,7 @@ spec        | break down the next thing on the build plan into steps i can build
 build       | implement the current spec, one step at a time
 verify      | can you run the app and show me it works, not just that the tests pass
 review      | give this a security review and write down what you find
-ship        | this item is built and reviewed, wrap it up and merge it
+dispatch        | this item is built and reviewed, wrap it up and merge it
 docs        | the readme is still the template boilerplate, write a real one
 preflight   | are we ready to put this in front of real users
 host        | i need somewhere to deploy this and a real database
@@ -87,7 +87,7 @@ MISSES
 )
 
 # The line above which two descriptions are treated as interchangeable. The
-# worst real pair sits at 0.28 (`review` <-> `ship`, which share the whole
+# worst real pair sits at 0.28 (`review` <-> `dispatch`, which share the whole
 # vocabulary of closing out an item), so this leaves headroom without being a
 # guard that can never fire.
 collision_limit=0.40

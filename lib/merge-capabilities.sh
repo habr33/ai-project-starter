@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Merge a spec's "## Behaviour changes" into blueprint/capabilities/, one file per
-# capability. ship runs it before its other Step 2 writes; verify --all runs it on
+# capability. dispatch runs it before its other Step 2 writes; verify --all runs it on
 # an old archive it has just given a section.
 #
 #   .agents/bin/merge-capabilities.sh SPEC-OR-ARCHIVE ARCHIVE-NAME [--target DIR]

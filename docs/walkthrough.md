@@ -61,7 +61,7 @@ one: it stops on a plan that is already filled, unless you ask for `--rescope`.
 
 **The mockups are throwaway; the decisions are not.** `prototype` also writes
 `blueprint/context/design.md` — the states, component conventions, and any
-contrast value that was measured rather than chosen. `ship` deletes the mockups
+contrast value that was measured rather than chosen. `dispatch` deletes the mockups
 and keeps that, so the next UI item builds against what was already settled
 instead of reinventing it.
 
@@ -71,7 +71,7 @@ instead of reinventing it.
 ## 3. Build it, one item at a time
 
 ```
-spec → build → verify → review → ship
+spec → build → verify → review → dispatch
 ```
 
 **`spec`** turns one plan item into a spec with small steps, each with an
@@ -99,7 +99,7 @@ verify" is a valid result and never a pass.**
 **`review`** audits the code and writes findings with durable IDs. An open P0 or
 P1 blocks the merge.
 
-**`ship`** archives the spec, makes one commit, squash-merges **with your explicit
+**`dispatch`** archives the spec, makes one commit, squash-merges **with your explicit
 approval**, then asks separately before pushing.
 
 Repeat for the next item.
@@ -117,7 +117,7 @@ ticked steps and the `Verified:` and `Reviewed:` lines are all on disk.
 | `spec` | fresh | the strongest you have | Its decisions are the ones every later stage inherits. |
 | `build` → `verify` | fresh, one for both | mid-tier is enough | The spec already says what to build and how to prove it; `build` hands each step to a subagent and proves the done-when itself. |
 | `review` | **fresh** | the strongest you have | A reviewer that watched the code being written shares its assumptions. This is the judgement call of the loop. |
-| `ship` | the review's, or fresh | mid-tier is enough | Bookkeeping and one commit, behind a safety pass that reads files, not memory. |
+| `dispatch` | the review's, or fresh | mid-tier is enough | Bookkeeping and one commit, behind a safety pass that reads files, not memory. |
 
 **Choose the model when the session starts, not in the middle.** Switching
 part-way makes the new model re-read the whole conversation from nothing, which

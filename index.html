@@ -264,7 +264,7 @@ footer p { max-width: 60ch; }
       </div>
       <div>
         <h3>Findings block the merge.</h3>
-        <p><code>review</code> records each finding with a durable ID, a severity and a status. An open or fixed P0 or P1 stops <code>ship</code>. A repair is not done until a review has seen the result.</p>
+        <p><code>review</code> records each finding with a durable ID, a severity and a status. An open or fixed P0 or P1 stops <code>dispatch</code>. A repair is not done until a review has seen the result.</p>
       </div>
       <div>
         <h3>Evidence, or it didn’t happen.</h3>
@@ -346,7 +346,7 @@ footer p { max-width: 60ch; }
   const LINE = [
     { phase: "Plan", stations: ["ideate", "architect", "stack", "layout", "scaffold", "ci", "context"] },
     { phase: "Design, for anything with a UI", stations: ["prototype"] },
-    { phase: "Build", stations: ["spec", "build", "verify", "review", "ship"] },
+    { phase: "Build", stations: ["spec", "build", "verify", "review", "dispatch"] },
     { phase: "Run", stations: ["preflight", "host", "deploy", "monitor"] },
   ];
   const SIDINGS = ["setup", "progress", "prepare", "debug", "docs", "migrate", "rollback", "integrate", "orchestrate", "autopilot"];
@@ -359,11 +359,11 @@ footer p { max-width: 60ch; }
     ci: ["Sets up checks on push and pull requests using the project’s own verification command. Runs them locally first to prove they pass.", "amber", "Stops before pushing or changing any remote setting."],
     context: ["Checks the plans for placeholder text and contradictions, then generates the project overview that every session loads."],
     prototype: ["Recommends a visual direction and navigation, mocks it as throwaway HTML from the pack’s design kit, and records the decisions and measured contrast values in design.md."],
-    spec: ["Turns one work item into a buildable spec. With --quick, a one- or two-file fix becomes a single test-first step that goes straight from build to ship."],
+    spec: ["Turns one work item into a buildable spec. With --quick, a one- or two-file fix becomes a single test-first step that goes straight from build to dispatch."],
     build: ["Builds the spec one small reviewed step at a time, runs the project’s checks, and ticks each step off so progress survives a fresh session."],
     verify: ["Runs the real app against the spec’s done-when criteria and reports pass, fail or could-not-verify for each one, with evidence."],
     review: ["A read-only audit. Findings go in the ledger with a durable ID, a severity from P0 to P3, and a status."],
-    ship: ["Archives the spec, checks the item off, makes one commit and squash-merges with your approval. Asks separately before pushing.", "red", "Refuses to merge while a P0 or P1 finding is open or fixed."],
+    dispatch: ["Archives the spec, checks the item off, makes one commit and squash-merges with your approval. Asks separately before pushing.", "red", "Refuses to merge while a P0 or P1 finding is open or fixed."],
     preflight: ["The whole-project go-live audit, before the first release and again before anything major: security, data and backups, operations, accessibility and more.", "red", "Can say the product is not ready. It reports blockers and never fixes them."],
     host: ["Provisions hosting, database, domain and storage for each environment, with the cost stated before anything is created. Owns the secret lifecycle.", "amber", "Never creates a paid resource without your explicit approval."],
     deploy: ["Deploys to one named environment, checks it is actually serving, and rolls a bad release back.", "amber", "Production always needs its own approval. Approval for staging is never approval for production."],
@@ -393,7 +393,7 @@ footer p { max-width: 60ch; }
 
   const holder = document.getElementById("diagram");
   const detail = document.getElementById("detail");
-  let selected = "ship";
+  let selected = "dispatch";
   let geo = null; // { lit, total, lengths, groups }
 
   function layout(vertical, w) {
@@ -458,8 +458,8 @@ footer p { max-width: 60ch; }
       if (e.kind === "phase") { const t = el("text", { x: e.x, y: e.y, class: "phase", "text-anchor": e.anchor }, svg); t.textContent = e.text; }
     }
 
-    // spec --quick: build straight to ship
-    const pb = L.pts.find(p => p.s === "build"), ps = L.pts.find(p => p.s === "ship");
+    // spec --quick: build straight to dispatch
+    const pb = L.pts.find(p => p.s === "build"), ps = L.pts.find(p => p.s === "dispatch");
     if (!L.vertical) {
       const lift = 58, mx = (pb.x + ps.x) / 2;
       el("path", { d: `M ${pb.x} ${pb.y} C ${pb.x + 50} ${pb.y - lift}, ${ps.x - 50} ${ps.y - lift}, ${ps.x} ${ps.y}`, class: "aux" }, svg);

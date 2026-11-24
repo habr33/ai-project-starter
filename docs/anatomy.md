@@ -46,21 +46,21 @@ by mentioning it.
 | File | Holds | Written by | Read by |
 |---|---|---|---|
 | `blueprint/project-plan.md` | the what and why | `ideate` `architect` `stack` `layout` `setup` `scaffold` `spec` `distill` | 9 skills |
-| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `ship` `setup` `distill` | `distill` `progress` `monitor` `preflight` |
+| `blueprint/build-plan.md` | the checklist — per part, and **splitting the product's items across parts is `architect`'s job whenever there are parts**, because `ideate` writes the only initial set, and re-running it needs `--rescope` | `ideate` `architect` `spec` `dispatch` `setup` `distill` | `distill` `progress` `monitor` `preflight` |
 | `blueprint/context/project-overview.md` | the source of truth, generated | `distill` | `spec` `build` `review` `progress` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack — **not loaded every session**; the three skills that need it read it | **the pack** — refreshed on every install | `spec` `build` `review` |
 | `blueprint/context/coding-standards.md` | this project's own conventions, and the standards it follows | `scaffold` `setup` | `spec` `build` `review` `progress` |
 | `blueprint/context/quality-bar.md` | performance, scale, security, availability — **product-level: in a multi-part product it lives at the product root, like the plan** | `architect` `setup` | `spec` `verify` `review` `preflight` `monitor` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments — what it will never trade away. **Product-level, like the plan.** Never inferred from code: `setup` reports it unrecorded rather than writing one | `ideate` | `architect` `review` `preflight` |
-| `blueprint/context/design.md` | visual decisions, measured values, the navigation map, the screens and journeys that apply | `prototype` `spec` | `spec` `review` `ship` |
+| `blueprint/context/design.md` | visual decisions, measured values, the navigation map, the screens and journeys that apply | `prototype` `spec` | `spec` `review` `dispatch` |
 | `blueprint/design-kit/` | the baseline tokens (JSON and CSS), every core component in every state, and the UX checklist — **the pack** refreshes it on every install | **the pack** | `prototype` `spec` |
-| `blueprint/context/current-work.md` | the one item in flight, steps ticked, and what `verify` and `review` last examined | `spec` `build` `ship` `verify` `review` `rollback` | 5 skills |
-| `blueprint/context/findings.md` | the findings **index**, loaded every session — one heading per live finding, and status lives only here. Code findings close through `review` (or `build`, at P2 or P3, with a test seen failing first); non-code ones through a `preflight` re-check | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `ship` `preflight` |
-| `blueprint/findings/` | each finding's full entry, `<ID>.md`, read on demand; and `backlog.md`, the unresolved P3s `ship` moves out of the index | `review` `build` `ship` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `review` `progress` `preflight` |
-| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` `ship` | `prepare` `progress` `preflight` |
-| `blueprint/capabilities/` | what the product does now — one file per capability, one claim per observable behaviour, IDs never reused; part-level, read on demand | `ship` `verify` | `spec` `verify` `rollback` |
-| `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `ship` `verify` | `progress` `verify` `rollback` `docs` `preflight` |
-| `blueprint/production-pending.md` | what production still needs for merged items — variables, migrations, accounts. `spec` names them, `ship` carries them, a production `deploy` ticks them off | `ship` `deploy` | `deploy` `progress` |
+| `blueprint/context/current-work.md` | the one item in flight, steps ticked, and what `verify` and `review` last examined | `spec` `build` `dispatch` `verify` `review` `rollback` | 5 skills |
+| `blueprint/context/findings.md` | the findings **index**, loaded every session — one heading per live finding, and status lives only here. Code findings close through `review` (or `build`, at P2 or P3, with a test seen failing first); non-code ones through a `preflight` re-check | `review` `build` `dispatch` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `progress` `dispatch` `preflight` |
+| `blueprint/findings/` | each finding's full entry, `<ID>.md`, read on demand; and `backlog.md`, the unresolved P3s `dispatch` moves out of the index | `review` `build` `dispatch` `verify` `preflight` `host` `docs` `ci` `deploy` `monitor` `migrate` | `spec` `review` `progress` `preflight` |
+| `blueprint/context/needs-you.md` | work only a person can do — accounts, spend, system software, hardware, manual checks, decisions | `stack` `scaffold` `setup` `spec` `host` `verify` `build` `architect` `dispatch` | `prepare` `progress` `preflight` |
+| `blueprint/capabilities/` | what the product does now — one file per capability, one claim per observable behaviour, IDs never reused; part-level, read on demand | `dispatch` `verify` | `spec` `verify` `rollback` |
+| `blueprint/history/` | every completed item, archived — **and the only record of what each shipped feature was proved to do** | `dispatch` `verify` | `progress` `verify` `rollback` `docs` `preflight` |
+| `blueprint/production-pending.md` | what production still needs for merged items — variables, migrations, accounts. `spec` names them, `dispatch` carries them, a production `deploy` ticks them off | `dispatch` `deploy` | `deploy` `progress` |
 | `blueprint/orchestration.md` | the board — multi-part only; **one board, in the main checkout**, when parts work in git worktrees. The contract line is committed; `status/` is working state and gitignored | `orchestrate` + the scripts | `orchestrate` |
 | `CHANGELOG.md` | what changed, for users | `docs` | `preflight` |
 | `project-plan.md` · §8 Deployment | target host, build and start commands, env vars by name, storage, health check | `stack` `architect` `scaffold` | `host` `deploy` `preflight` |
@@ -69,7 +69,7 @@ by mentioning it.
 **`current-work.md` is the hinge.** Eleven skills touch it and six write it.
 `spec` fills it, `build` ticks it and records `verify`'s line when it proved the
 behaviour itself, `verify` and `review` record the fingerprint
-of the code they examined, `ship` clears it, and `rollback` writes the
+of the code they examined, `dispatch` clears it, and `rollback` writes the
 guarded plan for a reversal into it. That is why shipping in
 one part of a multi-part product used to destroy another part's in-flight work,
 and why the coordination board is one file per part rather than one file with
@@ -130,8 +130,8 @@ against *this project's* recorded values rather than a generic standard.
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight; a UI with no design.md | `build` |
 | `build` | current-work, overview, standards, findings | source, current-work ticks, the spec's `Verified:` line when it proved every behavioral done-when live, the spec's `Full verify:` line, its `Reach:` line when the diff went wider than declared, `Takes:` in `AGENTS.md` after a full run, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every claim in `capabilities/`** (archives without a `Behaviour changes` section are walked and offered for seeding) | findings (a regression), needs-you (a could-not-verify), the spec's `Verified:` line, and with `--all` the seeded capability claims — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
-| `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line, naming what it did not read — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
-| `ship` | current-work, findings, build-plan, the pipeline's checks job by job, `main`'s last run | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1; a part of full verify the scope needed that ran nowhere - a skipped job is not a pass unless the `gate` job passed; a red `main` | `ci`, `deploy`, `integrate`, `docs` |
+| `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line, naming what it did not read — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `dispatch` |
+| `dispatch` | current-work, findings, build-plan, the pipeline's checks job by job, `main`'s last run | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1; a part of full verify the scope needed that ran nowhere - a skipped job is not a pass unless the `gate` job passed; a red `main` | `ci`, `deploy`, `integrate`, `docs` |
 
 **Each of the four checks asks a different question**, and that separation is the
 point:
@@ -141,17 +141,17 @@ point:
 - `verify` — *does the running thing behave as the spec promised?* Read-only.
   **"Could not verify" is a valid result and never a pass.**
 - `review` — *is the code sound?* Writes findings with durable IDs.
-- `ship` — *is this safe to merge?* An open **or fixed** P0/P1 blocks it, because
+- `dispatch` — *is this safe to merge?* An open **or fixed** P0/P1 blocks it, because
   a repair is re-examined by something other than what made it.
 
 **A quick fix is the same line with two checks left out.** `spec --quick`
 admits a fix of at most two files outside `blueprint/` that changes no stored
 data, contract, dependency or environment variable and touches nothing the
 quality bar names; it writes one step whose done-when is the bug's
-reproduction, and `build` hands it straight to `ship`. **The reproduction test,
+reproduction, and `build` hands it straight to `dispatch`. **The reproduction test,
 seen red and then green, is the evidence `verify` would have been**, and the
 limits are what make skipping `review` safe - so `build` drops the `**Quick:**`
-line if the diff crosses one, and `ship` checks them again before merging. The
+line if the diff crosses one, and `dispatch` checks them again before merging. The
 findings gate and the one commit are unchanged.
 
 **Where each test runs** (`D30`, `D38`-`D40`) - each one as late as is safe and
@@ -162,10 +162,10 @@ no later, so a small change never waits for the whole suite:
 | after each build step | Verify, plus the test the done-when names | `build` |
 | `build`'s closing | the item's own tests together, on fresh state - a quick fix skips this; full verify only for a `wide` item measured within `Budget:`, else the `Affected:` command; records `Verified:` when every behavioral done-when ran live | `build`, from `Reach:` and `Takes:` |
 | `verify`, `review` | no suite - the running app, then the code | - |
-| the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `ship` through `ci-checks.sh` and `pipeline-ran.sh`, whichever tool runs it |
-| a local merge, no pipeline | full verify within budget; over it, the scope's choice, said | `ship` |
-| CI could not start - no minutes, no runner (`pipeline-ran.sh` exit 4) | the same jobs here, `ci-local.sh` from a clean worktree of the commit; never read as red | `ship`, `deploy`, with the user's yes |
-| every push to `main` | full verify, sharded - the backstop; nothing waits for it, and a red result blocks the next merge and deploy until fixed | `ci`; `ship`, `deploy` via `ci-checks.sh --main` and `pipeline-ran.sh --main` |
+| the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `dispatch` through `ci-checks.sh` and `pipeline-ran.sh`, whichever tool runs it |
+| a local merge, no pipeline | full verify within budget; over it, the scope's choice, said | `dispatch` |
+| CI could not start - no minutes, no runner (`pipeline-ran.sh` exit 4) | the same jobs here, `ci-local.sh` from a clean worktree of the commit; never read as red | `dispatch`, `deploy`, with the user's yes |
+| every push to `main` | full verify, sharded - the backstop; nothing waits for it, and a red result blocks the next merge and deploy until fixed | `ci`; `dispatch`, `deploy` via `ci-checks.sh --main` and `pipeline-ran.sh --main` |
 | deploy | nothing new: the pull request's gate on the same tree | `deploy` |
 
 **`debug` sits outside the line and is reached from inside it** — from `build`
@@ -184,7 +184,7 @@ something is already live. It edits no product code; it isolates and hands back.
 | `migrate` | project-plan Tech + data model | the schema, status, decisions, findings→`fixed` | no database; no recent backup | `build` |
 | `integrate` | contracts, each part | nothing — reports | single-part project | `deploy` |
 
-**`preflight` is the only whole-project gate.** `ship` asks whether a change is
+**`preflight` is the only whole-project gate.** `dispatch` asks whether a change is
 safe to merge; `deploy` asks whether a deployment will succeed. Neither asks
 whether the product is fit for real people. A project with faultless code and no
 backups passes `review` and fails here. It is allowed — required — to say no-go.
@@ -202,7 +202,7 @@ that needs a card you do not have costs far more than the seconds it takes.
 
 **`monitor` is the only way in from outside.** Every other loop runs between the
 plan and the code: `spec` reads the plan, `build` reads the spec, `review` reads
-the code, `ship` updates the plan. Without monitor's deliberate
+the code, `dispatch` updates the plan. Without monitor's deliberate
 read-the-signals pass, a project can be perfectly executed against a plan nobody
 ever checked against use.
 
@@ -217,8 +217,8 @@ The skills a person reaches for between, beside or instead of the loop's steps.
 | `prepare` | needs-you, the plan, quality-bar, the Environments table | nothing — read-only | *(no gate)* | the skill that owns each line |
 | `debug` | the failure, current-work, the code | nothing — never product code | *(no gate)* | `spec` for a fix, or back to `build` |
 | `docs` | README, dev-notes, plan, history, the code | README and API docs, decisions, status, CHANGELOG, findings→`fixed`; with `--check`, nothing | *(no gate)* | whatever the audit found |
-| `rollback` | history archive, capabilities, git history, current-work | current-work — a guarded `**Type:** Rollback` spec, with the inverse `Behaviour changes` | the feature is not shipped; another item is in flight; it is a bad release (`deploy`) | `build`, then `ship` |
-| `autopilot` | the range's own inputs, the board, the review queue | code on a branch through the skills in its range, the part's status | not explicitly asked; any preflight miss; unfrozen contract for a consumer; two packets waiting | a review packet, then `ship` |
+| `rollback` | history archive, capabilities, git history, current-work | current-work — a guarded `**Type:** Rollback` spec, with the inverse `Behaviour changes` | the feature is not shipped; another item is in flight; it is a bad release (`deploy`) | `build`, then `dispatch` |
+| `autopilot` | the range's own inputs, the board, the review queue | code on a branch through the skills in its range, the part's status | not explicitly asked; any preflight miss; unfrozen contract for a consumer; two packets waiting | a review packet, then `dispatch` |
 | `orchestrate` | the board, every status file, each part's plan, current-work and findings | the contract line, committed on its own | no board; not run from the product root; placeholder `Owner:` | the next skill per part |
 
 ## The gates that actually hold
@@ -259,7 +259,7 @@ Code runs them, so nothing above may depend on them.
 index, `needs-you.md`, `current-work.md`'s header, the overview's cap, the loaded
 context, capability files, a `preflight:` line - and names each one out of the
 form its skill writes, with that skill as the fix. `progress` reports it, `ci`
-runs it on every push, and `ship`'s safety pass blocks on it; exit 2 (it could
+runs it on every push, and `dispatch`'s safety pass blocks on it; exit 2 (it could
 not run) never blocks. It writes nothing.
 
 With `--git-hooks` it also runs on **every commit, from any tool**: a pre-commit
@@ -361,7 +361,7 @@ by cleverness.
    mention, including one inside a diagram.
 2. Add the pair to the `PAIRS` list in `tests/test-seams.sh`. **That list is the
    population** - four broken transitions survived because the population
-   stopped at `review ship`.
+   stopped at `review dispatch`.
 3. Reconcile every declaration site, then verify by *count*, not by eye.
 
 **Reordering the loop** - moving a skill to a different position.

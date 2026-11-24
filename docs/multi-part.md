@@ -8,7 +8,7 @@ usually right. Read the two constraints at the bottom before choosing.
 
 ## Why parts, mechanically
 
-`blueprint/context/current-work.md` is read or written by 11 skills, and `ship`
+`blueprint/context/current-work.md` is read or written by 11 skills, and `dispatch`
 resets it. In a single shared blueprint, two agents collide badly: agent A is
 mid-build with three steps ticked, agent B ships, the reset wipes A's spec **and
 its ticked checkboxes — which are the entire resume mechanism.** A restarts from
@@ -183,7 +183,7 @@ frozen, so they cannot wait for the freeze. `orchestrate` freezes it once they
 have shipped, and will not move the consuming parts into parallel work until
 then.
 
-**4. Parallel.** Each part runs `spec → build → verify → review → ship` in its own
+**4. Parallel.** Each part runs `spec → build → verify → review → dispatch` in its own
 directory, one session each.
 
 **5. `integrate`.** Every part passing its own checks is not evidence they work
@@ -220,7 +220,7 @@ to that.
 **`orchestration.md` is committed; the status files are gitignored** - the files,
 not the directory, which a tracked `.gitkeep` keeps in every clone. The
 contract line is a decision, and `orchestrate` commits it on its own. The status
-files are live working state: tracked, every `ship` - which clears its packet
+files are live working state: tracked, every `dispatch` - which clears its packet
 after its one commit - left the main checkout dirty, and the next commit swept in
 another part's state. A fresh clone has no status files, and a missing one reads
 as `idle`. A product seeded by an earlier version of the pack still tracks them; `install.sh`
@@ -239,7 +239,7 @@ away.
 
 **Write the block, do not just say it.** When a part stops because it needs
 something another part owns, `spec`, `build` and `autopilot` record it in that
-part's `Blocked on:` field, and `ship` clears it. That field is the *only* thing
+part's `Blocked on:` field, and `dispatch` clears it. That field is the *only* thing
 `orchestrate` reads to find deadlock, a block with no owner, or a block left
 standing after the thing it waited for shipped. A block that lives only in a
 conversation is one the coordinator can never see — and every part will report a

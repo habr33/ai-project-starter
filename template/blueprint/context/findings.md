@@ -9,13 +9,13 @@
 > repair `build` saw a test fail without, which `build` closes itself. **A
 > finding no code fixes** - raised by `preflight` or `host`, such as missing
 > backups or a leaked secret - is marked `fixed` with evidence by whichever
-> skill repairs it, and `preflight` re-checks and closes it. `ship` refuses to
+> skill repairs it, and `preflight` re-checks and closes it. `dispatch` refuses to
 > merge while any P0 or P1 finding is `open` or `fixed`, then archives resolved
 > findings with the work item, moves unresolved P3s to
 > `blueprint/findings/backlog.md`, and resets this file. A finding the user puts
 > off rather than abandons is `deferred`, with a
 > `Deferred to:` line naming the skill that will do it: it gates nothing, stays
-> in the ledger through `ship`, and `preflight` reports it at every audit until
+> in the ledger through `dispatch`, and `preflight` reports it at every audit until
 > that skill has run.
 
 _No findings recorded._

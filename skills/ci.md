@@ -82,7 +82,7 @@ logged-in CLI (`gh`, `glab`, `tea`), a runner already registered, whether the
 repository is public. Record the answer as `- CI tool: <tool> on <runner>` in
 the Environments section of `AGENTS.md`, and the dependency install the
 pipeline runs as `- Install:`. `.agents/bin/ci-checks.sh` reads `CI tool:`, and
-it is how `ship` and `deploy` read every pipeline, whichever tool it is.
+it is how `dispatch` and `deploy` read every pipeline, whichever tool it is.
 
 | `CI tool:` | Config | Results read by |
 |---|---|---|
@@ -110,11 +110,11 @@ it is how `ship` and `deploy` read every pipeline, whichever tool it is.
   does not need. **Registering a runner is the user's** - a remote setting and
   a machine; give the steps, do not do it.
 - **this machine** - `local`: nothing runs without being asked, so say plainly
-  that "without anyone asking" is lost - `ship` runs `ci-local.sh` before each
+  that "without anyone asking" is lost - `dispatch` runs `ci-local.sh` before each
   merge instead, and that is the only gate.
 
 **Whatever the tool, `.agents/bin/ci-local.sh` is the fallback**: when the
-pipeline cannot start a job - minutes gone, a runner offline - `ship` and
+pipeline cannot start a job - minutes gone, a runner offline - `dispatch` and
 `deploy` run the same jobs here, from a clean worktree of the commit.
 
 **If the verification command fails locally, stop.** Setting up CI to run a
@@ -255,7 +255,7 @@ For `local` there is no file: `ci-local.sh` runs these jobs in this order.
 
 A skipped job reports success, even to a required check, and so does
 a job skipped because one it needs failed; this job is the one to require
-before merging, and it is what lets `ship` read one check instead of
+before merging, and it is what lets `dispatch` read one check instead of
 trusting a green list.
 
 **Branch on the platform:**
@@ -301,7 +301,7 @@ again now that the command may have changed: remove the build and dependency
 directories, install from the lockfile, and run the sequence. Anything still
 present from earlier work is something the runner will not have. **Time the
 full verify part and write it as `Takes:`** under Full verify in `AGENTS.md`
-- `~N min, <date>`; it is what `build` and `ship` read before starting one.
+- `~N min, <date>`; it is what `build` and `dispatch` read before starting one.
 
 **`.agents/bin/ci-local.sh --push` is that run**, from a worktree of the
 commit with no `.env` and a clean environment - but it tests only what is
@@ -349,7 +349,7 @@ part of that item.
 **Then say what comes next: `distill`.** It generates the overview the build
 loop reads, and it is the last planning step before `spec` starts on items.
 
-**When this skill repairs a finding** - a `preflight` blocker such as no automated checks, or a verification command that skips some - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the workflow ran and failed on a deliberately broken check. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
+**When this skill repairs a finding** - a `preflight` blocker such as no automated checks, or a verification command that skips some - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the workflow ran and failed on a deliberately broken check. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `dispatch` in this part.
 
 ## Rules
 

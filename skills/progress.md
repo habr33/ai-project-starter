@@ -72,7 +72,7 @@ reports all three - plus the git branch, working-tree state, and recent log.
 - **Work in flight** - does `blueprint/context/current-work.md` hold a real spec or the stub?
   If real: which steps are ticked, which is next, and what its done-when is.
 - **Findings** - anything `open` or `fixed`, by ID and severity. Call out
-  explicitly whether any P0 or P1 would block `ship`.
+  explicitly whether any P0 or P1 would block `dispatch`.
 - **Git** - the current branch, whether it matches the spec's expected branch
   name, uncommitted changes, and how it stands against `main`.
 - **Freshness** - was `blueprint/context/project-overview.md` generated *after* the last edit to either
@@ -119,10 +119,10 @@ Report only what is actually wrong:
   next action is `prototype`, not `spec` - naming `spec` sends the user
   straight into a stop.
 - **Drift from the loop.** The signals worth naming:
-  - **product code committed to `main` by anything but `ship`'s merge** or a
+  - **product code committed to `main` by anything but `dispatch`'s merge** or a
     setup skill that commits it there by design (`scaffold`, `prototype`, `ci`,
     `monitor`'s wiring). The records `distill`, `preflight`, `host`, `deploy`,
-    `docs` and `ship --abandon` commit to `main` are not drift
+    `docs` and `dispatch --abandon` commit to `main` are not drift
   - a spec with every step ticked that was never shipped
   - a branch whose spec was already archived
   - checked-off plan items with no archive under `blueprint/history` - **compare
@@ -133,13 +133,13 @@ Report only what is actually wrong:
   - work parked in `git stash list` - no other skill looks there, so name each
     entry and what it holds
   - an overview older than the plans it was generated from
-  - **a `prototypes/` directory still present** after the look was built - `ship`
+  - **a `prototypes/` directory still present** after the look was built - `dispatch`
     should have deleted it, and this is exactly the drift that went unnoticed for
     many features. **Unless any archive under
     `blueprint/history/` has a `## Prototypes kept` section naming each file
     still present, and the item it names for that file is still unchecked** -
-    that is `ship` keeping what a later item still needs, and reporting it as
-    drift sends the user to delete it. Any archive, not the latest: `ship`
+    that is `dispatch` keeping what a later item still needs, and reporting it as
+    drift sends the user to delete it. Any archive, not the latest: `dispatch`
     writes the section only for an item that consumed mockups, so the next item
     that did not leaves none
   - **the spec disagreeing with git**: steps ticked that no commit or working-tree
@@ -157,7 +157,7 @@ Lead with the state, in a form that reads at a glance:
     Plan       4 of 11 items done, next up: 5. Tag filtering
     In flight  4c. Route protection - 2 of 4 steps done
     Branch     feature/route-protection, 3 uncommitted files
-    Findings   F-07 [P1] open - would block ship
+    Findings   F-07 [P1] open - would block dispatch
     Overview   stale: build-plan.md edited more recently
     Needs you  2 open, 1 blocking - see prepare
 
@@ -185,7 +185,7 @@ and nothing else asks them this question:
 - **What production is behind by** - the item sections still in
   `blueprint/production-pending.md`: "production is N items behind, and needs"
   the open lines. Merged is not live, and this is the only report that says so.
-- **The backlog, `blueprint/findings/backlog.md`** - the P3s `ship` moved out of
+- **The backlog, `blueprint/findings/backlog.md`** - the P3s `dispatch` moved out of
   the index. Give the count; at five or more, name `spec`'s tidy item as an
   option.
 

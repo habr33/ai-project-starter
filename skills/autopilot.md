@@ -13,7 +13,7 @@ running at the time, under that skill's rules.
 
 Where this sits:
 
-    `progress` -> autopilot -> human review -> `ship`
+    `progress` -> autopilot -> human review -> `dispatch`
 
 This runs the loop's middle without pausing at every gate. It exists for work
 that is genuinely routine, when the user has decided the per-step review is not
@@ -57,7 +57,7 @@ runs `spec..review` on the current spec - the original bounded pass.
 **A range resolves against the workflow's order**, which is:
 
     architect -> stack -> layout -> scaffold -> ci -> distill -> prototype -> spec
-          -> build -> verify -> review -> ship
+          -> build -> verify -> review -> dispatch
 
 So `stack..distill` runs five skills, and `architect` comes **before** `stack`
 because a technology is chosen against a shape, not the other way round.
@@ -83,7 +83,7 @@ destroys the ticked steps. Starting at `build` is the only way back in.
   create a second one.
 
 **Where it may end:** any of those, plus `verify`, `review`, and - opting in
-explicitly - `ship`.
+explicitly - `dispatch`.
 
 **`ideate` is never in range.** It is an interview about what to build and who for,
 and there is no correct answer to invent when nobody is there to give one. Write
@@ -109,7 +109,7 @@ Everything permitted above is recoverable: `git reset`, `git checkout`, delete
 the branch, delete the directory. **That is the whole test.** If the only way to
 undo a step is a backup, an invoice, or an apology, it does not run unattended.
 
-`ship` sits on the line and is therefore opt-in. Merging to `main` is recoverable
+`dispatch` sits on the line and is therefore opt-in. Merging to `main` is recoverable
 with git, so it is allowed - but only when named explicitly in the range, never
 by default, and never with a push.
 
@@ -143,7 +143,7 @@ Non-negotiable, regardless of what is asked mid-run:
   report**. It fails the same test as the rest - git can undo the edit, but it
   cannot undo three parts having built against different assumptions meanwhile.
 - **Never push, force-push, rewrite history, or delete data.**
-- **Never `ship` unless `ship` was named in the range**, and never push after it.
+- **Never `dispatch` unless `dispatch` was named in the range**, and never push after it.
 - **Never act on a rollback spec.** Reversing shipped work needs the dependency
   gates in `rollback` and the guards in `build`. If
   `blueprint/context/current-work.md` is `Type: Rollback`, stop and say so.
@@ -226,7 +226,7 @@ the coordinator no way to know - it sees a part that simply went quiet.
   the right call only because the same session remembered the step.
 - on a branch, not `main` - **only when `build` is not in the range.** If it is,
   `build`'s Step 2 creates the branch from the spec, and requiring one first is
-  circular: `ship` deletes the branch when it merges, so a clean `main` is the
+  circular: `dispatch` deletes the branch when it merges, so a clean `main` is the
   normal state between items and exactly where `autopilot spec..review` is meant
   to start. Refusing there makes the documented usage unreachable.
 - `blueprint/project-plan.md` filled in, not placeholder text
@@ -262,9 +262,9 @@ the coordinator no way to know - it sees a part that simply went quiet.
   When the check does apply, it matters: starting from a red baseline makes every
   later failure ambiguous.
 
-**If the range includes `ship`:**
+**If the range includes `dispatch`:**
 
-- `ship` was named explicitly in the range
+- `dispatch` was named explicitly in the range
 - the working tree is otherwise clean and `main` has no divergence to resolve
 
 ## Step 2 - set the budget, and say it out loud

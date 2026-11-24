@@ -564,7 +564,7 @@ generated tree, the README, and what this step recorded - `coding-standards.md`,
 `project-plan.md`, `needs-you.md` and `decisions.md`. Nothing
 later commits it: `build` branches for the first item from whatever the tree
 holds, so an uncommitted scaffold rides into that item's squashed commit, and
-`ship`'s own check for unrelated work stops on it.
+`dispatch`'s own check for unrelated work stops on it.
 
 **Then say what comes next: `ci`.** It runs here rather than later, and the
 reason is this step: the verification command and the runtime version it needs

@@ -8,7 +8,7 @@
 #
 # The tool is `- CI tool:` in AGENTS.md (here, else the repository root), or
 # --tool TOOL: github-actions | forgejo-actions | gitlab-ci | woodpecker |
-# local | other. ci writes that field; ship and deploy read every pipeline
+# local | other. ci writes that field; dispatch and deploy read every pipeline
 # through this script, so neither names a tool's CLI.
 #
 # --commit prints each job of that commit's newest pipeline as

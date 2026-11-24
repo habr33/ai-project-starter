@@ -55,7 +55,7 @@ a library or an API with no UI skips it.
   look that already exists* below says. `spec` stops on a UI project with no
   record, so this is the route that lets an adopted app reach it.
 - **`blueprint/context/design.md` already exists** - stop and say so before
-  mocking anything. The mockups here are disposable and `ship` deletes them, but
+  mocking anything. The mockups here are disposable and `dispatch` deletes them, but
   `design.md` is not: `review` measures the built UI against it, and `spec` and
   `architect` read it. **A second run that writes a fresh `design.md` can leave
   it describing a look the code does not have**, and `review` then reports a
@@ -211,7 +211,7 @@ A `design.md` written from mockups nobody saw records a look nobody chose.
 
 **The mockups are throwaway. The decisions in them are not.**
 
-`ship` deletes `prototypes/` once the look is built, and the tokens land in the
+`dispatch` deletes `prototypes/` once the look is built, and the tokens land in the
 app's real theme. Everything else disappears with it. So write
 `blueprint/context/design.md`, which **survives**:
 
@@ -250,7 +250,7 @@ Then say explicitly what happens next:
 - that item's **first build step** ports `theme.css` and `components.css` into
   wherever this platform keeps its theme - a stylesheet, a theme object,
   `ThemeData`, or an asset catalogue
-- `ship` deletes prototypes once the look has been built
+- `dispatch` deletes prototypes once the look has been built
 
 ## Recording a look that already exists
 

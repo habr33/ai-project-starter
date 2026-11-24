@@ -5,7 +5,7 @@
 # A `git commit` on `main` or `master` makes Claude Code ask the person, rather
 # than trusting the model to remember "Never build on `main`". It asks instead of
 # refusing because some commits on `main` are the workflow's own: the setup
-# commits `scaffold`, `ci`, `distill` and `prototype` make, and `ship`'s squash.
+# commits `scaffold`, `ci`, `distill` and `prototype` make, and `dispatch`'s squash.
 #
 # A commit on `main` holding only workflow state - blueprint/, dev-notes/,
 # CHANGELOG.md, the files AGENTS.md's tables declare - says nothing: it is a
@@ -247,7 +247,7 @@ print(json.dumps({"hookSpecificOutput": {
         "A commit on " + branch
         + (" holding more than workflow state: " + ", ".join(other) if other else "")
         + ". AGENTS.md: Never build on `main`. Setup "
-        "commits and ship'"'"'s merge belong here - if this is one and the person "
+        "commits and dispatch'"'"'s merge belong here - if this is one and the person "
         "declines, leave it uncommitted and say so; never move it to a branch. "
         "Anything else belongs on a branch."}}))
 '

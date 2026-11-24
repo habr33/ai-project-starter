@@ -7,7 +7,7 @@
 #   gh run list --branch main --event push --json status,conclusion,headSha \
 #     | .agents/bin/pipeline-ran.sh --main
 #
-# ship reads it before treating a pipeline as the full verify gate. A skipped
+# dispatch reads it before treating a pipeline as the full verify gate. A skipped
 # job reports success, to a required check too, so a list that looks green can
 # have run none of the browser tests. Only `pass` counts: `skipping`, `cancel`
 # and `fail` are each a check that did not pass, and `pending` is one still

@@ -114,7 +114,7 @@ because **reading them is the actual bottleneck** - not agent throughput.
 
 **This entire step reads one field: `Blocked on:` in each part's status file.**
 `spec`, `build` and `autopilot` write it when they stop for something another
-part owns; `ship` clears it. Nothing below can be found without it.
+part owns; `dispatch` clears it. Nothing below can be found without it.
 
 So **check first that the field is being written at all.** A product where every
 part reports `Blocked on: -` while parts are visibly waiting on each other does

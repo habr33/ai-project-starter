@@ -9,7 +9,7 @@ description: "The whole-project go-live audit: everything, once, before the firs
 
 Where this sits:
 
-    ship -> preflight -> host -> deploy -> monitor
+    dispatch -> preflight -> host -> deploy -> monitor
     (`ci` runs much earlier, right after `scaffold`)
 
 > **Multi-part project:** `blueprint/project-plan.md`,
@@ -20,7 +20,7 @@ Where this sits:
 > `Product root:` field. Everything else here is this part's own.
 
 **There are two different questions, and the rest of the workflow only asks one.**
-`ship` asks *"is this change safe to merge?"* - one item, one branch, one session.
+`dispatch` asks *"is this change safe to merge?"* - one item, one branch, one session.
 `deploy` asks *"will this deployment succeed?"*. Neither asks **"is this product
 ready for real people?"**
 
@@ -60,7 +60,7 @@ that** - the plan and the decision are its to change, not this skill's, whose
 one write is the ledger - so route there and audit the release it will set up.
 If not, audit what a release
 would need and report it, but **write nothing to the ledger** - a P0 or P1 for a
-release nobody plans blocks every later `ship` in this part for nothing.
+release nobody plans blocks every later `dispatch` in this part for nothing.
 
 **Then settle which of the two audits this is, and say so** - they ask different
 questions and mixing them produces a report where half the findings are noise:
@@ -281,7 +281,7 @@ Sort everything into six buckets, and lead with the verdict:
   **Every blocker is a ledger entry at P0 or P1, whatever `review`'s scale
   would call it** - this audit asks whether it is fit to go live, not how bad
   the code is. One filed at P2 gates nothing, so the report says no-go while
-  `ship` merges past it; if it is not worth a P1, it is not a blocker. **A
+  `dispatch` merges past it; if it is not worth a P1, it is not a blocker. **A
   blocker whose repair is a person's** - an account, a manual check, an open
   `needs-you.md` line - **still goes in the ledger**, naming that line: the
   line says what to do, the finding is what gates, and without it the
@@ -289,7 +289,7 @@ Sort everything into six buckets, and lead with the verdict:
 
   **A blocker only a release needs holds the build loop too.** A person trying
   it on a real device, an account, a backup - once `open` at P0 or P1, it
-  blocks every later `ship` in this part, though the next item's code has
+  blocks every later `dispatch` in this part, though the next item's code has
   nothing to do with it. **Say so, and offer the user `deferred`**, with
   `Deferred to:` the skill that releases - `host` or `deploy`. It stays in the
   ledger and in every audit until that skill runs; setting it is the user's

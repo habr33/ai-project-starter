@@ -213,7 +213,7 @@ does not un-build the code, it only removes the record that the code exists.
 
 **Work in flight is finished or abandoned explicitly, never silently dropped.**
 If `blueprint/context/current-work.md` holds an item, say so and ask which.
-Finishing it through `ship` first is usually cheaper than unpicking a half-built
+Finishing it through `dispatch` first is usually cheaper than unpicking a half-built
 item afterwards.
 
 **Every item leaving the plan is named, and shipped ones are somebody's problem.**

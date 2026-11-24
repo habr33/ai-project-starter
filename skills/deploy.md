@@ -47,8 +47,8 @@ Name which of these has not happened, rather than proceeding quietly past it:
 **Then read the ledger for what was put off until now** - a `deferred` finding
 whose `Deferred to:` names this skill, in `blueprint/context/findings.md`. A
 release-only blocker - a check on a real device, a backup - is deferred to the
-release so it stops holding `ship`, and this is the release. **Stop on each**,
-as `ship` stops on an `open` P0 or P1: it is repaired and set `fixed` with
+release so it stops holding `dispatch`, and this is the release. **Stop on each**,
+as `dispatch` stops on an `open` P0 or P1: it is repaired and set `fixed` with
 evidence, for `preflight` to close, or the user accepts it with their reason.
 Releasing past it turns "later" into "never".
 
@@ -145,7 +145,7 @@ Check, and report only what blocks:
   not on the default branch, name what merging it would take, and **get the
   user's explicit go-ahead to deploy anyway** - then record it, because an
   unmerged production deploy is a thing the next person needs to know about and
-  cannot see. Usually the right answer is to `ship` first; it is one step, and it
+  cannot see. Usually the right answer is to `dispatch` first; it is one step, and it
   is the step that makes the two agree.
 - **for a multi-part project**: `integrate` passed against these exact versions,
   and the contract is current
@@ -326,7 +326,7 @@ success from every check you would naturally run.
   people**: they do not reload. A contract change needs the old shape served
   until they have moved, which `integrate`'s version check is what tests.
 
-**When this skill repairs a finding** - a `preflight` blocker such as a rollback that has never been tried - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the rollback ran against the target and the previous release came back. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
+**When this skill repairs a finding** - a `preflight` blocker such as a rollback that has never been tried - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the rollback ran against the target and the previous release came back. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `dispatch` in this part.
 
 ## Rules
 

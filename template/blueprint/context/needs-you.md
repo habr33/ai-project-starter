@@ -28,7 +28,7 @@ skill that would have needed it closes it on its next run at the latest.
 `prepare` never closes anything: it reports a line that looks satisfied and
 names the skill that owns it.
 
-**Closed lines move to Done, and `ship` moves Done to
+**Closed lines move to Done, and `dispatch` moves Done to
 `blueprint/history/needs-you-done.md`**, so this file stays the open list.
 
 ## Open
@@ -40,4 +40,4 @@ _Nothing recorded yet._
 
 ## Done
 
-<!-- Closed since the last `ship`. `ship` moves these to history. -->
+<!-- Closed since the last `dispatch`. `dispatch` moves these to history. -->

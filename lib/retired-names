@@ -32,3 +32,5 @@ idea
 
 # renamed from context - collided with the /context built-in
 context
+# renamed to dispatch - collided with the /ship built-in, which Claude Code will not let a custom skill replace
+ship

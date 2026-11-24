@@ -96,7 +96,7 @@ of those live at the root. Before a release, run it in every part and
    contract specs and builds the items that define it first; `orchestrate`
    freezes it once they have shipped, and will not move the consuming parts into
    parallel work until then.
-3. **Parallel.** Each part runs `spec -> build -> verify -> review -> ship` in its
+3. **Parallel.** Each part runs `spec -> build -> verify -> review -> dispatch` in its
    own directory, one session each.
 4. **`integrate`**, then `deploy`.
 5. **A contract change stops everything.** It should feel expensive.

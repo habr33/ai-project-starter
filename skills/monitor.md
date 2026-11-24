@@ -164,7 +164,7 @@ as someone else's work. Committing is not pushing.
 **This is the half of monitoring that gets skipped**, and it is the only place
 this workflow learns anything from the outside. Every other loop here is closed
 between the plan and the code: `spec` reads the plan, `build` reads the spec,
-`review` reads the code, `ship` updates the plan. **Reality only ever gets in
+`review` reads the code, `dispatch` updates the plan. **Reality only ever gets in
 through this step.** Without it the project can be perfectly executed against a
 plan nobody has checked against use.
 
@@ -196,7 +196,7 @@ the project's shape it belongs back at `architect` rather than in a spec.
 it and move on. Inventing work from a quiet dashboard is worse than reading
 nothing, because it spends the project's remaining attention on noise.
 
-**When this skill repairs a finding** - a `preflight` blocker such as no error tracking, or a check with nowhere to deliver its alert - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: a test error reached the tracker and the alert arrived where it was sent. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
+**When this skill repairs a finding** - a `preflight` blocker such as no error tracking, or a check with nowhere to deliver its alert - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: a test error reached the tracker and the alert arrived where it was sent. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `dispatch` in this part.
 
 ## Rules
 

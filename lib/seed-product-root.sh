@@ -33,8 +33,8 @@ copy_if_absent() { [ -e "$2" ] || cp "$1" "$2"; }
 mkdir -p "$ROOT/blueprint/context" "$ROOT/blueprint/status" "$ROOT/contracts" "$ROOT/dev-notes"
 
 # The status files are live working state and are never committed. Tracked, they
-# left the main checkout dirty after every `ship` (which clears its packet after
-# its one commit), were swept into other parts' commits by `ship`'s stage-all,
+# left the main checkout dirty after every `dispatch` (which clears its packet after
+# its one commit), were swept into other parts' commits by `dispatch`'s stage-all,
 # and made `autopilot` refuse on "unrelated uncommitted changes" another part had
 # written. Written here, before new-project.sh's first commit, so they are never
 # in one. The contract line in orchestration.md is a decision and stays tracked.

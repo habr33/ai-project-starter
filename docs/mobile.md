@@ -38,7 +38,7 @@ directory yet** — `scaffold` creates it once `layout` says where it goes.
 
 ```
 ideate → architect → stack → layout → scaffold → ci → distill
-     → prototype → spec → build → verify → review → ship
+     → prototype → spec → build → verify → review → dispatch
 ```
 
 1. **`ideate`** — interviews you into the two planning docs. Its most useful act is
@@ -86,7 +86,7 @@ ideate → architect → stack → layout → scaffold → ci → distill
    red-teams its own draft before showing it to you; `build` works one reviewed
    step at a time; `review` writes findings that gate the merge.
 
-10. **`ship`** — final safety pass, archive, one commit, squash-merge with your
+10. **`dispatch`** — final safety pass, archive, one commit, squash-merge with your
    explicit approval. Asks separately before pushing.
 
 ## Where mobile differs

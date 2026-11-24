@@ -9,7 +9,7 @@ description: "Provision what the project needs to run somewhere other than a lap
 
 Where this sits:
 
-    ship -> preflight -> host -> deploy -> monitor
+    dispatch -> preflight -> host -> deploy -> monitor
 
 > **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
@@ -297,7 +297,7 @@ such as missing backups - **set it to `fixed`** with the evidence in the
 **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the new value works and the old one is revoked, a restore
 from the backup ran. **Never `closed`**: `preflight` re-checks it and closes it,
 because a repair is examined by something other than what made it. Left `open`,
-it blocks every later `ship` in this part.
+it blocks every later `dispatch` in this part.
 
 ## Step 6 - report
 

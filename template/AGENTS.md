@@ -14,8 +14,8 @@ These are already loaded, before you read anything else:
 | `blueprint/context/project-overview.md` | what this project is - at most 8 KB; it links, never restates | `distill` |
 | `blueprint/context/coding-standards.md` | this project's own conventions and the standards it follows | `scaffold`, `setup` |
 | `blueprint/context/ai-interaction.md` | how to communicate here, and when to stop | you |
-| `blueprint/context/findings.md` | the findings index - one heading per live finding, status only | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
-| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `ship` |
+| `blueprint/context/findings.md` | the findings index - one heading per live finding, status only | `review`, `build`, `dispatch`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
+| `blueprint/context/needs-you.md` | work only a person can do - accounts, spend, system software, hardware, manual checks, decisions | `stack`, `scaffold`, `setup`, `spec`, `host`, `verify`, `build`, `architect`, `dispatch` |
 
 **Context budget: 48 KB.** Everything above is paid for by every session, so the files `CLAUDE.md` imports share that budget, this
 file included. `progress` reports when they exceed it and names the largest.
@@ -26,23 +26,23 @@ its history - closed items move out, detail lives in files read on demand.
 
 | File | What it holds | Written by |
 |---|---|---|
-| `blueprint/context/current-work.md` | the one item in flight - its spec, with its steps ticked | `spec`, `build`, `ship`, `verify`, `review`, `rollback` |
+| `blueprint/context/current-work.md` | the one item in flight - its spec, with its steps ticked | `spec`, `build`, `dispatch`, `verify`, `review`, `rollback` |
 | `blueprint/context/fundamentals.md` | conventions that hold regardless of stack - `spec`, `build` and `review` read it | the pack - refreshed on every install, your edits are overwritten |
 | `blueprint/context/design.md` | the visual decisions, if this project has a UI | `prototype`, `spec` |
 | `blueprint/design-kit/` | tokens, components and the UX checklist `prototype` starts from | the pack - refreshed on every install |
 | `blueprint/context/quality-bar.md` | the performance, scale, security and availability this project holds itself to | `architect`, `setup` |
 | `blueprint/context/principles.md` | the project's non-negotiable commitments - what it will never trade away | `ideate` |
 | `blueprint/project-plan.md` | the what and why | `ideate`, `stack`, `architect`, `layout`, `setup`, `scaffold`, `spec`, `distill`, `host` |
-| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `ship`, `setup`, `distill` |
-| `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `ship` moved out of the index | `review`, `build`, `ship`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
-| `blueprint/capabilities/` | what the product does now, one file per capability, claim by claim; read on demand | `ship`, `verify` |
-| `blueprint/history/` | every completed item, archived | `ship`, `verify` |
-| `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `ship`, `deploy` |
-| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `ship`, `stack` |
-| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight`, `ship` |
+| `blueprint/build-plan.md` | the checklist | `ideate`, `architect`, `spec`, `dispatch`, `setup`, `distill` |
+| `blueprint/findings/` | each finding's full entry, by ID, and `backlog.md` - the P3s `dispatch` moved out of the index | `review`, `build`, `dispatch`, `verify`, `preflight`, `host`, `docs`, `ci`, `deploy`, `monitor`, `migrate` |
+| `blueprint/capabilities/` | what the product does now, one file per capability, claim by claim; read on demand | `dispatch`, `verify` |
+| `blueprint/history/` | every completed item, archived | `dispatch`, `verify` |
+| `blueprint/production-pending.md` | what production still needs for merged items - variables, migrations, accounts | `dispatch`, `deploy` |
+| `dev-notes/decisions.md` | why this project is shaped the way it is | `docs`, `architect`, `layout`, `scaffold`, `ideate`, `host`, `migrate`, `dispatch`, `stack` |
+| `dev-notes/status.md` | where things stand, what is open | `docs`, `deploy`, `monitor`, `ci`, `host`, `migrate`, `preflight`, `dispatch` |
 | `CHANGELOG.md` | what changed, for people who use it | `docs` |
 | `blueprint/orchestration.md` | the coordination board and its contract line - multi-part only, at the product root | `orchestrate` - the scripts list the parts |
-| `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `ship`, `autopilot` |
+| `blueprint/status/` | each part's live state - multi-part only, at the product root, never committed | `spec`, `build`, `dispatch`, `autopilot` |
 
 **Read `blueprint/context/current-work.md` before changing any code.** It is
 not loaded - a spec is too large to give every session and every subagent -
@@ -55,7 +55,7 @@ or `_(partly built, stopped: ...)_` already has code in the tree - `build` says
 what to do with it.
 
 **If anything is unclear, run `progress`.** It reports where things stand, what
-is next, and any drift between what the files claim and what git shows.
+is next, and where the files disagree with git.
 
 **Checking the state of the project** - four skills, different questions:
 
@@ -80,11 +80,10 @@ fails `preflight`.
 
     ideate -> architect -> stack -> layout -> scaffold -> ci -> distill (plan it)
          -> prototype                                      (with a UI)
-         -> spec -> build -> verify -> review -> ship      (build it)
+         -> spec -> build -> verify -> review -> dispatch  (build it)
          -> preflight -> host -> deploy -> monitor         (run it)
 
-Not everything is in that line. These are reached for when needed, and are just
-as available:
+Not in that line, but just as available when needed:
 
 - `debug` - reproduce and isolate a failure, without editing code
 - `migrate` - change the database schema safely
@@ -150,7 +149,7 @@ Or just ask in plain language - "spec the next item", "run the review".
 - **Never push, deploy, provision, or change a remote service** without a
   separate explicit yes in the current conversation. Approval to merge is not
   approval to push; approval to deploy to staging is not approval for production.
-  Standing yes: `ship` pushes `main` on merge if the user sets:
+  Standing yes: `dispatch` pushes `main` on merge if the user sets:
   **Push main without asking:** no
 - **Never claim something passes without naming the evidence** - the command and
   its output, the screenshot, the response.

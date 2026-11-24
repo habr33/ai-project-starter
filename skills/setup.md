@@ -210,7 +210,7 @@ every test that needs something running - a browser, a database, a network
 service. The verification command is run after every build step, so a test that
 starts a browser or needs a database does not belong in it: that puts
 the whole browser suite behind every step. Full verify is run once per
-item - `build`'s closing check, `ship`, `ci`. Where the runner mixes both kinds
+item - `build`'s closing check, `dispatch`, `ci`. Where the runner mixes both kinds
 in one command, split them with what it already has - a marker, a tag, a
 directory - never a second runner. With no such test, record full verify as
 "same as Verify". **Under it, write `Takes:` - measured if full verify runs

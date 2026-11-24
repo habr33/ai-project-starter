@@ -231,8 +231,8 @@ for adapter in $adapters; do
   done
 done
 
-# Skills name scripts they run inside the project - ship and verify merge a
-# spec's behaviour changes; progress, ci and ship run the project checker (D23) -
+# Skills name scripts they run inside the project - dispatch and verify merge a
+# spec's behaviour changes; progress, ci and dispatch run the project checker (D23) -
 # and a project has no lib/ of the pack's. So they are installed beside the
 # skills, pack-owned and always replaced like them.
 mkdir -p "$TARGET/.agents/bin"
@@ -513,10 +513,10 @@ fi
 
 # A project's own .gitignore commonly ignores bin/ - new-project.sh wrote one
 # that did until 2026-10-04 - and that silently drops .agents/bin/ from every
-# clone, so ship's merge script exists only on the machine that installed it.
+# clone, so dispatch's merge script exists only on the machine that installed it.
 # The .gitignore is the project's, so this reports the lines and writes none.
 if git -C "$TARGET" check-ignore -q .agents/bin/merge-capabilities.sh 2>/dev/null; then
-  legacy="$legacy\n  - .agents/bin/ is gitignored, so ship's merge script is missing from every clone\n    and ship fails there. Add these two lines to .gitignore, then commit the script:\n      !**/.agents/bin/\n      !**/.agents/bin/**"
+  legacy="$legacy\n  - .agents/bin/ is gitignored, so dispatch's merge script is missing from every clone\n    and dispatch fails there. Add these two lines to .gitignore, then commit the script:\n      !**/.agents/bin/\n      !**/.agents/bin/**"
 fi
 # AGENTS.md is project-owned - it holds Commands and Environments, which are this
 # project's - so it is never overwritten, and a section added to the template
@@ -579,11 +579,11 @@ if [ -f "$BOARD" ] && [ -d "$TARGET/blueprint/status" ]; then
 fi
 
 # Products seeded before 2026-09-15 commit blueprint/status/. It is live working
-# state: tracked, every `ship` leaves the main checkout dirty and the next commit
+# state: tracked, every `dispatch` leaves the main checkout dirty and the next commit
 # sweeps in other parts' state. Untracking changes the user's index, so this
 # reports the two commands and runs neither.
 if [ -f "$BOARD" ] && [ -n "$(git -C "$TARGET" ls-files -- 'blueprint/status/*.md' 2>/dev/null)" ]; then
-  legacy="$legacy\n  - blueprint/status/ is committed, and it is live working state - tracked, every\n    ship leaves the main checkout dirty. To stop committing it, in $TARGET:\n      echo '/blueprint/status/*.md' >> .gitignore\n      touch blueprint/status/.gitkeep && git add blueprint/status/.gitkeep\n      git rm --cached blueprint/status/*.md\n    The files stay on disk; only git stops tracking them, and the .gitkeep keeps\n    the directory in every clone."
+  legacy="$legacy\n  - blueprint/status/ is committed, and it is live working state - tracked, every\n    dispatch leaves the main checkout dirty. To stop committing it, in $TARGET:\n      echo '/blueprint/status/*.md' >> .gitignore\n      touch blueprint/status/.gitkeep && git add blueprint/status/.gitkeep\n      git rm --cached blueprint/status/*.md\n    The files stay on disk; only git stops tracking them, and the .gitkeep keeps\n    the directory in every clone."
 fi
 
 # CLAUDE.md is yours and is never rewritten here, so a project created before a

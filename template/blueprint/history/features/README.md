@@ -2,7 +2,7 @@
 
 Archive of completed features, one file per item, named NN-title.md.
 
-The `ship` skill writes here. Each file is the spec exactly as it was built,
+The `dispatch` skill writes here. Each file is the spec exactly as it was built,
 plus the findings that were resolved with it. This is the project's build
 history: what was built, what it was meant to do, and what review found.
 

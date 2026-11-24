@@ -9,7 +9,7 @@ description: "Prove the parts of a multi-part project actually work together. Re
 
 Where this sits:
 
-    ship (a part) -> integrate -> deploy
+    dispatch (a part) -> integrate -> deploy
 
 **Every part's `verify` proves that part.** Nothing else checks that the parts
 agree, and that is exactly where parallel work fails: each side is individually

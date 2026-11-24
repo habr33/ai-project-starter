@@ -9,7 +9,7 @@ description: "Turn one work item into a buildable spec in blueprint/context/curr
 
 Where this sits:
 
-    `blueprint/build-plan.md` -> spec -> `build` -> `verify` -> `ship`
+    `blueprint/build-plan.md` -> spec -> `build` -> `verify` -> `dispatch`
 
 One thin line of plan in, one reviewed spec out.
 
@@ -39,15 +39,15 @@ than working around it**:
 - **`blueprint/context/current-work.md` already holds an unfinished spec** - an
   item is in flight. Say which, and stop. Overwriting it destroys the ticked
   steps, which are the entire resume mechanism; finishing it or abandoning it
-  deliberately is the user's call, not this skill's. `ship --abandon` is how it
+  deliberately is the user's call, not this skill's. `dispatch --abandon` is how it
   is set aside: it archives the spec and keeps its branch.
 - **The current branch holds work `main` does not** - `git log main..HEAD`
   lists commits and `git diff main HEAD` is not empty (`master` where that is
   the default). The last item was built, perhaps closed out, and never merged.
   Stop and name the branch: a spec written here either starts from a `main`
   missing the work it depends on, or rides a branch that belongs to another
-  item - and `ship` for that item then finds a second spec in the file it
-  resets. Run `ship` for it first. **A branch with no commits of its own
+  item - and `dispatch` for that item then finds a second spec in the file it
+  resets. Run `dispatch` for it first. **A branch with no commits of its own
   passes** - a part's worktree is on one before any spec exists. Commits but no
   difference is a squash-merged branch nobody deleted: switch to `main` and
   delete it.
@@ -97,7 +97,7 @@ Six modes, chosen from the argument - a plan addition arrives two ways:
 the outside - both arrive as prose - and they end up in different places. A fix
 repairs something already built and needs no plan line. A feature is new scope:
 it gets a numbered item in `blueprint/build-plan.md` **before** it is spec'd, so
-`ship` can tick it, `progress` counts it, and the plan still describes the
+`dispatch` can tick it, `progress` counts it, and the plan still describes the
 product afterwards. Ask which it is when it is genuinely unclear; guessing "fix"
 is the cheaper mistake to make and the harder one to notice, because the work
 lands and the plan quietly stops being true.
@@ -152,8 +152,8 @@ What the short path changes: **one build step**, whose done-when is the
 reproduction - the test that fails now and passes after the repair. Step 2 and
 Step 4 are skipped; in their place, check the draft against the list above
 once more. The spec carries a `**Quick:**` line, which is what `build` and
-`ship` read. What it keeps: the spec in `current-work.md`, the gate in Step 5,
-a branch, the test seen failing first, `ship`'s findings gate and one commit.
+`dispatch` read. What it keeps: the spec in `current-work.md`, the gate in Step 5,
+a branch, the test seen failing first, `dispatch`'s findings gate and one commit.
 
 ## Step 1 - pick the target and the mode
 
@@ -202,7 +202,7 @@ brings the spec back with its ticks and the ledger back with it, and there is
 nothing to copy. Writing the archive onto `main` first only makes the checkout
 refuse: git will not overwrite a local change to that file. Restore from the
 archive only when the branch is gone, and then **drop the `**Abandoned:**` and
-`**Branch:**` lines and the whole `## Findings` section** that `ship --abandon`
+`**Branch:**` lines and the whole `## Findings` section** that `dispatch --abandon`
 appended - that is the record of the attempt, not part of the spec, and its IDs
 are prefixed for the archive. Either way, remove the abandoned note from the
 item's plan line.
@@ -337,20 +337,20 @@ Write the spec to `blueprint/context/current-work.md`, filling every section:
     ## Decisions
     Choices this item makes that the plan does not already answer and later
     items will build on - an id type, a limit, a session rule - each with what
-    it beat. `ship` records them in dev-notes/decisions.md. "None" is an answer.
+    it beat. `dispatch` records them in dev-notes/decisions.md. "None" is an answer.
     ## Production needs
     What production must have before this item can run there: new environment
     variables by name, migrations, external accounts or services, a changed
-    host setting. `ship` carries it to blueprint/production-pending.md. "None"
+    host setting. `dispatch` carries it to blueprint/production-pending.md. "None"
     is an answer.
     ## Behaviour changes
     What this item adds to, changes in, or removes from what the product does
-    now, against `blueprint/capabilities/` - one line each, below. `ship` merges
+    now, against `blueprint/capabilities/` - one line each, below. `dispatch` merges
     it. "None" is an answer.
     ## Notes
     Conventions and constraints to respect.
 
-**The Decisions section is how a choice outlives the item.** `ship` resets this
+**The Decisions section is how a choice outlives the item.** `dispatch` resets this
 file, and the archive under `blueprint/history/` is not where anyone looks for why
 the project is shaped the way it is. A spec can settle id formats, a
 password rule, logout on every device and a folder the layout never named - and
@@ -537,7 +537,7 @@ splits, gaps, or scope cuts Step 4 produced, or "nothing, the draft held up."
 That note is the point. It shows the gate working before a line of code exists.
 **For a quick fix, lead with why it qualifies instead** - the files it touches
 and each criterion it was checked against - and say that `build` will hand it
-straight to `ship`, so the user can ask for the full loop now.
+straight to `dispatch`, so the user can ask for the full loop now.
 
 Then tell the user to review and adjust, and that `build` is next. This
 skill never starts building.

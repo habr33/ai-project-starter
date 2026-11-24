@@ -9,7 +9,7 @@
 # which every session loads. After: that file holds each heading, its File:
 # line and a Deferred to: line where there is one - deploy and host read that
 # there - and blueprint/findings/F-NN.md holds the rest. No status changes, and
-# no P3 moves to the backlog: that is ship's call, not a migration's.
+# no P3 moves to the backlog: that is dispatch's call, not a migration's.
 #
 # Everything is checked before anything is written - every heading readable, no
 # ID twice, none already in the backlog or on disk as an entry, every line of

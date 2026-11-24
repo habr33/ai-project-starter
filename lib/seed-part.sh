@@ -60,7 +60,7 @@ for _seg in $PART_PATH; do
 done
 IFS="$_ifs"
 
-# `Product root:` is read by spec, build, ship, autopilot and orchestrate to
+# `Product root:` is read by spec, build, dispatch, autopilot and orchestrate to
 # resolve every cross-part path. It was hardcoded to '..', which is correct only
 # for a part one level down - a nested part resolved the board to `apps/` and
 # found nothing, silently.
@@ -102,7 +102,7 @@ mkdir -p "$DIR"
 # writes a stub when none is present, so remove it after rather than before.
 rm -f "$DIR/blueprint/project-plan.md"
 
-# The Part / Product root fields are read by spec, build, ship, autopilot and
+# The Part / Product root fields are read by spec, build, dispatch, autopilot and
 # orchestrate to resolve every cross-part path. A part missing them does not fail
 # loudly - each session silently resolves the board to the part's own blueprint,
 # where no other part is looking. So substitution is verified, not assumed.

@@ -195,7 +195,7 @@ committed without asking (`AGENTS.md`'s rules); an `AGENTS.md` or README line is
 not, so a commit holding one is asked about once. **Between items that is
 `main`**, and it is the commit that keeps the next item's branch free of it;
 mid-item it is the item's branch, where the plan change belongs to that item
-anyway. **Run from `ship`, commit nothing**: its work commit carries this.
+anyway. **Run from `dispatch`, commit nothing**: its work commit carries this.
 
 Then point at what is next:
 
@@ -210,9 +210,9 @@ Then point at what is next:
 
 - After editing either planning doc.
 - After `spec` adds a new item to the build plan.
-- **After every `ship`.** It ticks an item off the build plan and resets the
+- **After every `dispatch`.** It ticks an item off the build plan and resets the
   spec, so *Current state* - the item count, what is next, what is in flight -
-  is wrong the moment it finishes. **`ship` runs this itself**, before its work
+  is wrong the moment it finishes. **`dispatch` runs this itself**, before its work
   commit, so the refresh lands in the item rather than a second commit on `main`.
 - After anything that changes direction, users, data, stack, or deployment.
 

@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Read-only code audit that records what it finds in the ledger at blueprint/context/findings.md. Reviews the current work (`current`), the changed files (`changed`), a named path, or the whole project (`full`), through every lens or one focused lens: quality, security, performance, or tests. Findings get durable IDs, a severity from P0 to P3, and a status; an open or fixed P0 or P1 blocks the merge at `ship`. Writes nothing but the ledger and the spec's review line - never edits source, installs, or commits. Use when the user runs `review`, asks for a code review, security review, performance check, or test-quality pass, or before closing out an item."
+description: "Read-only code audit that records what it finds in the ledger at blueprint/context/findings.md. Reviews the current work (`current`), the changed files (`changed`), a named path, or the whole project (`full`), through every lens or one focused lens: quality, security, performance, or tests. Findings get durable IDs, a severity from P0 to P3, and a status; an open or fixed P0 or P1 blocks the merge at `dispatch`. Writes nothing but the ledger and the spec's review line - never edits source, installs, or commits. Use when the user runs `review`, asks for a code review, security review, performance check, or test-quality pass, or before closing out an item."
 ---
 
 # review - audit the code, and record what you find
@@ -9,7 +9,7 @@ description: "Read-only code audit that records what it finds in the ledger at b
 
 Where this sits:
 
-    `build` -> review -> repairs -> review again -> `ship`
+    `build` -> review -> repairs -> review again -> `dispatch`
 
 > **Multi-part project:** `blueprint/project-plan.md`,
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
@@ -131,7 +131,7 @@ file. **Read that file whole** rather than letting an empty diff read as no
 change, and **record it as a finding** - the diff is the only thing a
 pull-request reviewer sees, so the item's main change would otherwise ship
 reviewed by nothing but this skill. That file can be the item's core
-new file, and neither `review` nor `ship` would notice.
+new file, and neither `review` nor `dispatch` would notice.
 
 ## Step 2 - run the signals that already exist
 
@@ -139,7 +139,7 @@ Use the project's existing commands. **Do not install tools.** Run only what the
 chosen lens needs, each once per pass: lint and typecheck where relevant, the
 tests the tests lens is judging - by file, not a whole browser or database
 suite - and the build when the lens needs compiled evidence. **Never full
-verify**: `build` ran it on this work and `ship` gates on it, so a review pass
+verify**: `build` ran it on this work and `dispatch` gates on it, so a review pass
 that runs it again repeats a gate without adding a reader.
 
 A useful check the project does not have is a **gap to report**, not a reason to
@@ -280,7 +280,7 @@ makes every entry cost more than it tells.
 
 IDs are sequential within the ledger, never reused and never renumbered while
 their entries live there - not even after one closes. A bare ID is scoped to the
-live ledger; `ship` archives resolved entries under the work item's
+live ledger; `dispatch` archives resolved entries under the work item's
 prefix, and that prefixed form is the permanent reference.
 
 **Severity:**
@@ -326,13 +326,13 @@ Then:
 - Append each new confirmed finding as `open`, with the next sequential ID:
   **one past the highest `F-` number in the index, in
   `blueprint/findings/backlog.md`, and among the entry files in
-  `blueprint/findings/`.** The index alone is not enough - `ship` empties it
+  `blueprint/findings/`.** The index alone is not enough - `dispatch` empties it
   between items while a backlogged P3 keeps its entry file, and an ID counted
   from the index alone overwrites that file.
 - Record a risk worth tracking but unproven as `unverified`. It is a lead, and
   never gates a merge.
 - Update entries this pass re-examined, noting the evidence in **Resolution**.
-- **Findings in `blueprint/findings/backlog.md` are still live.** A P3 `ship`
+- **Findings in `blueprint/findings/backlog.md` are still live.** A P3 `dispatch`
   moved there keeps its ID and status; close one the same way when this pass's
   reviewed set covers its file, updating its heading in the backlog.
 - Move `fixed` to `closed` only when all three hold: this pass's reviewed set
@@ -345,7 +345,7 @@ Then:
   line naming the skill or milestone that will do the work. It is not
   `accepted` - the difference is whether the work is going to happen - and
   `accepted` was doing both jobs, which reads downstream as abandoned. A
-  `deferred` finding stays in the ledger through `ship`, because the skill
+  `deferred` finding stays in the ledger through `dispatch`, because the skill
   named in it has not run yet.
 - Set `invalid` only when re-examination shows the finding was wrong, with the
   evidence recorded. It is a review verdict, never a shortcut past a blocked
@@ -379,7 +379,7 @@ file in scope was opened; a pass that stopped early otherwise records "0
 blocking" exactly as a complete one does.
 **Including when nothing was found**: an empty ledger because nothing looked
 reads exactly like one because nothing was wrong, and this line is the only
-difference `ship` can see. The fingerprint is the tree of every file outside
+difference `dispatch` can see. The fingerprint is the tree of every file outside
 `blueprint/` and `dev-notes/`, committed or not:
 
     i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
@@ -388,8 +388,8 @@ For `full`, say whether coverage was complete or partial. **Never call a partial
 review a full-project audit.**
 
 **Then say what comes next**, and it depends on what was found: **open P0 or
-P1** goes back to `build` for repair, and `ship` will refuse the merge until it
-is resolved. **Nothing blocking** means the item is ready for `ship`. Say which
+P1** goes back to `build` for repair, and `dispatch` will refuse the merge until it
+is resolved. **Nothing blocking** means the item is ready for `dispatch`. Say which
 of the two it is rather than leaving the report to be interpreted - a findings
 list with no verdict reads as approval.
 

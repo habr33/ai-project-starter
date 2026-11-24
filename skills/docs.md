@@ -11,7 +11,7 @@ Where this sits:
 
     any point in the loop -> docs -> the record survives the session
 
-    `ship` (a release) -> docs -> `CHANGELOG.md`
+    `dispatch` (a release) -> docs -> `CHANGELOG.md`
 
 Two audiences, and they need different things:
 
@@ -130,7 +130,7 @@ Only for a project that is deployed and that someone other than you runs. The
 first two audiences here are people running it and people maintaining it; this is
 the third - **people who already use it and want to know what changed.**
 
-**Derive them, do not recall them.** `ship` archives every completed item under
+**Derive them, do not recall them.** `dispatch` archives every completed item under
 `blueprint/history/` - `features/`, `fixes/`, `rollbacks/` - and `deploy` records
 the commit of each release in `dev-notes/status.md`. So the material is already
 written down: take everything archived since the previously released commit. A
@@ -199,7 +199,7 @@ Nothing to commit in `--check` mode, which writes nothing. Left uncommitted,
 `deploy` refuses the dirty tree and the next `build` carries the docs onto an
 item's branch as someone else's work. Committing is not pushing.
 
-**When this skill repairs a finding** - a `preflight` blocker such as a scaffold-default README or absent dev-notes - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the README now says how to run the project, checked by following it. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `ship` in this part.
+**When this skill repairs a finding** - a `preflight` blocker such as a scaffold-default README or absent dev-notes - **set it to `fixed`** in `blueprint/context/findings.md`, with the evidence in the **Resolution** line of its entry, `blueprint/findings/<ID>.md`: the README now says how to run the project, checked by following it. **Never `closed`**: `preflight` re-checks it and closes it, because a repair is examined by something other than what made it. Left `open`, it blocks every later `dispatch` in this part.
 
 ## Rules
 

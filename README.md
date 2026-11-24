@@ -2,7 +2,7 @@
 
 One command creates a project directory with every skill already in it. Open it
 with Claude Code — or any AI coding tool, or nothing at all — and the whole
-lifecycle is there: ideate, architect, stack, layout, scaffold, build, ship,
+lifecycle is there: ideate, architect, stack, layout, scaffold, build, dispatch,
 host, deploy, monitor.
 
 ## Install
@@ -74,7 +74,7 @@ own conventions rather than one imposed here.
 ```
 ideate → architect → stack → layout → scaffold → ci → distill  plan it
      → prototype                                    settle the look and navigation (any UI)
-     → spec → build → verify → review → ship        build it
+     → spec → build → verify → review → dispatch        build it
      → preflight → host → deploy → monitor          run it
 ```
 
@@ -82,13 +82,13 @@ ideate → architect → stack → layout → scaffold → ci → distill  plan 
 |---|---|
 | **Plan** | `ideate` `architect` `stack` `layout` `scaffold` `ci` `distill` |
 | **Design** | `prototype` |
-| **Build** | `spec` `build` `verify` `review` `ship` |
+| **Build** | `spec` `build` `verify` `review` `dispatch` |
 | **Operate** | `preflight` `host` `deploy` `monitor` `migrate` `integrate` |
 | **Learn** | `monitor` back into the plan, `docs` for release notes |
 | **Support** | `setup` `progress` `prepare` `debug` `docs` `rollback` `autopilot` `orchestrate` |
 
 A small fix can take the short path: `spec --quick` writes one test-first step,
-and `build` hands it straight to `ship` — as long as it stays within two files
+and `build` hands it straight to `dispatch` — as long as it stays within two files
 and touches no data, contract or anything the quality bar names.
 
 No framework is assumed. `stack` asks what you want to build with — language and
@@ -109,7 +109,7 @@ repair isn't done until a review has seen the result.
 **Evidence, or it didn't happen.** "Passes" names a command, output, or
 screenshot. "I couldn't verify that" is a valid answer.
 
-**Two different questions get asked.** `ship` asks "is this change safe to
+**Two different questions get asked.** `dispatch` asks "is this change safe to
 merge?" `preflight` asks "is this product ready to be live at all?" — the whole
 project, once, before launch. It can say no, and that is the point.
 
@@ -239,13 +239,13 @@ adds two hooks to `.claude/settings.json`, merged beside anything already there.
 A `git commit` on `main` then needs your yes in the UI however the model was
 told to proceed - unless it holds only workflow state (`blueprint/`,
 `dev-notes/`, `CHANGELOG.md`), which goes through unasked (`D24`); setup commits
-holding code and `ship`'s merge still work, they just ask;
+holding code and `dispatch`'s merge still work, they just ask;
 headless (`claude -p`) there is nobody to ask, so they are refused -
 and a session opens with a warning when the always-loaded files are over the
 budget `AGENTS.md` states. With `--git-hooks` active too, a commit with
 `--no-verify` or `-n` and a change to `core.hooksPath` are refused outright.
 It also allows the checker, read-only git, `git add` and `git commit`, so
-they stop prompting, and lets `ship` push `main` unasked once you set
+they stop prompting, and lets `dispatch` push `main` unasked once you set
 `**Push main without asking:** yes` in `AGENTS.md` and commit it.
 Other tools ignore them; the rules still hold as prose.
 
@@ -330,10 +330,10 @@ The scripts:
 | `lib/count-check-runs.sh` | count how often a project's checks ran, from Claude Code's session logs (`D35`) |
 | `lib/hook-main-commit.sh`, `lib/hook-context-budget.sh` | the Claude Code hooks `--hooks` installs (`D20`) |
 | `lib/check-project.sh` | checks a project's state files are in the form the skills write them (`D23`) |
-| `lib/pipeline-ran.sh` | reads a pull request's checks for `ship`: passes only when every job ran and passed - a skipped job is not a pass (`D39`), unless the `gate` job passed; `--main` reads the default branch's last run (`D40`); exit 4 when CI could not start a job, which is neither red nor a pass (`D41`) |
-| `lib/test-scope.sh` | sorts a diff into `none`, `affected` or `full` - what its pull request runs, for `ci` and `ship` (`D40`) |
+| `lib/pipeline-ran.sh` | reads a pull request's checks for `dispatch`: passes only when every job ran and passed - a skipped job is not a pass (`D39`), unless the `gate` job passed; `--main` reads the default branch's last run (`D40`); exit 4 when CI could not start a job, which is neither red nor a pass (`D41`) |
+| `lib/test-scope.sh` | sorts a diff into `none`, `affected` or `full` - what its pull request runs, for `ci` and `dispatch` (`D40`) |
 | `lib/ci-checks.sh` | reads a commit's pipeline from whichever CI tool `CI tool:` names - GitHub Actions, Forgejo or Gitea Actions, GitLab CI, Woodpecker, `local`, or another through `Read checks:` - in the form `pipeline-ran.sh` reads; a job that never started is `blocked`, not failed (`D41`) |
-| `lib/ci-local.sh` | runs the pipeline on this machine from a clean worktree of a commit - the `local` CI tool, and the fallback for `ship` and `deploy` when CI cannot start (`D41`) |
+| `lib/ci-local.sh` | runs the pipeline on this machine from a clean worktree of a commit - the `local` CI tool, and the fallback for `dispatch` and `deploy` when CI cannot start (`D41`) |
 | `lib/git-pre-commit.sh` | the git pre-commit hook `--git-hooks` installs, which runs that checker (`D23`) |
 | `lib/retired-names` | names this pack used to have — read by both `check.sh` and `install.sh` |
 
@@ -386,7 +386,7 @@ to fail, and a test suite with that flaw hides every defect beneath it.
 ## Credit
 
 The `blueprint/` layout, the findings ledger, and the plan → spec → build →
-verify → review → ship loop come from
+verify → review → dispatch loop come from
 [ai-blueprint](https://github.com/bradtraversy/ai-blueprint) by
 [Brad Traversy](https://github.com/bradtraversy), MIT licensed — worth your time
 if this is useful to you. The skill text, scripts, linter and tests here are

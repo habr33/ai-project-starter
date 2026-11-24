@@ -7,7 +7,7 @@ This project is inspired by ai-blueprint
 MIT licensed.
 
 The workflow design is his - the `blueprint/` directory layout, the findings
-ledger, and the plan/spec/build/verify/review/ship loop. The skill text, scripts,
+ledger, and the plan/spec/build/verify/review/dispatch loop. The skill text, scripts,
 linter and tests in this repository are written from scratch; the design they
 implement came from there, and the MIT notice above is retained in acknowledgement
 of it.

@@ -9,7 +9,7 @@ description: "Prove the current work does what its spec says by running the real
 
 Where this sits:
 
-    `build` -> verify -> `review` -> `ship`
+    `build` -> verify -> `review` -> `dispatch`
 
 > **Multi-part project:** `blueprint/project-plan.md` and
 > `blueprint/context/quality-bar.md` (the bar the whole product is held to -
@@ -31,7 +31,7 @@ actually happens.
   Verifying an unbuilt spec produces a list of failures that describe the plan,
   not a defect.
 - **It holds no spec** - not a stop. With no argument, verify the most recently
-  archived item, as Step 1 says - `ship` resets the spec and then points here -
+  archived item, as Step 1 says - `dispatch` resets the spec and then points here -
   and with `--all`, the archives. Stop only when there is no archive either.
 - **A done-when names a number from `blueprint/context/quality-bar.md`** -
   measure it, do not assert it. "Under 500ms at p95" is proven with timings from a
@@ -84,7 +84,7 @@ could-not-verify against a feature that does not exist - and both make the
 checklist wrong in a way nobody would think to question.
 
 **Skip an archive whose build-plan item is unchecked** - that is a feature rolled
-back. `ship` keeps its archive under `blueprint/history/features` and unchecks the
+back. `dispatch` keeps its archive under `blueprint/history/features` and unchecks the
 item, adding one under `blueprint/history/rollbacks` that names it, so its
 done-whens describe behaviour removed on purpose; proving them reports the
 rollback as a regression. Name each one skipped, with its rollback archive. A
@@ -224,7 +224,7 @@ One line per claim, with the evidence attached:
 
 Then the bottom line: are all the done-whens proven, or not yet.
 
-- **All proven** - say it is ready for `review`, then `ship`. **Say too that
+- **All proven** - say it is ready for `review`, then `dispatch`. **Say too that
   `review` reads best from a fresh session**: this one holds the whole build,
   and a reviewer that watched the code being written shares its assumptions.
   Nothing is lost by starting one - the spec, its ticks and the `**Verified:**`
@@ -239,7 +239,7 @@ Then the bottom line: are all the done-whens proven, or not yet.
 **Record the result in the spec's `**Verified:**` line**, replacing what is
 there: the date, the work fingerprint, and the count -
 `**Verified:** 2026-03-02, 6f06b62b2f2c, 4 of 5 proven, 1 could not verify`.
-`ship` reads it; a report said only in the conversation is gone when the
+`dispatch` reads it; a report said only in the conversation is gone when the
 context is cleared, and then the item is either verified again at the merge or
 merged on a claim nothing can confirm. The fingerprint is the tree of every
 file outside `blueprint/` and `dev-notes/`, committed or not, so a checkpoint
@@ -250,10 +250,10 @@ skill runs:
 
 **`build` writes the same line at closing, with `proven live in build`, when its
 Step 3 proved every behavioral done-when against the running app** - a live run
-is a live run, and the fingerprint is what `ship` reads, not who wrote it.
+is a live run, and the fingerprint is what `dispatch` reads, not who wrote it.
 
 **With `--all`, the bottom line is a different sentence.** Nothing here is ready
-for `review` or `ship` - no item is in flight. Report instead:
+for `review` or `dispatch` - no item is in flight. Report instead:
 
 - **how many shipped items were re-proved, and how many claims each contributed.**
   A count of items alone hides that one item had eleven done-whens and another had
@@ -289,7 +289,7 @@ This is what stops "I have not seen this" from quietly becoming "this
 works" by the time anyone reads the report.
 
 **The line names the criterion and its item; the steps stay in the spec's
-done-when**, which `ship` archives with the item. That file is loaded by every
+done-when**, which `dispatch` archives with the item. That file is loaded by every
 session, so a procedure copied into it is paid for on every turn until someone
 does the check - and the checker refuses a line over 400 bytes.
 

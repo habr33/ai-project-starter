@@ -398,8 +398,8 @@ r=$(fresh_repo)
 sed -i '0,/^name: verify$/{/^name: verify$/d}' "$r/skills/verify.md"; printf '\nname: verify\n' >> "$r/skills/verify.md"
 assert_refuses "rule 2: a name: line in the body is not the frontmatter name" "!= filename" lint "$r"
 
-r=$(fresh_repo); printf '\nThen run `/ship` to finish.\n' >> "$r/skills/verify.md"
-assert_refuses "rule 4: a /skill reference in backticks is caught" "tool-specific reference to 'ship'" lint "$r"
+r=$(fresh_repo); printf '\nThen run `/dispatch` to finish.\n' >> "$r/skills/verify.md"
+assert_refuses "rule 4: a /skill reference in backticks is caught" "tool-specific reference to 'dispatch'" lint "$r"
 
 r=$(fresh_repo); printf '\nThen run /idea.\n' >> "$r/skills/verify.md"
 assert_refuses "rule 4: a /reference to a retired name is caught" "tool-specific reference to 'idea'" lint "$r"

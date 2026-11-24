@@ -6,7 +6,7 @@
 >
 > **This file is committed; `blueprint/status/` is not.** The contract line is a
 > decision, and `orchestrate` commits it on its own. The status files are live
-> working state: committed, every `ship` would leave the main checkout dirty and
+> working state: committed, every `dispatch` would leave the main checkout dirty and
 > the next commit would sweep in other parts' state. **A missing status file
 > reads as `idle`** — a fresh clone has none until each part writes its own.
 >
@@ -67,10 +67,10 @@ consuming it reports all-clear on data nobody ever supplied.
 
 | Field | Written by | Cleared by |
 |---|---|---|
-| `State` | `spec` → `spec'ing`, `build` and `autopilot` → `building`, `build` and `autopilot` → `waiting`, any of the three → `blocked` / `stopped` | `ship` → `idle` |
-| `Item` | `spec` on claiming, `autopilot` and `build` on the item they are working | `ship` |
-| `Blocked on` | `spec`, `build`, `autopilot` — whichever stops for something another part owns | `ship`, or the part's own next session once the dependency lands |
-| `Review packet` | `build`, `autopilot` | `ship` |
+| `State` | `spec` → `spec'ing`, `build` and `autopilot` → `building`, `build` and `autopilot` → `waiting`, any of the three → `blocked` / `stopped` | `dispatch` → `idle` |
+| `Item` | `spec` on claiming, `autopilot` and `build` on the item they are working | `dispatch` |
+| `Blocked on` | `spec`, `build`, `autopilot` — whichever stops for something another part owns | `dispatch`, or the part's own next session once the dependency lands |
+| `Review packet` | `build`, `autopilot` | `dispatch` |
 | `Updated` | every write above | — |
 
 `orchestrate` **reads all of these and writes none of them.** It reports a stale

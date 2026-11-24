@@ -179,7 +179,7 @@ assert_ok "and it says what to run to get real ones" \
 
 section "new-project.sh - git state"
 # The branch was unborn until the script made a commit itself: branching before
-# committing left nothing for ship's squash-merge to land on, and which happened
+# committing left nothing for dispatch's squash-merge to land on, and which happened
 # depended only on the order the user worked in.
 assert_eq "initial branch is main"      "main" "$(git -C "$p" branch --show-current)"
 assert_eq "makes exactly one commit"    "1"    "$(git -C "$p" log --oneline 2>/dev/null | wc -l | tr -d ' ')"
@@ -968,7 +968,7 @@ section "the created project reports git honestly"
 # made" and "initialised, nothing committed yet". The second was a leftover from
 # before the script started committing. Not cosmetic: "nothing committed yet"
 # tells the user to branch before committing, and an unborn base branch is
-# exactly what breaks a first `ship`.
+# exactly what breaks a first `dispatch`.
 w=$(workdir); out=$(cd "$w" && "$NP" gitrep 2>&1)
 assert_ok    "says the first commit was made" grep -q "first commit already made" <<< "$out"
 assert_fails "and does not also say nothing was committed" \
@@ -1175,12 +1175,12 @@ for n in 'r&d' 'x|y' 'back\slash'; do
   assert_exists "and still makes its first commit" "$w/$n/.git"
 done
 
-section "the work fingerprint verify, review and ship record"
-# Run as ship gives it. A commit is the wrong key: checkpoints are optional, so
+section "the work fingerprint verify, review and dispatch record"
+# Run as dispatch gives it. A commit is the wrong key: checkpoints are optional, so
 # a review of uncommitted work already differs from its HEAD, and git diff never
 # sees a new file nobody has added.
-fpcmd=$(grep -h 'git write-tree' "$REPO/skills/ship.md" | sed 's/^ *//')
-assert_ok "ship gives the fingerprint command" test -n "$fpcmd"
+fpcmd=$(grep -h 'git write-tree' "$REPO/skills/dispatch.md" | sed 's/^ *//')
+assert_ok "dispatch gives the fingerprint command" test -n "$fpcmd"
 w=$(workdir); (cd "$w" && git init -q -b main && git config user.email t@t && git config user.name t \
   && echo a >app.js && git add app.js && git commit -qm base && git checkout -qb item \
   && echo b >>app.js && echo new >new.js) >/dev/null 2>&1
@@ -1279,7 +1279,7 @@ assert_fails "nor a push from another branch" allows 'git push origin main'
 (cd "$w" && git checkout -q main)
 (cd "$w" && git checkout -qb item)
 assert_eq "a commit on a branch says nothing" "" "$(mc 'git commit -m x')"
-# ...unless the command switches to main first - ship's squash, run from the
+# ...unless the command switches to main first - dispatch's squash, run from the
 # branch in one line, went through unasked in the D23 trial.
 assert_ok "a switch to main earlier in the command still asks" \
   grep -q '"ask"' <<<"$(mc 'git switch -q main && git merge --squash -q item && git commit -q -m x')"
@@ -1452,7 +1452,7 @@ assert_lacks_out() { _name="$1"; if grep -q "$2" <<<"$3"; then _no "'$2' in outp
 assert_lacks_out "and stops once it is split" 'migrate-findings.sh' "$("$IN" --target "$t" 2>&1)"
 
 section "the capability merge, D21 - a spec's behaviour changes land in capability files"
-# ship carries a spec's ## Behaviour changes into blueprint/capabilities/, one
+# dispatch carries a spec's ## Behaviour changes into blueprint/capabilities/, one
 # file per capability. The script keeps the arithmetic (next ID past a
 # tombstone, old text matching) that two agents by hand would get wrong.
 MC="$REPO/lib/merge-capabilities.sh"
@@ -1544,7 +1544,7 @@ assert_refuses "a claim line it cannot read is refused, not kept as a note" "can
 assert_eq "and leaves every file byte-identical (broken claim)" "$before" "$(cap_tree "$n")"
 
 section "the capability merge reaches a project - a skill's script must exist where it runs"
-# ship and verify run the merge inside a project, which has no lib/. A fresh
+# dispatch and verify run the merge inside a project, which has no lib/. A fresh
 # project once had none of it: every test above ran the pack's copy by path.
 w=$(workdir); (cd "$w" && "$NP" cm >/dev/null 2>&1); p="$w/cm"
 assert_ok "a new project holds an executable copy" test -x "$p/.agents/bin/merge-capabilities.sh"
@@ -1629,7 +1629,7 @@ assert_ok "two lines that are each under the limit are not added together" "$CK"
 d=$(ck_copy "$SPB"); ny_put "$d" Open "- [ ] **A check** - $w60" "                    $w60 $w60" "                    $w60 $w60" "                    $w60 open"
 assert_ok "wrapping and indentation are not counted" "$CK" "$d"
 d=$(ck_copy "$SPB"); ny_put "$d" Done "$long1"
-assert_ok "and a long line under Done is left for ship to move" "$CK" "$d"
+assert_ok "and a long line under Done is left for dispatch to move" "$CK" "$d"
 
 spec_hdr() { printf '# Feature: export\n\n**From build plan:** item 2\n**Type:** Feature\n**Verified:** %s\n**Reviewed:** %s\n\n## Goal\nx\n' "$2" "$3" >"$1/blueprint/context/current-work.md"; }
 d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' '2026-03-02, 6f06b62b2f2c, current, every lens, read whole - 0 blocking'
@@ -1719,7 +1719,7 @@ d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
 printf '# Capability: count\n\n- **count.1** - Prints the total *Since:* features/01-count\n\n## Removed\n- count.2 - removed by features/02-x\n' >"$d/blueprint/capabilities/count.md"
 assert_ok "a capability file as the merge writes it passes" "$CK" "$d"
 printf -- '- **count.3** - No provenance\n' >>"$d/blueprint/capabilities/count.md"
-assert_refuses "a claim line the merge cannot read, with ship" "the merge script cannot read" "$CK" "$d"
+assert_refuses "a claim line the merge cannot read, with dispatch" "the merge script cannot read" "$CK" "$d"
 d=$(ck_copy "$SPB"); mkdir -p "$d/blueprint/capabilities"
 printf -- '- **count.1** - A *Since:* features/01\n- count.1 - removed by features/02\n' >"$d/blueprint/capabilities/count.md"
 assert_refuses "a claim ID used twice" "count.1 appears twice" "$CK" "$d"
@@ -1753,7 +1753,7 @@ assert_eq "outside a project: exit 2" "2" "$("$CK" "$(workdir)" >/dev/null 2>&1;
 assert_eq "--staged outside a repository: exit 2" "2" "$(d=$(workdir); mkdir -p "$d/blueprint/context"; "$CK" --staged "$d" >/dev/null 2>&1; echo $?)"
 
 section "the project checker reaches a project, D23"
-# progress, ci and ship run it inside a project, which has no lib/ - the merge
+# progress, ci and dispatch run it inside a project, which has no lib/ - the merge
 # script's lesson: a skill's script must exist where it runs, and stay current.
 w=$(workdir); (cd "$w" && "$NP" ckp >/dev/null 2>&1); p="$w/ckp"
 assert_ok "a new project holds an executable checker" test -x "$p/.agents/bin/check-project.sh"
@@ -1780,12 +1780,12 @@ assert_eq "--status on a fresh install: exit 0" "0" "$rc"
 assert_ok "and says it is current" grep -q 'current' <<<"$out"
 git -C "$p" add -A >/dev/null 2>&1
 assert_eq "--status writes nothing" "$before" "$(git -C "$p" status --porcelain; git -C "$p" write-tree)"
-echo '# stale' >"$p/.agents/skills/ship/SKILL.md"; echo '0000000 2020-01-01' >"$p/.agents/pack-version"
+echo '# stale' >"$p/.agents/skills/dispatch/SKILL.md"; echo '0000000 2020-01-01' >"$p/.agents/pack-version"
 out=$("$IN" --status --target "$p" 2>&1); rc=$?
 assert_eq "a skill that differs from the pack: exit 1" "1" "$rc"
-assert_ok "names the skill" grep -qE 'differ.*\bship\b' <<<"$out"
+assert_ok "names the skill" grep -qE 'differ.*\bdispatch\b' <<<"$out"
 assert_ok "and the version it was installed from" grep -q '0000000 2020-01-01' <<<"$out"
-assert_eq "--status left the stale skill alone" "# stale" "$(cat "$p/.agents/skills/ship/SKILL.md")"
+assert_eq "--status left the stale skill alone" "# stale" "$(cat "$p/.agents/skills/dispatch/SKILL.md")"
 out=$("$IN" --target "$p" 2>&1)
 assert_ok "a re-install says what it replaced" grep -q 'was 0000000 2020-01-01' <<<"$out"
 assert_eq "and --status is clean again" "0" "$("$IN" --status --target "$p" >/dev/null 2>&1; echo $?)"
@@ -1959,7 +1959,7 @@ d=$(workdir); printf '%s' '[{"name":"V","bucket":"pass"}]' >"$d/c.json"
 assert_ok "it reads a file as well as stdin" "$PR" "$d/c.json"
 assert_refuses "and says so when the file is missing" "cannot read" "$PR" "$d/none.json"
 w=$(workdir); (cd "$w" && "$NP" prr >/dev/null 2>&1)
-assert_ok "a new project holds it where ship runs it" cmp -s "$PR" "$w/prr/.agents/bin/pipeline-ran.sh"
+assert_ok "a new project holds it where dispatch runs it" cmp -s "$PR" "$w/prr/.agents/bin/pipeline-ran.sh"
 assert_ok "executable" test -x "$w/prr/.agents/bin/pipeline-ran.sh"
 
 section "pipeline-ran - a gate job lets a job skipped by scope pass (D40)"
@@ -2020,7 +2020,7 @@ out="$(printf '%s' '[{"status":"completed","conclusion":"blocked","headSha":"abc
 assert_ok "and main is not called red" grep -qF 'could not start' <<< "$out"
 
 section "ci-checks - any CI tool's answer, in the form pipeline-ran reads"
-# ship and deploy once read a pipeline only through gh, so a project on
+# dispatch and deploy once read a pipeline only through gh, so a project on
 # GitLab, Forgejo, Woodpecker or its own machine had no gate but trust. Each
 # fixture is the shape that tool's API returns; the bucket is the claim.
 CC="$REPO/lib/ci-checks.sh"
@@ -2070,7 +2070,7 @@ printf -- '- CI tool: forgejo-actions\n' > "$d/AGENTS.md"
 assert_refuses "a tool needing a token says so before asking" "FORGEJO_TOKEN" \
   env -u FORGEJO_TOKEN -u GITEA_TOKEN bash -c "cd '$d' && '$CC' --commit HEAD"
 w=$(workdir); (cd "$w" && "$NP" ccp >/dev/null 2>&1)
-assert_ok "a new project holds it where ship runs it" cmp -s "$CC" "$w/ccp/.agents/bin/ci-checks.sh"
+assert_ok "a new project holds it where dispatch runs it" cmp -s "$CC" "$w/ccp/.agents/bin/ci-checks.sh"
 
 section "ci-local - the pipeline on this machine, from what is committed"
 # The fallback when CI cannot run: a free account out of minutes, a runner
@@ -2162,7 +2162,7 @@ assert_eq "and the rest of the code stays affected" "affected" "$(_ts src/styles
 assert_eq "a part reads only its own files" "none" "$(cd "$d/web" && "$TS" --base main 2>/dev/null)"
 assert_refuses "an unknown option is refused" "usage" "$TS" --bogus
 w=$(workdir); (cd "$w" && "$NP" tsp >/dev/null 2>&1)
-assert_ok "a new project holds it where ci and ship run it" cmp -s "$TS" "$w/tsp/.agents/bin/test-scope.sh"
+assert_ok "a new project holds it where ci and dispatch run it" cmp -s "$TS" "$w/tsp/.agents/bin/test-scope.sh"
 assert_ok "executable" test -x "$w/tsp/.agents/bin/test-scope.sh"
 
 finish

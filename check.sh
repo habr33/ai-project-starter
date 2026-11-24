@@ -72,7 +72,7 @@ for f in "$HERE"/skills/*.md; do
   #    One grep per file over an alternation of every name, not one per name:
   #    27 x 27 greps were most of this script's runtime. Each name is still
   #    reported once, at its first line.
-  # A backtick does not excuse it - `/ship` is the same tool-specific call - and a
+  # A backtick does not excuse it - `/dispatch` is the same tool-specific call - and a
   # retired name written /idea is a stale call rule 5 cannot see either.
   hits=$(grep -noE "(^|[^[:alnum:]/_-])[/\$]($alt_known|$alt_retired)\b" "$f" || true)
   while IFS= read -r h; do
@@ -433,7 +433,7 @@ fi
 #    The path class, finally made checkable for the shape that keeps recurring:
 #    a skill running inside a part reads `blueprint/x.md`, which there means that
 #    part's own directory, while the file actually lives at the product root. Six
-#    times now - `spec`, `build`, `ship` and `autopilot` once, `orchestrate`
+#    times now - `spec`, `build`, `dispatch` and `autopilot` once, `orchestrate`
 #    again, then `quality-bar.md`, and then five more skills (`host`, `deploy`,
 #    `migrate`, `prepare`, `docs`) reading a product plan that does not exist in
 #    a part at all. `host` reads it to decide whether to spend money.

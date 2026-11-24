@@ -9,7 +9,7 @@ description: "Plan a safe reversal of a completed feature: find its archive and 
 
 Where this sits:
 
-    completed feature -> rollback -> `build` -> `ship`
+    completed feature -> rollback -> `build` -> `dispatch`
 
 Removing shipped work is riskier than adding it, because later work may quietly
 depend on it. This skill does the whole dependency review **before** a line
@@ -113,7 +113,7 @@ Write to `blueprint/context/current-work.md`, marked `**Type:** Rollback`, recor
   out; ask for the number.
 - what should be gone afterwards, and one unaffected path worth re-checking
 - **a `## Behaviour changes` section that is the inverse of the target's**, which
-  `ship` merges like any other: each add becomes a `Removes`, each change a
+  `dispatch` merges like any other: each add becomes a `Removes`, each change a
   `Changes` back from the new text to the old, each remove an `Adds` (a new ID -
   a tombstone is never reused). Write the old text back exactly as the
   target's archive recorded it. **A claim `verify --all` seeded has no recorded
@@ -137,7 +137,7 @@ patch under the guards this spec records.
 - **Never change code here.** Planning only.
 - **Never plan around a real dependency** - report it and stop.
 - **Never propose reverting the whole commit.** Product paths only.
-- **Preserve the original archive.** `ship` adds a rollback archive
+- **Preserve the original archive.** `dispatch` adds a rollback archive
   alongside it. History records that the feature existed and was removed, not
   that it never existed.
 

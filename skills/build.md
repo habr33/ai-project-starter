@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Build the spec in `blueprint/context/current-work.md` one small reviewed step at a time: hands each step to a subagent where the host supports one, then reads the diff, explains it, and proves the done-when. Creates the matching branch, runs the project's checks, iterates until it works, and ticks the step off so progress survives a context clear; resumes from the first unchecked step. The work-level commit and the merge belong to `ship`. Use when the user runs `build`, or asks to build, implement, code, or start the current spec."
+description: "Build the spec in `blueprint/context/current-work.md` one small reviewed step at a time: hands each step to a subagent where the host supports one, then reads the diff, explains it, and proves the done-when. Creates the matching branch, runs the project's checks, iterates until it works, and ticks the step off so progress survives a context clear; resumes from the first unchecked step. The work-level commit and the merge belong to `dispatch`. Use when the user runs `build`, or asks to build, implement, code, or start the current spec."
 ---
 
 # build - turn the spec into code, one reviewed step at a time
@@ -9,7 +9,7 @@ description: "Build the spec in `blueprint/context/current-work.md` one small re
 
 Where this sits:
 
-    `spec` -> build -> `verify` -> `review` -> `ship`
+    `spec` -> build -> `verify` -> `review` -> `dispatch`
 
 The spec is written and reviewed. This turns it into code without vibe coding:
 one small step at a time, each with a visible diff, a plain-English explanation,
@@ -73,14 +73,14 @@ the user to run `git init` - the loop depends on branches and on being able to
 show diffs.
 
 **Before creating it, look at `git status`.** A new branch starts from whatever
-the tree holds, and `ship` later squashes all of it into this item's one commit.
+the tree holds, and `dispatch` later squashes all of it into this item's one commit.
 What `spec` just wrote belongs here - `current-work.md`, and any change it made
 to `build-plan.md`, `project-plan.md`, `needs-you.md` or `design.md` for this
 item. **Anything else uncommitted is someone else's work**: a scaffold, a CI
 workflow, a regenerated overview, a new design record `prototype` wrote. Commit
 it on `main` first, as the skill that made it says to - workflow state without
 asking, anything else named and asked about once; carried along, it merges as
-this item, and `ship`'s check for unrelated work stops on it.
+this item, and `dispatch`'s check for unrelated work stops on it.
 
 On a resume the branch already exists. Check it out; do not create a second one.
 
@@ -102,7 +102,7 @@ part that is simply working.
 `orchestrate` drives parts - rename that branch to the spec's name
 (`git branch -m <spec branch>`) instead of creating another. The worktree was
 made before the spec named anything, and a second branch leaves the first behind
-after `ship` removes the worktree.
+after `dispatch` removes the worktree.
 
 Never build on `main` or `master`.
 
@@ -258,7 +258,7 @@ Work the spec's build steps in order, one at a time. For each step:
     and remove its `_(built, awaiting approval)_` marker. **If the step settled a
     choice the spec did not** - a limit, a library, a rule a later item will build
     on - add it under the spec's `## Decisions` now, while the reason is on screen;
-    `ship` carries that section into `dev-notes/decisions.md`. If the
+    `dispatch` carries that section into `dev-notes/decisions.md`. If the
     step repaired a finding in `blueprint/context/findings.md`, set that finding to `fixed` and
     note the repair in the **Resolution** line of its entry,
     `blueprint/findings/<ID>.md` - never to `closed` at P0 or P1, because a repair
@@ -325,7 +325,7 @@ than a loud one.
 ## Step 4 - clear the findings gate, then hand off
 
 Before handing off, read blueprint/context/findings.md. A P0 or P1 finding still `open` or
-`fixed` will block `ship`, so close the loop now:
+`fixed` will block `dispatch`, so close the loop now:
 
 - **Repair each open P0 or P1 as an extra reviewed step.** First append it to the
   spec's build steps (`- [ ] Repair F-03 - <title>`) so the repair is on the record
@@ -395,7 +395,7 @@ and then it stands in for the run above, each test once:
 - **the user asks.**
 
 If it cannot run here - no database, no browser - say so in the packet as a
-skipped check; `ship` will not merge without it.
+skipped check; `dispatch` will not merge without it.
 
 **Nor does it run here past the budget.** Read `Takes:` and `Budget:` under
 Full verify in `AGENTS.md` - no `Budget:` line means 10 minutes. **When
@@ -411,12 +411,12 @@ covering each capability the Reach trigger names - and say in the packet
 run still going then is stopped, its failures so far reported, and `Takes:`
 written as `over budget, <date>`, so the next item knows before it starts.
 **Whoever completes a full verify run writes `Takes:`** - `~N min, <date>` -
-`build` here, `ship` at a local merge, `ci` when it proves the pipeline; one
+`build` here, `dispatch` at a local merge, `ci` when it proves the pipeline; one
 measurement is what turns this rule from a guess into a number.
 
 **Otherwise leave it for the merge.** Do not run the suite here: leave the
 `**Full verify:**` line as it is and say in the packet **full verify: left to
-the merge**, with the Reach line and that the diff stayed inside it. `ship` gates on it where the item
+the merge**, with the Reach line and that the diff stayed inside it. `dispatch` gates on it where the item
 is merged - its pull-request route on the pipeline's run, which for a `local`
 diff is the `Affected:` command, with the whole suite run on `main` behind
 the merge (`D40`); a local merge finds the line `not yet` and runs the suite
@@ -438,7 +438,7 @@ part, once**, and said in the report; it is never a reason for the suite.
 
 **Record a passing run in the spec's `**Full verify:**` line**, replacing what
 is there: the date, the work fingerprint and the result -
-`**Full verify:** 2026-03-02, 6f06b62b2f2c, passed`. `ship` reads it and does
+`**Full verify:** 2026-03-02, 6f06b62b2f2c, passed`. `dispatch` reads it and does
 not run the suite again while the fingerprint still matches; a run reported
 only in the conversation is gone when the context is cleared, and then the
 whole suite is paid for a second time at the merge. A run that failed or could
@@ -460,10 +460,10 @@ now stands, with no later step changing the behavior that proof covered: the
 date, the same fingerprint, and `proven live in build` followed
 by what it covered -
 `**Verified:** 2026-03-02, 6f06b62b2f2c, proven live in build - every behavioral done-when`.
-That is what lets `ship` accept the proof without running `verify` again on work
+That is what lets `dispatch` accept the proof without running `verify` again on work
 already covered. **When any behavioral done-when was proven only by a green
 check, leave the line `not yet`** and name `verify` first in the packet. A quick
-fix leaves it alone: its reproduction test is its evidence, and `ship` reads that
+fix leaves it alone: its reproduction test is its evidence, and `dispatch` reads that
 from the `**Quick:**` line.
 
 When it passes, stop with a compact review packet:
@@ -481,11 +481,11 @@ When it passes, stop with a compact review packet:
 - **next action:** `verify` first, when any behavioral done-when was proven
   only by a green check rather than run against the real app - that is exactly
   what `verify` exists for, and skipping it there leaves the spec's actual
-  promise unproven. Then `review`, then `ship`. **If every behavioral
+  promise unproven. Then `review`, then `dispatch`. **If every behavioral
   done-when was already run live in Step 3, record the `**Verified:**` line
   above, say so, and name `review` directly** - running `verify` again over
   work it already covers is not the point of naming it in the chain. **A quick
-  fix still inside its limits names `ship` directly**, saying that `verify` and
+  fix still inside its limits names `dispatch` directly**, saying that `verify` and
   `review` were skipped by the short path - unless its claim is one only the
   running app shows, such as a rendered layout, which goes to `verify` first.
   **Where the next action is `review`, say it reads best from a fresh session**,
@@ -542,7 +542,7 @@ is work nobody reviewed.
   of the whole loop. A step the user cannot explain back has not really landed.
 - **Never commit code the user has not approved.** Per-step commits are optional
   checkpoints; the work-level commit, the merge, and any push belong to
-  `ship`. This skill never touches `main`.
+  `dispatch`. This skill never touches `main`.
 - **Follow `blueprint/context/coding-standards.md`** over generic best practice. The project's existing
   patterns win.
 

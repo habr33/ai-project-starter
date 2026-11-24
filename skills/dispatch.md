@@ -1,15 +1,15 @@
 ---
-name: ship
-description: "Close out finished work: a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, one work-level commit, then a squash-merge with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed. Asks separately before pushing, unless AGENTS.md holds the user's standing yes. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked. Use when the user runs `ship`, or asks to finish, wrap up, merge, or close out the current item once it is built and reviewed."
+name: dispatch
+description: "Close out finished work: a final safety pass, archive the spec under `blueprint/history`, check the item off in `blueprint/build-plan.md`, reset `blueprint/context/current-work.md`, one work-level commit, then a squash-merge with explicit approval. Refuses to merge while a P0 or P1 finding is open or fixed. Asks separately before pushing, unless AGENTS.md holds the user's standing yes. With --abandon, sets an unfinished item aside instead: archives its spec, keeps its branch and leaves the plan item unchecked. Use when the user runs `dispatch`, or asks to ship, finish, wrap up, merge, or close out the current item once it is built and reviewed."
 ---
 
-# ship - log it, commit it, merge it
+# dispatch - log it, commit it, merge it
 
 **Writes:** `blueprint/context/current-work.md` · `blueprint/context/findings.md` · `blueprint/findings/` · `blueprint/context/needs-you.md` · `blueprint/build-plan.md` · `blueprint/history/` · `blueprint/capabilities/` · `dev-notes/decisions.md` · `blueprint/production-pending.md` · `blueprint/status/` · `dev-notes/status.md`
 
 Where this sits:
 
-    `build` -> `verify` -> `review` -> ship -> next item
+    `build` -> `verify` -> `review` -> dispatch -> next item
 
 `build` built the work on a branch, with optional per-step checkpoints.
 This closes it: logs it, makes the single work-level commit, and squash-merges so
@@ -284,13 +284,13 @@ learn how a finding no code fixes gets closed:
     > repair `build` saw a test fail without, which `build` closes itself. **A
     > finding no code fixes** - raised by `preflight` or `host`, such as missing
     > backups or a leaked secret - is marked `fixed` with evidence by whichever
-    > skill repairs it, and `preflight` re-checks and closes it. `ship` refuses to
+    > skill repairs it, and `preflight` re-checks and closes it. `dispatch` refuses to
     > merge while any P0 or P1 finding is `open` or `fixed`, then archives resolved
     > findings with the work item, moves unresolved P3s to
     > `blueprint/findings/backlog.md`, and resets this file. A finding the user puts
     > off rather than abandons is `deferred`, with a
     > `Deferred to:` line naming the skill that will do it: it gates nothing, stays
-    > in the ledger through `ship`, and `preflight` reports it at every audit until
+    > in the ledger through `dispatch`, and `preflight` reports it at every audit until
     > that skill has run.
 
     _No findings recorded._
@@ -308,7 +308,7 @@ Then reset `blueprint/context/current-work.md` to its stub:
 
     > **Working file.** The one item in flight - a feature, a fix, or a rollback.
     > The `spec` skill writes it, `build` ticks its steps off as they land, and
-    > `ship` archives it under blueprint/history and resets this file.
+    > `dispatch` archives it under blueprint/history and resets this file.
 
     _Nothing in progress. Run the `spec` skill to start the next item, or describe a
     bug to spec it as a fix._
@@ -352,7 +352,7 @@ naming the items, so it reads as a decision rather than the same old oversight.
 
 **Refresh what a cold session reads first, in this same change** (D24). Run
 `distill` now - it regenerates the overview's *Current state* from the plan this
-step just ticked, and commits nothing when `ship` runs it. Then correct
+step just ticked, and commits nothing when `dispatch` runs it. Then correct
 `dev-notes/status.md`'s *where this stands*: how many build-plan items are done,
 that nothing is in flight, and any line this item made false - "not pushed",
 "CI never run". **Edit only the lines this item changed**; the rest is `docs`'s.

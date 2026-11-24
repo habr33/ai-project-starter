@@ -70,9 +70,9 @@ SOURCES = [
     ("full-verify", "", "", "template/AGENTS.md", "- Full verify: "),
     ("standards-verify", "setup", "blueprint/context/coding-standards.md",
      "template/blueprint/context/coding-standards.md", "Do not write either command in this file"),
-    ("capability-claims", "ship", "blueprint/capabilities/", "lib/merge-capabilities.sh",
+    ("capability-claims", "dispatch", "blueprint/capabilities/", "lib/merge-capabilities.sh",
      'CLAIM = re.compile(rf"^- \\*\\*({NAME})\\.(\\d+)\\*\\* - (.*?) \\*Since:\\* (\\S+)(?: · \\*Changed:\\* (\\S+))?$")'),
-    ("capability-claims", "ship", "blueprint/capabilities/", "lib/merge-capabilities.sh",
+    ("capability-claims", "dispatch", "blueprint/capabilities/", "lib/merge-capabilities.sh",
      'TOMB = re.compile(rf"^- ({NAME})\\.(\\d+) - removed by (\\S+)$")'),
     ("preflight-line", "preflight", "dev-notes/status.md", "skills/preflight.md",
      "`preflight: no-go, 2026-03-02, a1b2c3d - blockers F-12, F-14`"),
@@ -217,7 +217,7 @@ def check_spec(part):
             say(p, "spec-verified" if field == "Verified" else "spec-reviewed",
                 f"**{field}:** is neither 'not yet' nor '<date>, <fingerprint>, <result>': '{m[1].strip()}'")
     # A spec written before this line existed has none, and that is not a
-    # problem: ship then has no recorded run to reuse and runs full verify.
+    # problem: dispatch then has no recorded run to reuse and runs full verify.
     m = re.search(r"^\*\*Full verify:\*\* *(.*)$", text, re.M)
     if m and m[1].strip() != "not yet" and not DATED.match(m[1].strip()):
         say(p, "spec-full-verify",

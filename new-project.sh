@@ -3,7 +3,7 @@
 #
 # The point of creating the directory here is that there is never a moment when
 # you have an AI tool open in a folder with no skills. Open it and everything -
-# ideate, stack, scaffold, build, ship, host, deploy, monitor - is already there.
+# ideate, stack, scaffold, build, dispatch, host, deploy, monitor - is already there.
 #
 # It deliberately does NOT create a source directory. The `scaffold` skill does
 # that later, once `stack` has decided what this project actually is, using the
@@ -231,7 +231,7 @@ target/
 !**/skills/out/
 !**/skills/out/**
 # The same trap for the scripts installed beside them: `bin/` above matches
-# .agents/bin/, so ship's merge script was on disk and absent from every clone.
+# .agents/bin/, so dispatch's merge script was on disk and absent from every clone.
 # At any depth - a multi-part product's parts sit under this one .gitignore.
 !**/.agents/bin/
 !**/.agents/bin/**
@@ -323,7 +323,7 @@ fi
 # Without it `main` is an *unborn* branch: it does not exist until something is
 # committed on it. A first `git checkout -b feat/...` then moves that unborn HEAD
 # to the feature branch, the first commit lands there, and `main` silently never
-# comes into being - so `ship`'s squash-merge has nothing to merge into. Whether
+# comes into being - so `dispatch`'s squash-merge has nothing to merge into. Whether
 # the base branch exists otherwise depends on the order the user happens to do
 # things, which is not a thing to leave to chance.
 #
