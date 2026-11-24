@@ -67,7 +67,8 @@ by mentioning it.
 | `AGENTS.md` · Environments | every place this code runs, and which hold real data | `scaffold` `host` | `deploy` `migrate` `preflight` `monitor` |
 
 **`current-work.md` is the hinge.** Eleven skills touch it and six write it.
-`spec` fills it, `build` ticks it, `verify` and `review` record the fingerprint
+`spec` fills it, `build` ticks it and records `verify`'s line when it proved the
+behaviour itself, `verify` and `review` record the fingerprint
 of the code they examined, `ship` clears it, and `rollback` writes the
 guarded plan for a reversal into it. That is why shipping in
 one part of a multi-part product used to destroy another part's in-flight work,
@@ -127,7 +128,7 @@ against *this project's* recorded values rather than a generic standard.
 | Part | Reads | Writes | Stops when | Hands to |
 |---|---|---|---|---|
 | `spec` | build-plan, overview, standards, quality-bar, design, findings | **current-work**, build-plan | no overview; an item already in flight; a UI with no design.md | `build` |
-| `build` | current-work, overview, standards, findings | source, current-work ticks, the spec's `Full verify:` line, its `Reach:` line when the diff went wider than declared, `Takes:` in `AGENTS.md` after a full run, findings→`fixed` | current-work holds no real spec | `verify` |
+| `build` | current-work, overview, standards, findings | source, current-work ticks, the spec's `Verified:` line when it proved every behavioral done-when live, the spec's `Full verify:` line, its `Reach:` line when the diff went wider than declared, `Takes:` in `AGENTS.md` after a full run, findings→`fixed` | current-work holds no real spec | `verify` |
 | `verify` | current-work done-whens; with `--all`, **every claim in `capabilities/`** (archives without a `Behaviour changes` section are walked and offered for seeding) | findings (a regression), needs-you (a could-not-verify), the spec's `Verified:` line, and with `--all` the seeded capability claims — never code | no spec and no `--all`, or no step ticked | `review` or back to `build`; a regression found by `--all` goes to **findings**, since there is no spec to return to |
 | `review` | source, standards, quality-bar, **principles**, design, findings | findings, and the spec's `Reviewed:` line, naming what it did not read — even for a clean pass | *(advisory)* — reports missing bars | repairs, or `ship` |
 | `ship` | current-work, findings, build-plan, the pipeline's checks job by job, `main`'s last run | history, build-plan, decisions, **capabilities**, current-work reset, one commit | no completed spec; an open P0/P1; a part of full verify the scope needed that ran nowhere - a skipped job is not a pass unless the `gate` job passed; a red `main` | `ci`, `deploy`, `integrate`, `docs` |
@@ -159,7 +160,7 @@ no later, so a small change never waits for the whole suite:
 | When | What runs | Who decides |
 |---|---|---|
 | after each build step | Verify, plus the test the done-when names | `build` |
-| `build`'s closing | the item's own tests together, on fresh state; full verify only for a `wide` item measured within `Budget:`, else the `Affected:` command | `build`, from `Reach:` and `Takes:` |
+| `build`'s closing | the item's own tests together, on fresh state - a quick fix skips this; full verify only for a `wide` item measured within `Budget:`, else the `Affected:` command; records `Verified:` when every behavioral done-when ran live | `build`, from `Reach:` and `Takes:` |
 | `verify`, `review` | no suite - the running app, then the code | - |
 | the pull request | Verify always; `Affected:` or full verify as `test-scope.sh` sorts the diff - `none`, `affected`, or `full` for a `wide` spec, a manifest, a migration or CI config; one `gate` job judges | `ci`, read by `ship` through `pipeline-ran.sh` |
 | a local merge, no pipeline | full verify within budget; over it, the scope's choice, said | `ship` |

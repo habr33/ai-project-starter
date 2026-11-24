@@ -2335,8 +2335,8 @@ assert_ok "the packet separates live proof from a green check" \
   _says skills/build.md 'proven live against the running app in Step 3 versus only by a green check'
 assert_ok "verify is named first when any proof was only a check" \
   _says skills/build.md '`verify` first, when any behavioral done-when was proven only by a green check'
-assert_ok "and review directly when every one was run live" \
-  _says skills/build.md 'already run live in Step 3, say so and name `review` directly'
+assert_ok "records the line before naming review directly when every one ran live" \
+  _says skills/build.md 'already run live in Step 3, record the `**Verified:**` line above, say so, and name `review` directly'
 assert_fails "the old unconditional handoff is gone" \
   _says skills/build.md 'next action, usually `review` then `ship`'
 
@@ -3143,11 +3143,28 @@ for w in 'PARTLY READ' 'NOT READ'; do
 done
 assert_ok "ship does not take a partly read review as clean" \
   _says skills/ship.md 'reading `PARTLY READ` or `NOT READ` is not a clean pass'
-# One fingerprint, written three times: a copy that drifts makes every record
+# build can run verify mid-step, but the line verify writes then goes stale as
+# later steps land - so the run was repeated at the merge. build records the
+# line at closing instead, on the tree it actually proved, and ship takes it.
+assert_ok "build records the live proof in the spec" \
+  _says skills/build.md 'Record the live proof in the spec'"'"'s `**Verified:**` line'
+assert_ok "with the fingerprint of the tree it proved" \
+  _says skills/build.md 'the date, the same fingerprint, and `proven live in build`'
+assert_ok "and leaves it not yet when a proof was only a green check" \
+  _says skills/build.md 'When any behavioral done-when was proven only by a green check, leave the line `not yet`'
+assert_ok "a quick fix leaves the line alone" \
+  _says skills/build.md 'A quick fix leaves it alone'
+assert_ok "ship takes build's line as verify's evidence" \
+  _says skills/ship.md 'whether `verify` wrote it or `build` did at closing'
+assert_ok "ship stops on an unrun review for a non-quick item" \
+  _says skills/ship.md 'A non-quick item'"'"'s `review` has run on this tree'
+assert_ok "a quick fix skips build's closing test run" \
+  _says skills/build.md 'A quick fix skips the run below'
+# One fingerprint, written four times: a copy that drifts makes every record
 # it writes look stale, or worse, makes a stale one match.
-fps=$(for n in verify review ship; do grep -h 'git write-tree' skills/$n.md | sed 's/^ *//'; done)
-assert_eq "verify, review and ship each give the fingerprint once" 3 "$(grep -c . <<<"$fps")"
-assert_eq "and it is the same command in all three" 1 "$(sort -u <<<"$fps" | grep -c .)"
+fps=$(for n in build verify review ship; do grep -h 'git write-tree' skills/$n.md | sed 's/^ *//'; done)
+assert_eq "build, verify, review and ship each give the fingerprint once" 4 "$(grep -c . <<<"$fps")"
+assert_eq "and it is the same command in all four" 1 "$(sort -u <<<"$fps" | grep -c .)"
 
 section "an overview over its cap is reported, not only prevented"
 # distill holds the overview to its cap only when it runs, so one written before

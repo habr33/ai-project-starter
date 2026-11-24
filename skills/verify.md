@@ -248,6 +248,10 @@ skill runs:
 
     i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
 
+**`build` writes the same line at closing, with `proven live in build`, when its
+Step 3 proved every behavioral done-when against the running app** - a live run
+is a live run, and the fingerprint is what `ship` reads, not who wrote it.
+
 **With `--all`, the bottom line is a different sentence.** Nothing here is ready
 for `review` or `ship` - no item is in flight. Report instead:
 

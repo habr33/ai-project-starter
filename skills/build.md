@@ -360,6 +360,10 @@ say which limit it crossed** - it is an ordinary fix now, and `verify` and
 `review` apply. A repair that needed a third file is exactly the one whose
 reach nobody predicted.
 
+**A quick fix skips the run below** - its reproduction is the only test, and it
+already ran red then green in Step 3; the closing run would be that same test a
+third time.
+
 When every step is built, **run this item's own tests together, once** - every
 test the spec's done-whens name, in one run, on the tree as it now stands. What
 it catches is a step that broke another step's test, and it costs this item's
@@ -446,8 +450,21 @@ to the code does:
     i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
 
 **A repair made after this run changes the fingerprint**, so a finding repaired
-through Step 3 ends here again: full verify once more, and the line rewritten.
+through Step 3 ends here again: full verify once more, and both lines rewritten.
 That is one run per round of repairs, never one per repair.
+
+**Record the live proof in the spec's `**Verified:**` line** when every
+behavioral done-when was proven against the running app in Step 3 - run through
+`verify`, or by a browser test that drives the served app - on the tree as it
+now stands, with no later step changing the behavior that proof covered: the
+date, the same fingerprint, and `proven live in build` followed
+by what it covered -
+`**Verified:** 2026-03-02, 6f06b62b2f2c, proven live in build - every behavioral done-when`.
+That is what lets `ship` accept the proof without running `verify` again on work
+already covered. **When any behavioral done-when was proven only by a green
+check, leave the line `not yet`** and name `verify` first in the packet. A quick
+fix leaves it alone: its reproduction test is its evidence, and `ship` reads that
+from the `**Quick:**` line.
 
 When it passes, stop with a compact review packet:
 
@@ -465,15 +482,15 @@ When it passes, stop with a compact review packet:
   only by a green check rather than run against the real app - that is exactly
   what `verify` exists for, and skipping it there leaves the spec's actual
   promise unproven. Then `review`, then `ship`. **If every behavioral
-  done-when was already run live in Step 3, say so and name `review`
-  directly** - running `verify` again over work it already covers is not the
-  point of naming it in the chain. **A quick fix still inside its limits names
-  `ship` directly**, saying that `verify` and `review` were skipped by the
-  short path - unless its claim is one only the running app shows, such as a
-  rendered layout, which goes to `verify` first. **Where the next action is
-  `review`, say it reads best from a fresh session**, as `verify` does: this
-  one holds the whole build, and nothing is lost - the spec and its ticks are
-  on disk. `verify` can run here.
+  done-when was already run live in Step 3, record the `**Verified:**` line
+  above, say so, and name `review` directly** - running `verify` again over
+  work it already covers is not the point of naming it in the chain. **A quick
+  fix still inside its limits names `ship` directly**, saying that `verify` and
+  `review` were skipped by the short path - unless its claim is one only the
+  running app shows, such as a rendered layout, which goes to `verify` first.
+  **Where the next action is `review`, say it reads best from a fresh session**,
+  as `verify` does: this one holds the whole build, and nothing is lost - the
+  spec and its ticks are on disk. `verify` can run here.
 
 **In a multi-part project, post the packet** in `<product root>/blueprint/status/<this part>.md`:
 

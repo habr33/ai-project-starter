@@ -1646,6 +1646,8 @@ assert_ok "a Full verify: line as build writes it passes" "$CK" "$d"
 sed -i 's/^\*\*Full verify:.*/**Full verify:** green/' "$d/blueprint/context/current-work.md"
 assert_refuses "a Full verify: line in no recorded form, with build" "**Full verify:** is neither" "$CK" "$d"
 assert_refuses "and build is named as its fix" "fix with build" "$CK" "$d"
+d=$(ck_copy "$SPB"); spec_hdr "$d" '2026-03-02, 6f06b62b2f2c, proven live in build - every behavioral done-when' 'not yet'
+assert_ok "a Verified: line as build writes it passes" "$CK" "$d"
 d=$(ck_copy "$SPB"); spec_hdr "$d" 'not yet' 'not yet'
 sed -i 's/^\*\*Verified:/**Reach:** local\n&/' "$d/blueprint/context/current-work.md"
 assert_ok "a Reach: line as spec writes it passes" "$CK" "$d"

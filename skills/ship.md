@@ -32,10 +32,12 @@ this is `--abandon`, which exists for the unfinished one. There is nothing to
 close out, and resetting it destroys whatever is in flight.
 
 Name which of these has not happened rather than merging past it - Step 1 turns
-the ones that matter into a hard stop:
+both into a hard stop:
 
 - **`verify` has not run** - the code compiles and nobody has watched it do the
-  thing the spec promised.
+  thing the spec promised. **`build` records this line itself at closing when it
+  proved every behavioral done-when against the running app**, so a line it
+  wrote is that evidence, not a gap.
 - **`review` has not run** on this work - the merge gate reads the findings
   ledger, and an empty ledger because nothing looked is indistinguishable from an
   empty ledger because nothing was wrong.
@@ -46,13 +48,16 @@ and `dev-notes/`, committed or not:
 
     i=$(mktemp) && rm -f "$i" && GIT_INDEX_FILE="$i" git add -A -- . ':!blueprint' ':!dev-notes' && GIT_INDEX_FILE="$i" git write-tree | cut -c1-12; rm -f "$i"
 
-A line still reading `not yet` means that check has not run. **A fingerprint that
-differs means it ran on other code** - usually a repair made after it. Show
-what changed since with `git diff --stat <recorded> <current>`, and ask whether
-to run that check again; a line naming one lens or one path is that much of a
-review, and say so. **A `Reviewed:` line reading `PARTLY READ` or `NOT READ`
-is not a clean pass** whatever its blocking count: name what it did not read
-and ask whether to review that before the merge.
+**For a non-quick item, both lines must record a pass on the tree being
+merged.** A line still reading `not yet` means that check has not run: **stop
+and run it** - `verify`, or `review` - before anything is logged. **A
+fingerprint that differs means it ran on other code** - usually a repair made
+after it. Show what changed since with `git diff --stat <recorded> <current>`,
+and **stop and have that check re-run** rather than asking to merge past it. A
+line naming one lens or one path is that much of a review, and say so. **A
+`Reviewed:` line reading `PARTLY READ` or `NOT READ` is not a clean pass**
+whatever its blocking count: name what it did not read and ask whether to
+review that before the merge.
 
 **A quick fix skips both by design** - a spec with a `**Quick:**` line, from
 `spec --quick`. Name that instead of the two above, and let Step 1 check that
@@ -127,11 +132,17 @@ blockers**:
   verification command alone is not enough. If none is
   declared, the build passed, and the tests passed when the project has a test
   command and this change touched logic.
-- Behavioral done-whens have `verify` evidence - a `**Verified:**` line, or
-  `verify` run in this session. Do not merge on an
+- Behavioral done-whens have `verify` evidence on this tree - the spec's
+  `**Verified:**` line with the fingerprint above, whether `verify` wrote it or
+  `build` did at closing, or `verify` run in this session. Do not merge on an
   unverified claim. **A quick fix's evidence is its reproduction test instead**,
   seen failing before the repair and passing after - both runs named in
   `build`'s packet. A green run alone is not that evidence.
+- **A non-quick item's `review` has run on this tree** - the spec's
+  `**Reviewed:**` line with the fingerprint above, not `not yet`, and not
+  `PARTLY READ` or `NOT READ`. An empty ledger because nothing looked is the
+  exact state this line distinguishes; run `review` rather than reading silence
+  as a clean pass.
 - **A quick fix is still inside its limits** - run `git diff --stat main` and
   `git status --short` and count, rather than recalling what was built: the
   branch's diff against `main` changes at most two files outside `blueprint/`, not counting tests, and no
